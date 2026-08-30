@@ -62,7 +62,7 @@
                                                         <VBox alignment="CENTER" spacing="4.0">
                                                             <children>
                                                                 <TextField fx:id="txtQuantidade" styleClass="stepper-input" text="0" />
-                                                                <Label style="-fx-font-size: 10px; -fx-text-fill: #64748B;" text="UNIDADES EM ESTOQUE" />
+                                                                <Label fx:id="lblQuantidadeDesc" style="-fx-font-size: 10px; -fx-text-fill: #64748B;" text="UNIDADES EM ESTOQUE" />
                                                             </children>
                                                         </VBox>
 
@@ -74,6 +74,31 @@
                                                             <children>
                                                                 <Label style="-fx-font-size: 9px; -fx-text-fill: #64748B; -fx-font-weight: bold;" text="ESTOQUE AO ABRIR:" />
                                                                 <Label fx:id="lblEstoqueInicial" style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #1E293B;" text="0 un." />
+                                                            </children>
+                                                        </VBox>
+
+                                                        <Separator orientation="VERTICAL" style="-fx-opacity: 0.4;" />
+
+                                                        <!-- Seção de Cores & Variações -->
+                                                        <VBox alignment="CENTER_LEFT" spacing="4.0"
+                                                              style="-fx-padding: 6px 12px; -fx-background-color: #F8FAFC; -fx-background-radius: 6px; -fx-border-color: #E2E8F0; -fx-border-radius: 6px;">
+                                                            <children>
+                                                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                                                    <children>
+                                                                        <Label style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #334155;" text="Cor Atual:" />
+                                                                        <ComboBox fx:id="cbCorAtual" prefWidth="175.0" style="-fx-font-size: 11px;" />
+                                                                    </children>
+                                                                </HBox>
+                                                                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                                                    <children>
+                                                                        <Button fx:id="btnAdicionarCor" onAction="#handleAbrirAdicionarCor"
+                                                                                style="-fx-background-color: #DBEAFE; -fx-text-fill: #1E40AF; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4px; -fx-cursor: hand; -fx-padding: 4px 10px;"
+                                                                                text="Adicionar Cor" />
+                                                                        <Button fx:id="btnVerCores" onAction="#handleAbrirGerenciarCores"
+                                                                                style="-fx-background-color: #E2E8F0; -fx-text-fill: #334155; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4px; -fx-cursor: hand; -fx-padding: 4px 10px;"
+                                                                                text="Ver Cores" />
+                                                                    </children>
+                                                                </HBox>
                                                             </children>
                                                         </VBox>
                                                     </children>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox prefHeight="580.0" prefWidth="680.0"
+      stylesheets="@../css/styles.css"
+      style="-fx-background-color: #F8FAFC;"
+      xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.swstock.controller.ProductColorsController">
+
+    <children>
+        <!-- Cabeçalho -->
+        <HBox alignment="CENTER_LEFT" spacing="14.0"
+              style="-fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0; -fx-padding: 16px 20px; -fx-background-color: #FFFFFF;">
+            <children>
+                <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label fx:id="lblTituloProduto" text="Cores do Produto"
+                               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+                        <Label fx:id="lblSubtituloCodigo" text="CÓDIGO: #000000"
+                               style="-fx-font-size: 11px; -fx-text-fill: #64748B;" />
+                    </children>
+                </VBox>
+                <Label fx:id="lblTotalCoresContador" text="0 Cores cadastradas"
+                       style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #2563EB;" />
+            </children>
+        </HBox>
+
+        <VBox spacing="14.0" VBox.vgrow="ALWAYS" style="-fx-padding: 18px 20px;">
+            <children>
+                <!-- Formulário para Adicionar Nova Cor -->
+                <VBox spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 14px 16px;">
+                    <children>
+                        <Label text="Adicionar Nova Cor / Variação:"
+                               style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <TextField fx:id="txtNomeCor" promptText="Nome da cor (ex: Azul, Vermelho, Preto Fosco...)"
+                                           styleClass="search-field" HBox.hgrow="ALWAYS" />
+                                <VBox alignment="CENTER_LEFT" spacing="2.0">
+                                    <children>
+                                        <TextField fx:id="txtQtdInicial" promptText="Qtd" text="0"
+                                                   prefWidth="75.0" styleClass="search-field" alignment="CENTER" />
+                                    </children>
+                                </VBox>
+                                <Button fx:id="btnAdicionar" onAction="#handleAdicionarCor"
+                                        text="+ Adicionar Cor" styleClass="btn-primary" style="-fx-font-size: 11px; -fx-padding: 7px 14px;" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+
+                <!-- Tabela de Cores Cadastradas -->
+                <TableView fx:id="tblCores" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colNomeCor" prefWidth="220.0" text="NOME DA COR" />
+                        <TableColumn fx:id="colQtdCor" prefWidth="110.0" text="ESTOQUE" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colStatusCor" prefWidth="120.0" text="STATUS" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colAcoesCor" prefWidth="160.0" text="AÇÕES" style="-fx-alignment: CENTER;" />
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                    <placeholder>
+                        <VBox alignment="CENTER" spacing="6.0" style="-fx-padding: 24px;">
+                            <children>
+                                <Label text="Nenhuma cor cadastrada para este produto."
+                                       style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #64748B;" />
+                                <Label text="Digite o nome da cor acima para criar ramificações de estoque."
+                                       style="-fx-font-size: 11px; -fx-text-fill: #94A3B8;" />
+                            </children>
+                        </VBox>
+                    </placeholder>
+                </TableView>
+
+                <!-- Resumo e Ações de Rodapé -->
+                <HBox alignment="CENTER_LEFT" spacing="12.0"
+                      style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 10px 14px;">
+                    <children>
+                        <Label fx:id="lblTotalEstoqueSoma" text="Total acumulado em cores: 0 un."
+                               style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1E293B;" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnDefinirAtiva" onAction="#handleDefinirAtiva"
+                                text="Selecionar como Cor Atual" styleClass="btn-secondary" style="-fx-font-size: 11px;" />
+                        <Button onAction="#handleFechar" text="Concluir" styleClass="btn-primary" style="-fx-font-size: 11px;" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</VBox>

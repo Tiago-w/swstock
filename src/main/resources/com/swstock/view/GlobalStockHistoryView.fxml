@@ -25,7 +25,7 @@
                 <Region HBox.hgrow="ALWAYS" />
                 <Button onAction="#handleExportarPdf"
                         style="-fx-background-color: #0D47A1; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6px; -fx-padding: 8px 16px; -fx-font-size: 12px;"
-                        text="📄 Exportar Relatório PDF" />
+                        text=" Exportar Relatório PDF" />
                 <Button onAction="#handleFechar" styleClass="btn-secondary" text="Fechar" />
             </children>
         </HBox>

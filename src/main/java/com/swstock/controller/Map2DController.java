@@ -289,12 +289,25 @@ public class Map2DController {
         String chave = localAlvo.trim().toUpperCase();
         VBox card = mapCardsEstantes.get(chave);
 
+        // Busca flexível se não encontrar pela chave exata
+        if (card == null) {
+            String chaveLimpa = chave.replaceAll("[^A-Z0-9]", "");
+            for (Map.Entry<String, VBox> entry : mapCardsEstantes.entrySet()) {
+                String kLimpa = entry.getKey().replaceAll("[^A-Z0-9]", "");
+                if (kLimpa.equalsIgnoreCase(chaveLimpa) || kLimpa.contains(chaveLimpa) || chaveLimpa.contains(kLimpa)) {
+                    card = entry.getValue();
+                    chave = entry.getKey();
+                    break;
+                }
+            }
+        }
+
         boxDestaqueAlvo.setVisible(true);
         boxDestaqueAlvo.setManaged(true);
-        lblDestaqueAlvo.setText("Localização do Produto: " + chave + " (Piscando)");
+        lblDestaqueAlvo.setText("Localização do Produto: " + chave + " (Piscando em Vermelho)");
 
         if (card != null) {
-            selecionarEstante(localAlvo, card);
+            selecionarEstante(chave, card);
             iniciarAnimacaoPiscante(card);
         } else {
             lblEstanteTitulo.setText(chave);
@@ -307,9 +320,13 @@ public class Map2DController {
         this.cardPiscando = card;
 
         blinkTimeline = new Timeline(
-                new KeyFrame(Duration.ZERO, e -> card.getStyleClass().add("shelf-card-highlight")),
-                new KeyFrame(Duration.millis(500), e -> card.getStyleClass().remove("shelf-card-highlight")),
-                new KeyFrame(Duration.millis(1000), e -> {})
+                new KeyFrame(Duration.ZERO, e -> {
+                    card.setStyle("-fx-background-color: #DC2626 !important; -fx-border-color: #F87171 !important; -fx-border-width: 3.5px !important; -fx-border-radius: 8px !important; -fx-background-radius: 8px !important; -fx-effect: dropshadow(three-pass-box, rgba(239, 68, 68, 0.95), 22, 0, 0, 0);");
+                }),
+                new KeyFrame(Duration.millis(350), e -> {
+                    card.setStyle("-fx-background-color: #1E293B !important; -fx-border-color: #EF4444 !important; -fx-border-width: 2px !important; -fx-border-radius: 8px !important; -fx-background-radius: 8px !important;");
+                }),
+                new KeyFrame(Duration.millis(700), e -> {})
         );
         blinkTimeline.setCycleCount(Timeline.INDEFINITE);
         blinkTimeline.play();
@@ -321,7 +338,7 @@ public class Map2DController {
             blinkTimeline = null;
         }
         if (cardPiscando != null) {
-            cardPiscando.getStyleClass().remove("shelf-card-highlight");
+            cardPiscando.setStyle("");
             cardPiscando = null;
         }
     }

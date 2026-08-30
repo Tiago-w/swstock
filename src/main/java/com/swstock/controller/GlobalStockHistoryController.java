@@ -80,11 +80,13 @@ public class GlobalStockHistoryController {
         }
 
         cbTipoOperacao.setItems(FXCollections.observableArrayList(
-                "Todos os Tipos (Entradas e Saídas)",
+                "Todos os Tipos (Entradas, Saídas e Ajustes)",
+                "Entradas e Saídas apenas (Sem Ajustes)",
                 "Apenas Entradas",
-                "Apenas Saídas"
+                "Apenas Saídas",
+                "Só Ajustes"
         ));
-        cbTipoOperacao.setValue("Todos os Tipos (Entradas e Saídas)");
+        cbTipoOperacao.setValue("Todos os Tipos (Entradas, Saídas e Ajustes)");
 
         carregarOpcoesGrupos();
         configurarTabela();
@@ -306,10 +308,10 @@ public class GlobalStockHistoryController {
                 status.append("Todo o Histórico");
             }
 
-            if (tipo != null && !tipo.toUpperCase().contains("TODOS")) {
+            if (tipo != null && !tipo.toUpperCase().contains("TODOS") && !tipo.toUpperCase().contains("TODAS")) {
                 status.append(" | Tipo: ").append(tipo);
             }
-            if (grupoFiltro != null && !grupoFiltro.toUpperCase().contains("TODOS")) {
+            if (grupoFiltro != null && !grupoFiltro.toUpperCase().contains("TODOS") && !grupoFiltro.toUpperCase().contains("TODAS")) {
                 status.append(" | Fabricante: ").append(grupoFiltro);
             }
             if (busca != null && !busca.trim().isEmpty()) {
@@ -443,7 +445,7 @@ public class GlobalStockHistoryController {
     private void handleLimparFiltros() {
         dpDataInicio.setValue(null);
         dpDataFim.setValue(null);
-        cbTipoOperacao.setValue("Todos os Tipos (Entradas e Saídas)");
+        cbTipoOperacao.setValue("Todos os Tipos (Entradas, Saídas e Ajustes)");
         if (cbGrupoFabricante != null) {
             cbGrupoFabricante.setValue("Todos os Grupos / Fabricantes");
         }

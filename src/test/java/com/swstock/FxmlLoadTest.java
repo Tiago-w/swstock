@@ -52,4 +52,18 @@ class FxmlLoadTest {
         Object root = loader.load();
         assertNotNull(root);
     }
+
+    @Test
+    void testLoadProductColorsModalFxml() throws Exception {
+        FXMLLoader loader = new FXMLLoader(FxmlLoadTest.class.getResource("/com/swstock/view/ProductColorsModal.fxml"));
+        Object root = loader.load();
+        assertNotNull(root);
+    }
+
+    @Test
+    void testLoadStockInventoryModalFxml() throws Exception {
+        FXMLLoader loader = new FXMLLoader(FxmlLoadTest.class.getResource("/com/swstock/view/StockInventoryModal.fxml"));
+        Object root = loader.load();
+        assertNotNull(root);
+    }
 }

@@ -4,7 +4,7 @@
 
 ---
 
-## 🛠 Stack Tecnológica
+##  Stack Tecnológica
 
 - **Linguagem**: Java 25
 - **Interface Gráfica**: JavaFX 23 (BorderPane, FXML desacoplados, CSS customizado)
@@ -14,7 +14,7 @@
 
 ---
 
-## 📁 Estrutura de Diretórios (MVC)
+##  Estrutura de Diretórios (MVC)
 
 ```text
 swstock/
@@ -59,11 +59,11 @@ swstock/
 
 ---
 
-## 🚀 Funcionalidades Principais
+##  Funcionalidades Principais
 
 ### 1. Banner Superior & Menu Retrátil
 - **Banner Vibrante**: Fundo em degradê azul (#1565C0 / #0D47A1), tipografia estilizada e contador geral de itens.
-- **Menu Sanduíche (☰)**: Botão de alternância que expande e recolhe o painel lateral com animação responsiva.
+- **Menu Sanduíche (MENU)**: Botão de alternância que expande e recolhe o painel lateral com animação responsiva.
 
 ### 2. Mapa 2D do Depósito Físico
 - Renderiza graficamente as estantes do armazém (Corredores A, B, C e setores customizados).
@@ -88,7 +88,7 @@ swstock/
 
 ---
 
-## 📦 Como Compilar e Executar
+##  Como Compilar e Executar
 
 ### Pré-requisitos
 - JDK 25 (ou JDK 21+ LTS)
