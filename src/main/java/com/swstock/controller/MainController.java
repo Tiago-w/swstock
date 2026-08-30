@@ -328,11 +328,11 @@ public class MainController {
 
             lblTotalItens.setText(String.format("Total: %d produtos cadastrados (%d unidades no total)",
                     lista.size(), totalUnidades));
-            lblHeaderStats.setText(String.format("📦 %d Itens (%d un.)", lista.size(), totalUnidades));
+            lblHeaderStats.setText(String.format(" %d Itens (%d un.)", lista.size(), totalUnidades));
             lblStatus.setText("Banco de Dados SQLite: Sincronizado e Operacional");
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao carregar produtos do banco.", e);
-            lblStatus.setText("⚠ Erro ao consultar o banco de dados.");
+            lblStatus.setText(" Erro ao consultar o banco de dados.");
         }
     }
 
@@ -393,6 +393,32 @@ public class MainController {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Erro ao abrir histórico global de estoque.", e);
             mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível carregar o histórico geral: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleAbrirLevantamentoEstoque() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/StockInventoryModal.fxml"));
+            Parent root = loader.load();
+
+            StockInventoryController controller = loader.getController();
+            Stage stage = new Stage();
+            stage.setTitle("SWStock - Levantamento de Estoque & Ficha de Pedido");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initOwner(rootPane.getScene().getWindow());
+            stage.setScene(new Scene(root));
+
+            controller.setDialogStage(stage);
+            controller.setProdutoDAO(produtoDAO);
+            controller.setProdutoCorDAO(new com.swstock.database.ProdutoCorDAO());
+            controller.carregarDadosIniciais();
+
+            stage.setMaximized(true);
+            stage.show();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir tela de levantamento de estoque.", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível abrir o módulo de levantamento de estoque: " + e.getMessage());
         }
     }
 

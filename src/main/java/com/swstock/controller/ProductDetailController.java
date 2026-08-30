@@ -1,22 +1,27 @@
 package com.swstock.controller;
 
-import com.swstock.database.FuncionarioDAO;
 import com.swstock.database.HistoricoEstoqueDAO;
+import com.swstock.database.ProdutoCorDAO;
 import com.swstock.database.ProdutoDAO;
 import com.swstock.model.HistoricoEstoque;
 import com.swstock.model.Produto;
+import com.swstock.model.ProdutoCor;
 import com.swstock.service.ProductEnrichmentService;
+import com.swstock.util.DialogHelper;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.sql.SQLException;
@@ -30,7 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Controlador para o modal de detalhes, edição e histórico de estoque do produto.
+ * Controlador para o modal de detalhes, edição, variações de cores e histórico de estoque do produto.
  */
 public class ProductDetailController {
 
@@ -46,6 +51,11 @@ public class ProductDetailController {
     @FXML private Button btnDecrement;
     @FXML private Button btnIncrement;
     @FXML private Label lblEstoqueInicial;
+    @FXML private Label lblQuantidadeDesc;
+
+    @FXML private ComboBox<String> cbCorAtual;
+    @FXML private Button btnAdicionarCor;
+    @FXML private Button btnVerCores;
 
     @FXML private HBox boxLoadingWeb;
     @FXML private Label lblLoadingWebText;
@@ -84,7 +94,10 @@ public class ProductDetailController {
     private Produto produto;
     private ProdutoDAO produtoDAO;
     private HistoricoEstoqueDAO historicoEstoqueDAO;
+    private ProdutoCorDAO produtoCorDAO = new ProdutoCorDAO();
     private final ObservableList<HistoricoEstoque> historicoList = FXCollections.observableArrayList();
+    private final ObservableList<ProdutoCor> coresDoProduto = FXCollections.observableArrayList();
+    private ProdutoCor corAtiva = null;
 
     private Runnable onUpdateCallback;
     private java.util.function.Consumer<String> onOpenMapCallback;
@@ -104,6 +117,21 @@ public class ProductDetailController {
 
         configurarCampoQuantidade();
         configurarTabelaHistorico();
+        configurarSeletorCores();
+    }
+
+    private void configurarSeletorCores() {
+        if (cbCorAtual != null) {
+            cbCorAtual.getSelectionModel().selectedIndexProperty().addListener((obs, oldVal, newVal) -> {
+                if (isUpdatingProgrammatically || newVal == null) return;
+                int idx = newVal.intValue();
+                if (idx <= 0 || idx > coresDoProduto.size()) {
+                    selecionarCorAtiva(null);
+                } else {
+                    selecionarCorAtiva(coresDoProduto.get(idx - 1));
+                }
+            });
+        }
     }
 
     private void configurarTabelaHistorico() {
@@ -174,7 +202,6 @@ public class ProductDetailController {
     }
 
     private void configurarCampoQuantidade() {
-        // Permite apenas números inteiros sem disparar gravações automáticas intermediárias
         txtQuantidade.textProperty().addListener((observable, oldValue, newValue) -> {
             if (isUpdatingProgrammatically) return;
 
@@ -186,23 +213,32 @@ public class ProductDetailController {
             if (!newValue.isEmpty()) {
                 try {
                     int novaQtd = Integer.parseInt(newValue);
-                    produto.setQuantidade(novaQtd);
-                    if (novaQtd != estoqueInicial) {
-                        lblAutoSaveStatus.setText("Alteração pendente de salvamento");
+                    if (corAtiva != null) {
+                        corAtiva.setQuantidade(novaQtd);
+                        lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
                         lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
                     } else {
-                        atualizarStatusSincronizado();
+                        produto.setQuantidade(novaQtd);
+                        if (novaQtd != estoqueInicial) {
+                            lblAutoSaveStatus.setText("Alteração pendente de salvamento");
+                            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+                        } else {
+                            atualizarStatusSincronizado();
+                        }
                     }
                 } catch (NumberFormatException ignored) {}
             }
         });
 
-        // Ao perder o foco, se estiver vazio, reseta para 0
         txtQuantidade.focusedProperty().addListener((obs, oldVal, hasFocus) -> {
             if (!hasFocus) {
                 if (txtQuantidade.getText() == null || txtQuantidade.getText().trim().isEmpty()) {
                     setQuantidadeDisplay(0);
-                    produto.setQuantidade(0);
+                    if (corAtiva != null) {
+                        corAtiva.setQuantidade(0);
+                    } else {
+                        produto.setQuantidade(0);
+                    }
                 }
             }
         });
@@ -215,6 +251,7 @@ public class ProductDetailController {
     public void setProdutoDAO(ProdutoDAO produtoDAO) {
         this.produtoDAO = produtoDAO;
         this.historicoEstoqueDAO = new HistoricoEstoqueDAO();
+        this.produtoCorDAO = new ProdutoCorDAO();
     }
 
     public void setOnUpdateCallback(Runnable onUpdateCallback) {
@@ -236,36 +273,43 @@ public class ProductDetailController {
         if (this.historicoEstoqueDAO == null) {
             this.historicoEstoqueDAO = new HistoricoEstoqueDAO();
         }
+        if (this.produtoCorDAO == null) {
+            this.produtoCorDAO = new ProdutoCorDAO();
+        }
 
         if (produto == null) {
             this.produto = new Produto();
             this.estoqueInicial = 0;
             lblModalNome.setText("Novo Produto");
-            lblModalCodigo.setText("CODIGO: [Pendente de Cadastro]");
+            lblModalCodigo.setText("CÓDIGO: [Pendente de Cadastro]");
             setQuantidadeDisplay(0);
             if (lblEstoqueInicial != null) {
                 lblEstoqueInicial.setText("0 un.");
             }
-            lblAutoSaveStatus.setText("Modo Criacao");
+            lblAutoSaveStatus.setText("Modo Criação");
             lblAutoSaveStatus.setStyle("-fx-text-fill: #2563EB; -fx-font-weight: bold; -fx-font-size: 11px;");
             txtPrecoVista.setText("0.00");
             txtPrecoPrazo.setText("0.00");
             txtCodigoLoja.setText("SKU-" + (int)(Math.random() * 900000 + 100000));
             if (txtGrupo != null) txtGrupo.setText("GERAL");
             carregarHistorico();
+            carregarCoresProduto();
         } else {
             this.estoqueInicial = produto.getQuantidade() != null ? produto.getQuantidade() : 0;
             lblModalNome.setText(produto.getNome() != null ? produto.getNome() : "Sem Nome");
-            lblModalCodigo.setText("CODIGO: #" + (produto.getCodigoLoja() != null ? produto.getCodigoLoja() : "N/A"));
+            lblModalCodigo.setText("CÓDIGO: #" + (produto.getCodigoLoja() != null ? produto.getCodigoLoja() : "N/A"));
             setQuantidadeDisplay(this.estoqueInicial);
             if (lblEstoqueInicial != null) {
                 lblEstoqueInicial.setText(this.estoqueInicial + " un.");
             }
+
             txtNome.setText(produto.getNome());
             txtCodigoLoja.setText(produto.getCodigoLoja());
-            if (txtGrupo != null) txtGrupo.setText(produto.getGrupo() != null ? produto.getGrupo() : "GERAL");
-            txtPrecoVista.setText(produto.getPrecoVista() != null ? String.valueOf(produto.getPrecoVista()) : "0.00");
-            txtPrecoPrazo.setText(produto.getPrecoPrazo() != null ? String.valueOf(produto.getPrecoPrazo()) : "0.00");
+            if (txtGrupo != null) {
+                txtGrupo.setText(produto.getGrupo() != null ? produto.getGrupo() : "GERAL");
+            }
+            txtPrecoVista.setText(produto.getPrecoVista() != null ? String.format("%.2f", produto.getPrecoVista()) : "0.00");
+            txtPrecoPrazo.setText(produto.getPrecoPrazo() != null ? String.format("%.2f", produto.getPrecoPrazo()) : "0.00");
             txtLocalizacao.setText(produto.getLocalizacao());
             txtUrlImagem.setText(produto.getUrlImagem());
             txtDescricaoBreve.setText(produto.getDescricaoBreve());
@@ -273,6 +317,169 @@ public class ProductDetailController {
             carregarImagem(produto.getUrlImagem());
             atualizarStatusSincronizado();
             carregarHistorico();
+            carregarCoresProduto();
+        }
+    }
+
+    public void carregarCoresProduto() {
+        if (cbCorAtual == null) return;
+        isUpdatingProgrammatically = true;
+        coresDoProduto.clear();
+        List<String> items = new ArrayList<>();
+        items.add("Nenhuma Cor (Estoque Geral)");
+
+        if (produto != null && produto.getId() != null) {
+            try {
+                List<ProdutoCor> cores = produtoCorDAO.findByProdutoId(produto.getId());
+                coresDoProduto.addAll(cores);
+                for (ProdutoCor cor : cores) {
+                    items.add(cor.getNomeCor() + " (" + cor.getQuantidade() + " un.)");
+                }
+            } catch (SQLException e) {
+                LOGGER.log(Level.SEVERE, "Erro ao buscar cores do produto.", e);
+            }
+        }
+
+        cbCorAtual.setItems(FXCollections.observableArrayList(items));
+
+        if (corAtiva != null) {
+            int idx = -1;
+            for (int i = 0; i < coresDoProduto.size(); i++) {
+                if (coresDoProduto.get(i).getId().equals(corAtiva.getId())) {
+                    idx = i + 1;
+                    corAtiva = coresDoProduto.get(i);
+                    break;
+                }
+            }
+            if (idx > 0) {
+                cbCorAtual.getSelectionModel().select(idx);
+                if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("ESTOQUE COR: " + corAtiva.getNomeCor());
+                setQuantidadeDisplay(corAtiva.getQuantidade());
+                if (lblEstoqueInicial != null) lblEstoqueInicial.setText(corAtiva.getQuantidade() + " un.");
+            } else {
+                corAtiva = null;
+                cbCorAtual.getSelectionModel().select(0);
+                if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
+                setQuantidadeDisplay(produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0);
+                if (lblEstoqueInicial != null) lblEstoqueInicial.setText((produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0) + " un.");
+            }
+        } else {
+            cbCorAtual.getSelectionModel().select(0);
+            if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
+            setQuantidadeDisplay(produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0);
+            if (lblEstoqueInicial != null) lblEstoqueInicial.setText((produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0) + " un.");
+        }
+        isUpdatingProgrammatically = false;
+    }
+
+    public void selecionarCorAtiva(ProdutoCor cor) {
+        this.corAtiva = cor;
+        if (cor != null) {
+            if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("ESTOQUE COR: " + cor.getNomeCor());
+            setQuantidadeDisplay(cor.getQuantidade());
+            if (lblEstoqueInicial != null) lblEstoqueInicial.setText(cor.getQuantidade() + " un.");
+        } else {
+            if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
+            int q = produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0;
+            setQuantidadeDisplay(q);
+            if (lblEstoqueInicial != null) lblEstoqueInicial.setText(q + " un.");
+        }
+    }
+
+    @FXML
+    private void handleAbrirAdicionarCor() {
+        if (produto == null || produto.getId() == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Salvar Primeiro", "Salve o cadastro básico do produto antes de adicionar cores.");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Adicionar Cor");
+        dialog.setHeaderText("Cadastrar nova cor para o produto:\n" + produto.getNome());
+        dialog.setContentText("Nome da cor (ex: Azul, Vermelho, Preto Fosco):");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isPresent() && !result.get().trim().isEmpty()) {
+            String nomeCor = result.get().trim().toUpperCase();
+
+            // Pede o responsável pela alteração
+            Optional<String> optResp = DialogHelper.solicitarResponsavel(
+                    tabPanePrincipal.getScene().getWindow(),
+                    "Responsável pelo Cadastro da Cor",
+                    "Informe quem está cadastrando a cor '" + nomeCor + "':"
+            );
+            if (optResp.isEmpty()) {
+                return;
+            }
+            String responsavel = optResp.get();
+
+            try {
+                boolean ok = produtoCorDAO.addCor(produto.getId(), nomeCor, 0, responsavel);
+                if (ok) {
+                    List<ProdutoCor> cores = produtoCorDAO.findByProdutoId(produto.getId());
+                    for (ProdutoCor c : cores) {
+                        if (c.getNomeCor().equalsIgnoreCase(nomeCor)) {
+                            this.corAtiva = c;
+                            break;
+                        }
+                    }
+                    carregarCoresProduto();
+                    carregarHistorico();
+                    notificarAtualizacao();
+                    mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Cor '" + nomeCor + "' cadastrada com sucesso!");
+                }
+            } catch (SQLException e) {
+                if (e.getMessage() != null && e.getMessage().contains("UNIQUE")) {
+                    mostrarAlerta(Alert.AlertType.WARNING, "Cor Duplicada", "Esta cor já está cadastrada para este produto.");
+                } else {
+                    LOGGER.log(Level.SEVERE, "Erro ao adicionar cor.", e);
+                    mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao cadastrar cor: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    @FXML
+    private void handleAbrirGerenciarCores() {
+        if (produto == null || produto.getId() == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Salvar Primeiro", "Salve o cadastro básico do produto antes de gerenciar cores.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/ProductColorsModal.fxml"));
+            Parent root = loader.load();
+
+            ProductColorsController controller = loader.getController();
+            Stage colorStage = new Stage();
+            colorStage.setTitle("Cores do Produto: " + produto.getNome());
+            colorStage.initModality(Modality.APPLICATION_MODAL);
+            colorStage.initOwner(tabPanePrincipal.getScene().getWindow());
+            colorStage.setScene(new Scene(root));
+
+            controller.setDialogStage(colorStage);
+            controller.setProdutoCorDAO(produtoCorDAO);
+            controller.setProdutoDAO(produtoDAO);
+            controller.setProduto(produto);
+
+            controller.setOnCorSelecionadaCallback(cor -> {
+                this.corAtiva = cor;
+                carregarCoresProduto();
+            });
+
+            controller.setOnModificacaoCallback(() -> {
+                carregarCoresProduto();
+                carregarHistorico();
+                notificarAtualizacao();
+            });
+
+            colorStage.showAndWait();
+            carregarCoresProduto();
+            carregarHistorico();
+            notificarAtualizacao();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir modal de cores.", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível abrir o gerenciamento de cores: " + e.getMessage());
         }
     }
 
@@ -285,7 +492,7 @@ public class ProductDetailController {
             if (lblTotalAdicionado != null) lblTotalAdicionado.setText("+0 un.");
             if (lblTotalSubtraido != null) lblTotalSubtraido.setText("-0 un.");
             if (lblSaldoAtualHistorico != null) lblSaldoAtualHistorico.setText("0 un.");
-            if (lblFiltroHistoricoStatus != null) lblFiltroHistoricoStatus.setText("Produto nao cadastrado ainda.");
+            if (lblFiltroHistoricoStatus != null) lblFiltroHistoricoStatus.setText("Produto não cadastrado ainda.");
             return;
         }
 
@@ -316,7 +523,7 @@ public class ProductDetailController {
             if (lblSaldoAtualHistorico != null) lblSaldoAtualHistorico.setText(saldo + " un.");
 
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Erro ao carregar historico de movimentacoes de estoque.", e);
+            LOGGER.log(Level.SEVERE, "Erro ao carregar histórico de movimentações de estoque.", e);
         }
     }
 
@@ -345,8 +552,8 @@ public class ProductDetailController {
     private void handleVerLocalMapa() {
         String loc = txtLocalizacao.getText();
         if (loc == null || loc.trim().isEmpty()) {
-            mostrarAlerta(Alert.AlertType.INFORMATION, "Localizacao Nao Cadastrada",
-                    "Este produto ainda nao possui localizacao definida.\nDigite uma estante (ex: 'Estante A1') para visualiza-la no mapa.");
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Localização Não Cadastrada",
+                    "Este produto ainda não possui localização definida.\nDigite uma estante (ex: 'Estante A1') para visualizá-la no mapa.");
             txtLocalizacao.requestFocus();
             return;
         }
@@ -378,32 +585,42 @@ public class ProductDetailController {
                     exibirLoadingWeb(false, "");
 
                     if (!resultado.success()) {
-                        mostrarAlerta(Alert.AlertType.INFORMATION, "Busca Web", resultado.statusMessage());
+                        mostrarAlerta(Alert.AlertType.WARNING, "Busca Web",
+                                "Não foi possível localizar dados na internet para este termo.\n" + resultado.statusMessage());
                         return;
                     }
 
-                    txtDescricaoBreve.setText(resultado.generatedDescription());
-                    imagensEncontradas = new ArrayList<>(resultado.candidateImageUrls());
-                    indiceImagemAtual = 0;
-
-                    if (!imagensEncontradas.isEmpty()) {
-                        String primeiraFoto = imagensEncontradas.get(0);
-                        txtUrlImagem.setText(primeiraFoto);
-                        carregarImagem(primeiraFoto);
-
-                        boxImageNav.setVisible(imagensEncontradas.size() > 1);
-                        boxImageNav.setManaged(imagensEncontradas.size() > 1);
-                        atualizarContadorFotos();
+                    if (resultado.generatedDescription() != null && !resultado.generatedDescription().isEmpty()) {
+                        txtDescricaoBreve.setText(resultado.generatedDescription());
                     }
 
-                    lblAutoSaveStatus.setText("Foto e descricao obtidas da internet");
+                    imagensEncontradas = resultado.candidateImageUrls();
+                    if (!imagensEncontradas.isEmpty()) {
+                        indiceImagemAtual = 0;
+                        txtUrlImagem.setText(imagensEncontradas.get(0));
+                        carregarImagem(imagensEncontradas.get(0));
+
+                        if (imagensEncontradas.size() > 1) {
+                            boxImageNav.setVisible(true);
+                            boxImageNav.setManaged(true);
+                            atualizarContadorFotos();
+                        } else {
+                            boxImageNav.setVisible(false);
+                            boxImageNav.setManaged(false);
+                        }
+                    } else {
+                        boxImageNav.setVisible(false);
+                        boxImageNav.setManaged(false);
+                    }
+
+                    lblAutoSaveStatus.setText("Dados preenchidos pela busca web");
                     lblAutoSaveStatus.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 11px;");
                 }))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
                         exibirLoadingWeb(false, "");
-                        LOGGER.log(Level.SEVERE, "Erro na thread de busca web.", ex);
-                        mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Falha na busca web: " + ex.getMessage());
+                        LOGGER.log(Level.SEVERE, "Erro inesperado na busca web.", ex);
+                        mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Erro ao executar busca na web: " + ex.getMessage());
                     });
                     return null;
                 });
@@ -411,22 +628,30 @@ public class ProductDetailController {
 
     @FXML
     private void handleFotoAnterior() {
-        if (imagensEncontradas.isEmpty()) return;
-        indiceImagemAtual = (indiceImagemAtual - 1 + imagensEncontradas.size()) % imagensEncontradas.size();
-        String url = imagensEncontradas.get(indiceImagemAtual);
-        txtUrlImagem.setText(url);
-        carregarImagem(url);
-        atualizarContadorFotos();
+        if (imagensEncontradas != null && !imagensEncontradas.isEmpty()) {
+            indiceImagemAtual--;
+            if (indiceImagemAtual < 0) {
+                indiceImagemAtual = imagensEncontradas.size() - 1;
+            }
+            String url = imagensEncontradas.get(indiceImagemAtual);
+            txtUrlImagem.setText(url);
+            carregarImagem(url);
+            atualizarContadorFotos();
+        }
     }
 
     @FXML
     private void handleFotoProxima() {
-        if (imagensEncontradas.isEmpty()) return;
-        indiceImagemAtual = (indiceImagemAtual + 1) % imagensEncontradas.size();
-        String url = imagensEncontradas.get(indiceImagemAtual);
-        txtUrlImagem.setText(url);
-        carregarImagem(url);
-        atualizarContadorFotos();
+        if (imagensEncontradas != null && !imagensEncontradas.isEmpty()) {
+            indiceImagemAtual++;
+            if (indiceImagemAtual >= imagensEncontradas.size()) {
+                indiceImagemAtual = 0;
+            }
+            String url = imagensEncontradas.get(indiceImagemAtual);
+            txtUrlImagem.setText(url);
+            carregarImagem(url);
+            atualizarContadorFotos();
+        }
     }
 
     private void atualizarContadorFotos() {
@@ -447,9 +672,15 @@ public class ProductDetailController {
         int atual = parseQuantidadeAtual();
         int novo = atual + 1;
         setQuantidadeDisplay(novo);
-        produto.setQuantidade(novo);
-        lblAutoSaveStatus.setText("Alteração pendente de salvamento");
-        lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+        if (corAtiva != null) {
+            corAtiva.setQuantidade(novo);
+            lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
+            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+        } else {
+            produto.setQuantidade(novo);
+            lblAutoSaveStatus.setText("Alteração pendente de salvamento");
+            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+        }
     }
 
     @FXML
@@ -458,9 +689,15 @@ public class ProductDetailController {
         if (atual > 0) {
             int novo = atual - 1;
             setQuantidadeDisplay(novo);
-            produto.setQuantidade(novo);
-            lblAutoSaveStatus.setText("Alteração pendente de salvamento");
-            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            if (corAtiva != null) {
+                corAtiva.setQuantidade(novo);
+                lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
+                lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            } else {
+                produto.setQuantidade(novo);
+                lblAutoSaveStatus.setText("Alteração pendente de salvamento");
+                lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            }
         }
     }
 
@@ -478,75 +715,62 @@ public class ProductDetailController {
         lblAutoSaveStatus.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 11px;");
     }
 
-    /**
-     * Exibe um diálogo modal com a lista de funcionários para selecionar quem é o responsável pela alteração.
-     */
-    private Optional<String> solicitarResponsavel() {
-        FuncionarioDAO fDao = new FuncionarioDAO();
-        List<String> funcionarios = fDao.getNomesFuncionarios();
-        if (funcionarios.isEmpty()) {
-            funcionarios = List.of("Tiago", "Denise", "Lucas", "Maurício", "Éder", "Gustavo");
-        }
-
-        Dialog<String> dialog = new Dialog<>();
-        dialog.setTitle("Responsável pela Alteração");
-        dialog.setHeaderText("Quem está realizando esta alteração no produto/estoque?");
-        if (stage != null) {
-            dialog.initOwner(stage);
-        }
-
-        ButtonType btnConfirmar = new ButtonType("Confirmar e Salvar", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(btnConfirmar, ButtonType.CANCEL);
-
-        ComboBox<String> cmbFuncionarios = new ComboBox<>(FXCollections.observableArrayList(funcionarios));
-        cmbFuncionarios.setEditable(true);
-        cmbFuncionarios.getSelectionModel().selectFirst();
-        cmbFuncionarios.setMaxWidth(Double.MAX_VALUE);
-        cmbFuncionarios.setStyle("-fx-font-size: 13px; -fx-padding: 4px;");
-
-        VBox content = new VBox(10);
-        content.getChildren().addAll(
-                new Label("Selecione ou digite o nome do funcionário:"),
-                cmbFuncionarios
-        );
-        content.setPrefWidth(350);
-
-        dialog.getDialogPane().setContent(content);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton != null && (dialogButton == btnConfirmar || dialogButton.getButtonData() == ButtonBar.ButtonData.OK_DONE)) {
-                String val = cmbFuncionarios.getEditor().getText();
-                if (val == null || val.trim().isEmpty()) {
-                    val = cmbFuncionarios.getValue();
-                }
-                return (val != null && !val.trim().isEmpty()) ? val.trim() : "Tiago";
-            }
-            return null;
-        });
-
-        return dialog.showAndWait();
-    }
-
     @FXML
     private void handleSalvarAlteracoes() {
         if (!validarFormulario()) {
             return;
         }
 
-        int qtdFinal = parseQuantidadeAtual();
-        int diferenca = qtdFinal - this.estoqueInicial;
+        // QUALQUER SALVAMENTO PEDE QUEM ALTEROU
+        Optional<String> optResp = DialogHelper.solicitarResponsavel(
+                tabPanePrincipal.getScene().getWindow(),
+                "Confirmação de Responsável",
+                "Informe o funcionário responsável por salvar as alterações deste produto:"
+        );
+        if (optResp.isEmpty()) {
+            return; // Salvamento abortado
+        }
+        String responsavel = optResp.get();
 
-        // Se houve alteração na quantidade física de estoque ou cadastro de novo item, solicita o funcionário responsável
-        String responsavel = "Tiago";
-        if (diferenca != 0 || produto.getId() == null) {
-            Optional<String> optResp = solicitarResponsavel();
-            if (optResp.isEmpty()) {
-                // Usuário cancelou o diálogo de salvamento
-                return;
+        int qtdFinal = parseQuantidadeAtual();
+
+        // Se estiver editando uma cor específica
+        if (corAtiva != null) {
+            try {
+                produtoCorDAO.updateQuantidade(corAtiva.getId(), qtdFinal, "Modificação de estoque [" + corAtiva.getNomeCor() + "]", responsavel);
+                corAtiva.setQuantidade(qtdFinal);
+
+                // Recalcula total do produto
+                int totalQtd = produtoCorDAO.getTotalQuantidadeCores(produto.getId());
+                produto.setQuantidade(totalQtd);
+
+                produto.setNome(txtNome.getText().trim());
+                produto.setCodigoLoja(txtCodigoLoja.getText().trim());
+                if (txtGrupo != null) {
+                    produto.setGrupo(txtGrupo.getText() != null && !txtGrupo.getText().trim().isEmpty() ? txtGrupo.getText().trim() : "GERAL");
+                }
+                produto.setPrecoVista(Double.parseDouble(txtPrecoVista.getText().trim().replace(",", ".")));
+                produto.setPrecoPrazo(Double.parseDouble(txtPrecoPrazo.getText().trim().replace(",", ".")));
+                produto.setLocalizacao(txtLocalizacao.getText().trim());
+                produto.setUrlImagem(txtUrlImagem.getText().trim());
+                produto.setDescricaoBreve(txtDescricaoBreve.getText().trim());
+
+                produtoDAO.updateSemHistorico(produto);
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Estoque da cor '" + corAtiva.getNomeCor() + "' e dados salvos no SQLite!");
+
+                atualizarStatusSincronizado();
+                carregarCoresProduto();
+                carregarHistorico();
+                notificarAtualizacao();
+                fecharModal();
+            } catch (SQLException e) {
+                LOGGER.log(Level.SEVERE, "Erro ao salvar alteração da cor.", e);
+                mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao salvar cor: " + e.getMessage());
             }
-            responsavel = optResp.get();
+            return;
         }
 
+        // Caso padrão (Estoque Geral)
         produto.setNome(txtNome.getText().trim());
         produto.setCodigoLoja(txtCodigoLoja.getText().trim());
         if (txtGrupo != null) {
@@ -569,18 +793,19 @@ public class ProductDetailController {
                             qtdFinal,
                             0,
                             qtdFinal,
-                            "Estoque Inicial de Cadastro",
+                            "Modificação de estoque",
                             responsavel
                     );
                     historicoEstoqueDAO.insert(h);
                 }
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Produto cadastrado com sucesso!");
             } else {
-                produtoDAO.update(produto, responsavel, "Edição Geral de Cadastro");
+                produtoDAO.update(produto, responsavel, "Modificação de estoque");
                 this.estoqueInicial = qtdFinal;
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Alterações salvas no SQLite!");
             }
             atualizarStatusSincronizado();
+            carregarCoresProduto();
             carregarHistorico();
             notificarAtualizacao();
             fecharModal();
@@ -599,12 +824,21 @@ public class ProductDetailController {
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirmar Exclusao");
+        confirm.setTitle("Confirmar Exclusão");
         confirm.setHeaderText("Excluir o produto '" + produto.getNome() + "'?");
-        confirm.setContentText("Esta acao e irreversivel e removera o item do banco SQLite.");
+        confirm.setContentText("Esta ação é irreversível e removerá o item e suas cores do banco SQLite.");
 
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
+            Optional<String> optResp = DialogHelper.solicitarResponsavel(
+                    tabPanePrincipal.getScene().getWindow(),
+                    "Responsável pela Exclusão",
+                    "Informe quem está excluindo o produto '" + produto.getNome() + "':"
+            );
+            if (optResp.isEmpty()) {
+                return;
+            }
+
             try {
                 produtoDAO.delete(produto.getId());
                 notificarAtualizacao();
@@ -635,23 +869,23 @@ public class ProductDetailController {
 
     private boolean validarFormulario() {
         if (txtNome.getText() == null || txtNome.getText().trim().isEmpty()) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Validacao", "O Nome do produto e obrigatorio.");
+            mostrarAlerta(Alert.AlertType.WARNING, "Validação", "O Nome do produto é obrigatório.");
             return false;
         }
         if (txtCodigoLoja.getText() == null || txtCodigoLoja.getText().trim().isEmpty()) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Validacao", "O Codigo da Loja (SKU) e obrigatorio.");
+            mostrarAlerta(Alert.AlertType.WARNING, "Validação", "O Código da Loja (SKU) é obrigatório.");
             return false;
         }
         try {
             Double.parseDouble(txtPrecoVista.getText().trim().replace(",", "."));
         } catch (Exception e) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Validacao", "Preco a Vista invalido.");
+            mostrarAlerta(Alert.AlertType.WARNING, "Validação", "Preço a Vista inválido.");
             return false;
         }
         try {
             Double.parseDouble(txtPrecoPrazo.getText().trim().replace(",", "."));
         } catch (Exception e) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Validacao", "Preco a Prazo invalido.");
+            mostrarAlerta(Alert.AlertType.WARNING, "Validação", "Preço a Prazo inválido.");
             return false;
         }
         return true;
@@ -663,7 +897,7 @@ public class ProductDetailController {
                 Image image = new Image(url.trim(), true);
                 image.errorProperty().addListener((obs, oldV, hasError) -> {
                     if (hasError) {
-                        lblFotoPlaceholder.setText("Nao foi possivel carregar a imagem da URL.");
+                        lblFotoPlaceholder.setText("Não foi possível carregar a imagem da URL.");
                         lblFotoPlaceholder.setVisible(true);
                         lblFotoPlaceholder.setManaged(true);
                         imgProduto.setImage(null);
@@ -677,7 +911,7 @@ public class ProductDetailController {
                 });
                 imgProduto.setImage(image);
             } catch (Exception e) {
-                lblFotoPlaceholder.setText("URL de imagem invalida.");
+                lblFotoPlaceholder.setText("URL de imagem inválida.");
                 lblFotoPlaceholder.setVisible(true);
                 lblFotoPlaceholder.setManaged(true);
             }

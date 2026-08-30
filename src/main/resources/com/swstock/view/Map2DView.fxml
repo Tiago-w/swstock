@@ -38,7 +38,7 @@
                               style="-fx-background-color: rgba(220, 38, 38, 0.2); -fx-border-color: #EF4444; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 6px 14px;"
                               visible="false" managed="false">
                             <children>
-                                <Label style="-fx-text-fill: #FCA5A5; -fx-font-size: 14px;" text="🔴" />
+                                <Label style="-fx-text-fill: #FCA5A5; -fx-font-size: 14px;" text="" />
                                 <Label fx:id="lblDestaqueAlvo"
                                        style="-fx-text-fill: #FEE2E2; -fx-font-weight: bold; -fx-font-size: 12px;"
                                        text="Localização do Produto: ESTANTE A1 (Piscando)" />
@@ -71,7 +71,7 @@
                                                 <HBox alignment="CENTER_LEFT" spacing="8.0">
                                                     <children>
                                                         <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #60A5FA;"
-                                                               text="🏷 BLOCO A • Acessórios &amp; Peças" />
+                                                               text=" BLOCO A • Acessórios &amp; Peças" />
                                                         <Region HBox.hgrow="ALWAYS" />
                                                         <Label style="-fx-font-size: 11px; -fx-text-fill: #94A3B8;" text="Corredor 01" />
                                                     </children>
@@ -86,7 +86,7 @@
                                                 <HBox alignment="CENTER_LEFT" spacing="8.0">
                                                     <children>
                                                         <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #34D399;"
-                                                               text="🏷 BLOCO B • Eletrônicos &amp; Periféricos" />
+                                                               text=" BLOCO B • Eletrônicos &amp; Periféricos" />
                                                         <Region HBox.hgrow="ALWAYS" />
                                                         <Label style="-fx-font-size: 11px; -fx-text-fill: #94A3B8;" text="Corredor 02" />
                                                     </children>
@@ -101,7 +101,7 @@
                                                 <HBox alignment="CENTER_LEFT" spacing="8.0">
                                                     <children>
                                                         <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #FBBF24;"
-                                                               text="🏷 BLOCO C • Ferramentas &amp; Insumos" />
+                                                               text=" BLOCO C • Ferramentas &amp; Insumos" />
                                                         <Region HBox.hgrow="ALWAYS" />
                                                         <Label style="-fx-font-size: 11px; -fx-text-fill: #94A3B8;" text="Corredor 03" />
                                                     </children>
@@ -116,7 +116,7 @@
                                                 <HBox alignment="CENTER_LEFT" spacing="8.0">
                                                     <children>
                                                         <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #F472B6;"
-                                                               text="🏷 BLOCO D • Tintas, Químicos &amp; Embalagens" />
+                                                               text=" BLOCO D • Tintas, Químicos &amp; Embalagens" />
                                                         <Region HBox.hgrow="ALWAYS" />
                                                         <Label style="-fx-font-size: 11px; -fx-text-fill: #94A3B8;" text="Corredor 04" />
                                                     </children>
@@ -132,7 +132,7 @@
                                                 <HBox alignment="CENTER_LEFT" spacing="8.0">
                                                     <children>
                                                         <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #A78BFA;"
-                                                               text="📍 Outras Áreas &amp; Paletes Cadastrados" />
+                                                               text=" Outras Áreas &amp; Paletes Cadastrados" />
                                                         <Region HBox.hgrow="ALWAYS" />
                                                         <Label style="-fx-font-size: 11px; -fx-text-fill: #94A3B8;" text="Setor Flexível" />
                                                     </children>
@@ -182,7 +182,7 @@
                         <VBox spacing="8.0">
                             <children>
                                 <Button fx:id="btnFiltrarPrincipal" maxWidth="Infinity" onAction="#handleFiltrarTabelaPrincipal"
-                                        styleClass="btn-primary" text="🔍 Filtrar na Tela Principal" />
+                                        styleClass="btn-primary" text=" Filtrar na Tela Principal" />
                             </children>
                         </VBox>
                     </children>
@@ -221,7 +221,7 @@
                             <children>
                                 <Circle fill="#EF4444" radius="5.0" />
                                 <Label style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #DC2626;"
-                                       text="🔴 Local do Produto (Piscando)" />
+                                       text=" Local do Produto (Piscando)" />
                             </children>
                         </HBox>
                     </children>

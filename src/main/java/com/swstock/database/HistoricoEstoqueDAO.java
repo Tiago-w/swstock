@@ -197,18 +197,22 @@ public class HistoricoEstoqueDAO {
 
         if (tipoFiltro != null && !tipoFiltro.trim().isEmpty()) {
             String tf = tipoFiltro.trim().toUpperCase();
-            if (!tf.contains("TODOS")) {
-                if (tf.contains("ENTRADA")) {
-                    sql.append(" AND (UPPER(h.tipo) = 'ENTRADA' OR h.quantidade_alterada > 0) ");
-                } else if (tf.contains("SAIDA") || tf.contains("SAÍDA")) {
-                    sql.append(" AND (UPPER(h.tipo) = 'SAIDA' OR h.quantidade_alterada < 0) ");
-                }
+            if (tf.contains("TODOS") || tf.contains("TODAS") || tf.equals("GERAL") || tf.equals("TUDO")) {
+                // Não adiciona nenhum filtro de tipo: retorna 100% das operações (Entradas, Saídas e Ajustes)
+            } else if (tf.contains("SEM AJUSTE") || tf.contains("SEM AJUSTES") || tf.contains("ENTRADA E SAIDA APENAS") || tf.contains("ENTRADAS E SAÍDAS APENAS") || tf.contains("ENTRADAS E SAIDAS APENAS")) {
+                sql.append(" AND UPPER(h.tipo) IN ('ENTRADA', 'SAIDA') ");
+            } else if (tf.contains("AJUSTE") || tf.contains("AJUSTES") || tf.contains("SÓ AJUSTE") || tf.contains("SO AJUSTE") || tf.contains("APENAS AJUSTE")) {
+                sql.append(" AND UPPER(h.tipo) = 'AJUSTE' ");
+            } else if (tf.contains("ENTRADA")) {
+                sql.append(" AND (UPPER(h.tipo) = 'ENTRADA' OR h.quantidade_alterada > 0) ");
+            } else if (tf.contains("SAIDA") || tf.contains("SAÍDA")) {
+                sql.append(" AND (UPPER(h.tipo) = 'SAIDA' OR h.quantidade_alterada < 0) ");
             }
         }
 
         if (grupoFiltro != null && !grupoFiltro.trim().isEmpty()) {
             String gf = grupoFiltro.trim().toUpperCase();
-            if (!gf.contains("TODOS")) {
+            if (!gf.contains("TODOS") && !gf.contains("TODAS")) {
                 sql.append(" AND UPPER(TRIM(p.grupo)) = ? ");
                 params.add(grupoFiltro.trim().toUpperCase());
             }

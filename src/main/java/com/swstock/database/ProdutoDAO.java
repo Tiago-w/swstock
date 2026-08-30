@@ -78,9 +78,9 @@ public class ProdutoDAO {
             stmt.setInt(10, produto.getId());
             boolean ok = stmt.executeUpdate() > 0;
 
-            if (ok && diferenca != 0) {
+            if (ok && diferenca != 0 && !"SEM_HISTORICO".equals(motivo)) {
                 String tipo = diferenca > 0 ? "ENTRADA" : "SAIDA";
-                String motivoReal = (motivo != null && !motivo.trim().isEmpty()) ? motivo : "Edição Geral de Cadastro";
+                String motivoReal = (motivo != null && !motivo.trim().isEmpty() && !motivo.equals("Edição Geral de Cadastro")) ? motivo : "Modificação de estoque";
                 String resp = (responsavel != null && !responsavel.trim().isEmpty()) ? responsavel : "Não informado";
                 HistoricoEstoque historico = new HistoricoEstoque(
                         produto.getId(),
@@ -98,7 +98,11 @@ public class ProdutoDAO {
     }
 
     public boolean update(Produto produto) throws SQLException {
-        return update(produto, "Não informado", "Edição Geral de Cadastro");
+        return update(produto, "Não informado", "Modificação de estoque");
+    }
+
+    public boolean updateSemHistorico(Produto produto) throws SQLException {
+        return update(produto, "Sistema", "SEM_HISTORICO");
     }
 
     /**
@@ -218,10 +222,10 @@ public class ProdutoDAO {
             stmt.setInt(2, id);
             boolean ok = stmt.executeUpdate() > 0;
 
-            if (ok && diferenca != 0) {
+            if (ok && diferenca != 0 && !"SEM_HISTORICO".equals(motivo)) {
                 String tipo = diferenca > 0 ? "ENTRADA" : "SAIDA";
                 if (motivo == null || motivo.trim().isEmpty()) {
-                    motivo = diferenca > 0 ? "Ajuste de Estoque (+)" : "Ajuste de Estoque (-)";
+                    motivo = "Modificação de estoque";
                 }
                 String resp = (responsavel != null && !responsavel.trim().isEmpty()) ? responsavel : "Não informado";
                 HistoricoEstoque historico = new HistoricoEstoque(
@@ -245,6 +249,10 @@ public class ProdutoDAO {
 
     public boolean updateQuantidade(int id, int novaQuantidade) throws SQLException {
         return updateQuantidade(id, novaQuantidade, null, "Não informado");
+    }
+
+    public boolean updateQuantidadeSemHistorico(int id, int novaQuantidade) throws SQLException {
+        return updateQuantidade(id, novaQuantidade, "SEM_HISTORICO", "Sistema");
     }
 
     /**
@@ -366,6 +374,26 @@ public class ProdutoDAO {
     }
 
     /**
+     * Retorna todos os grupos/fabricantes cadastrados no banco de dados.
+     */
+    public List<String> getAllGrupos() throws SQLException {
+        String sql = """
+            SELECT DISTINCT UPPER(TRIM(grupo)) as g
+            FROM produtos
+            WHERE grupo IS NOT NULL AND TRIM(grupo) != ''
+            ORDER BY g ASC;
+            """;
+        List<String> grupos = new ArrayList<>();
+        try (Statement stmt = getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                grupos.add(rs.getString("g"));
+            }
+        }
+        return grupos;
+    }
+
+    /**
      * Retorna todas as localizações cadastradas.
      */
     public List<String> getAllLocations() throws SQLException {
@@ -383,6 +411,43 @@ public class ProdutoDAO {
             }
         }
         return locs;
+    }
+
+    /**
+     * Retorna produtos filtrados por grupo específico (ou todos se null/TODOS) com busca opcional.
+     */
+    public List<Produto> findByGrupo(String grupo, String termoBusca) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT * FROM produtos WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (grupo != null && !grupo.trim().isEmpty() && !grupo.toUpperCase().contains("TODOS") && !grupo.toUpperCase().contains("TODAS")) {
+            sql.append("AND UPPER(TRIM(grupo)) = ? ");
+            params.add(grupo.trim().toUpperCase());
+        }
+
+        if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+            sql.append("AND (LOWER(nome) LIKE ? OR LOWER(codigoLoja) LIKE ? OR LOWER(localizacao) LIKE ? OR LOWER(descricaoBreve) LIKE ?) ");
+            String wild = "%" + termoBusca.trim().toLowerCase() + "%";
+            params.add(wild);
+            params.add(wild);
+            params.add(wild);
+            params.add(wild);
+        }
+
+        sql.append("ORDER BY UPPER(TRIM(grupo)) ASC, nome ASC;");
+
+        List<Produto> lista = new ArrayList<>();
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapRow(rs));
+                }
+            }
+        }
+        return lista;
     }
 
     private void setStatementParameters(PreparedStatement stmt, Produto p) throws SQLException {

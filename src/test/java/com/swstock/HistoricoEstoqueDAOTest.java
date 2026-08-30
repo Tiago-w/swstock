@@ -139,12 +139,16 @@ class HistoricoEstoqueDAOTest {
     @Test
     @Order(6)
     void testFindAllGlobalComTodosOsTiposEntradaESaida() throws SQLException {
-        List<HistoricoEstoque> todos = historicoDAO.findAllGlobal(LocalDate.now(), LocalDate.now(), "Todos os Tipos (Entradas e Saídas)", null);
+        List<HistoricoEstoque> todos = historicoDAO.findAllGlobal(LocalDate.now(), LocalDate.now(), "Todos os Tipos (Entradas, Saídas e Ajustes)", null);
         assertFalse(todos.isEmpty());
         boolean temEntrada = todos.stream().anyMatch(h -> "ENTRADA".equalsIgnoreCase(h.getTipo()) || (h.getQuantidadeAlterada() != null && h.getQuantidadeAlterada() > 0));
         boolean temSaida = todos.stream().anyMatch(h -> "SAIDA".equalsIgnoreCase(h.getTipo()) || (h.getQuantidadeAlterada() != null && h.getQuantidadeAlterada() < 0));
         assertTrue(temEntrada, "Deve conter entradas no extrato global.");
         assertTrue(temSaida, "Deve conter saídas no extrato global.");
+
+        // Testa também com texto alternativo "Todas as Operações"
+        List<HistoricoEstoque> todasOps = historicoDAO.findAllGlobal(null, null, "Todas as Operações", null);
+        assertEquals(todos.size(), todasOps.size(), "Ambos os filtros gerais devem trazer todas as movimentações.");
     }
 
     @Test
@@ -153,7 +157,7 @@ class HistoricoEstoqueDAOTest {
         List<String> grupos = historicoDAO.getAllGrupos();
         assertNotNull(grupos);
 
-        List<HistoricoEstoque> filtrados = historicoDAO.findAllGlobal(null, null, "Todos os Tipos (Entradas e Saídas)", "GERAL", null);
+        List<HistoricoEstoque> filtrados = historicoDAO.findAllGlobal(null, null, "Todas as Operações", "GERAL", null);
         assertNotNull(filtrados);
     }
 }

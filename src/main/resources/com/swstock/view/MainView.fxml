@@ -37,11 +37,14 @@
                 <Button fx:id="btnMapa2D" maxWidth="Infinity" onAction="#handleAbrirMapa2D"
                         styleClass="nav-button" text="Mapa do Depósito: Térreo" />
 
-                <Button fx:id="btnMapa2D" maxWidth="Infinity" onAction="#handleAbrirMapa2D"
+                <Button maxWidth="Infinity" onAction="#handleAbrirMapa2D"
                         styleClass="nav-button" text="Mapa do Depósito: 1º Andar" />
 
                 <Button fx:id="btnHistoricoGeral" maxWidth="Infinity" onAction="#handleAbrirHistoricoGeral"
                         styleClass="nav-button" text="Calendário &amp; Histórico Geral" />
+
+                <Button fx:id="btnLevantamentoEstoque" maxWidth="Infinity" onAction="#handleAbrirLevantamentoEstoque"
+                        styleClass="nav-button" text="Levantamento de Estoque" />
 
                 <Button fx:id="btnImportarXml" maxWidth="Infinity" onAction="#handleImportarXml"
                         styleClass="nav-button" text="Importar Estoque XML" />
@@ -57,7 +60,7 @@
                 <Separator style="-fx-opacity: 0.2;" />
 
                 <Button fx:id="btnSair" maxWidth="Infinity" onAction="#handleSair"
-                        styleClass="nav-button-danger" text="🚪  Encerrar &amp; Fechar DB" />
+                        styleClass="nav-button-danger" text="  Encerrar &amp; Fechar DB" />
             </children>
         </VBox>
     </left>
@@ -69,14 +72,14 @@
                 <!-- Barra de Ações Rápidas -->
                 <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="action-bar">
                     <children>
-                        <TextField fx:id="txtSearch" promptText="🔍 Buscar por nome, código, grupo ou descrição..."
+                        <TextField fx:id="txtSearch" promptText=" Buscar por nome, código, grupo ou descrição..."
                                    styleClass="search-field" HBox.hgrow="NEVER" />
 
                         <Button fx:id="btnNovoProduto" onAction="#handleNovoProduto"
                                 styleClass="btn-primary" text="+ Novo Produto" />
 
                         <Button fx:id="btnRecarregar" onAction="#handleRecarregar"
-                                styleClass="btn-secondary" text="🔄 Atualizar" />
+                                styleClass="btn-secondary" text=" Atualizar" />
 
                         <Region HBox.hgrow="ALWAYS" />
 
@@ -85,7 +88,7 @@
                                 <Label fx:id="lblFiltroAtivo" styleClass="badge-location"
                                        text="Exibindo: Todos os itens" />
                                 <Button fx:id="btnLimparFiltro" onAction="#handleLimparFiltro"
-                                        styleClass="btn-secondary" text="✕ Limpar Filtro"
+                                        styleClass="btn-secondary" text=" Limpar Filtro"
                                         visible="false" managed="false" />
                             </children>
                         </HBox>

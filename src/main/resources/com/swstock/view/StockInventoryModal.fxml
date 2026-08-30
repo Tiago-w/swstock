@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane prefHeight="720.0" prefWidth="1100.0"
+            stylesheets="@../css/styles.css"
+            xmlns="http://javafx.com/javafx/23"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.swstock.controller.StockInventoryController">
+
+    <!-- Topo: Banner do Modal -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="header-banner">
+            <children>
+                <VBox alignment="CENTER_LEFT" spacing="2.0">
+                    <children>
+                        <Label styleClass="brand-title" text="SWStock - Levantamento de Estoque &amp; Ficha de Pedido" />
+                        <Label text="Selecione o grupo/fabricante para inspecionar produtos, conferir estoque e exportar PDF com ficha de pedido para preenchimento manual."
+                               styleClass="brand-subtitle" />
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </top>
+
+    <!-- Centro: Filtros, Resumo e Tabela de Levantamento -->
+    <center>
+        <VBox spacing="14.0">
+            <padding>
+                <Insets bottom="16.0" left="20.0" right="20.0" top="16.0" />
+            </padding>
+            <children>
+
+                <!-- Barra de Filtros -->
+                <VBox spacing="10.0" styleClass="filter-container">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                            <children>
+                                <Label text="Fabricante / Grupo:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
+                                <ComboBox fx:id="cbGrupo" prefWidth="250.0" styleClass="search-field" />
+
+                                <Label text="Filtro de Estoque:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
+                                <ComboBox fx:id="cbFiltroEstoque" prefWidth="190.0" styleClass="search-field" />
+
+                                <Label text="Buscar:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
+                                <TextField fx:id="txtBusca" promptText="Filtrar por nome, código SKU ou localização..."
+                                           styleClass="search-field" HBox.hgrow="ALWAYS" />
+
+                                <Button onAction="#handleLimparFiltros" text="Limpar" styleClass="btn-secondary" style="-fx-font-size: 11px; -fx-padding: 6px 14px;" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+
+                <!-- Cards de Métricas e Totais Consolidados -->
+                <HBox spacing="14.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="metric-card-blue" HBox.hgrow="ALWAYS">
+                            <children>
+                                <VBox spacing="2.0">
+                                    <children>
+                                        <Label text="TOTAL DE ITENS LISTADOS" style="-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #1D4ED8;" />
+                                        <Label fx:id="lblTotalItens" text="0 produtos" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1E40AF;" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="metric-card-green" HBox.hgrow="ALWAYS">
+                            <children>
+                                <VBox spacing="2.0">
+                                    <children>
+                                        <Label text="TOTAL DE UNIDADES EM ESTOQUE" style="-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #15803D;" />
+                                        <Label fx:id="lblTotalUnidades" text="0 un." style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #166534;" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="12.0"
+                              style="-fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 8px 14px;"
+                              HBox.hgrow="ALWAYS">
+                            <children>
+                                <VBox spacing="2.0">
+                                    <children>
+                                        <Label text="VALOR TOTAL DO ESTOQUE (À VISTA)" style="-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #475569;" />
+                                        <Label fx:id="lblValorTotalEstoque" text="R$ 0,00" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #334155;" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </children>
+                </HBox>
+
+                <!-- Tabela de Produtos do Levantamento -->
+                <TableView fx:id="tblProdutos" VBox.vgrow="ALWAYS" styleClass="data-table">
+                    <columns>
+                        <TableColumn fx:id="colCodigo" text="Código (SKU)" prefWidth="105.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colNome" text="Nome do Produto" prefWidth="260.0" />
+                        <TableColumn fx:id="colGrupo" text="Fabricante / Grupo" prefWidth="130.0" />
+                        <TableColumn fx:id="colCores" text="Cor" prefWidth="140.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colEstoque" text="Estoque Atual" prefWidth="110.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colPrecoVista" text="Preço à Vista" prefWidth="115.0" style="-fx-alignment: CENTER_RIGHT;" />
+                        <TableColumn fx:id="colPrecoPrazo" text="Preço a Prazo" prefWidth="115.0" style="-fx-alignment: CENTER_RIGHT;" />
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                    <placeholder>
+                        <Label text="Nenhum produto encontrado para o levantamento com os filtros selecionados."
+                               style="-fx-text-fill: #94A3B8; -fx-font-size: 13px; -fx-padding: 30px;" />
+                    </placeholder>
+                </TableView>
+
+                <!-- Rodapé informativo e Botões de Ação -->
+                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <children>
+                        <Label fx:id="lblStatusFiltro" text="Exibindo: Todos os grupos"
+                               style="-fx-text-fill: #64748B; -fx-font-size: 11px;" />
+                        <Region HBox.hgrow="ALWAYS" />
+
+                        <Button onAction="#handleGerarPdf" text="Exportar PDF de Levantamento &amp; Pedido"
+                                styleClass="btn-primary" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8px 18px;" />
+
+                        <Button onAction="#handleFechar" text="Fechar"
+                                styleClass="btn-secondary" style="-fx-font-size: 12px; -fx-padding: 8px 16px;" />
+                    </children>
+                </HBox>
+
+            </children>
+        </VBox>
+    </center>
+
+</BorderPane>

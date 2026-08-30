@@ -121,6 +121,22 @@ public class DatabaseManager {
             ('Gustavo');
             """;
 
+        String createTableProdutoCores = """
+            CREATE TABLE IF NOT EXISTS produto_cores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                produto_id INTEGER NOT NULL,
+                nome_cor TEXT NOT NULL,
+                quantidade INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(produto_id) REFERENCES produtos(id) ON DELETE CASCADE,
+                UNIQUE(produto_id, nome_cor)
+            );
+            """;
+
+        String createIndexCoresProd = "CREATE INDEX IF NOT EXISTS idx_produto_cores_prod ON produto_cores(produto_id);";
+        String createIndexCoresNome = "CREATE INDEX IF NOT EXISTS idx_produto_cores_nome ON produto_cores(nome_cor);";
+
         try (Statement stmt = getConnection().createStatement()) {
             stmt.execute(createTableSql);
 
@@ -149,7 +165,11 @@ public class DatabaseManager {
             stmt.execute(createTableFuncionarios);
             stmt.execute(seedFuncionarios);
 
-            LOGGER.info("Schema das tabelas 'produtos', 'historico_estoque', 'funcionarios' e índices verificados com sucesso.");
+            stmt.execute(createTableProdutoCores);
+            stmt.execute(createIndexCoresProd);
+            stmt.execute(createIndexCoresNome);
+
+            LOGGER.info("Schema das tabelas 'produtos', 'historico_estoque', 'funcionarios', 'produto_cores' e índices verificados com sucesso.");
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao inicializar o schema SQLite.", e);
             throw new RuntimeException("Falha ao criar tabelas no SQLite.", e);
