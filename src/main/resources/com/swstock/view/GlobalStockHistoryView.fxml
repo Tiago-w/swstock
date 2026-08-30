@@ -18,7 +18,7 @@
                 <VBox alignment="CENTER_LEFT" spacing="2.0">
                     <children>
                         <Label styleClass="brand-title" text="SWStock" />
-                        <Label text="📅 Calendário &amp; Histórico Global de Estoque com Filtro por Fabricante"
+                        <Label text="Calendário &amp; Histórico Global de Estoque"
                                style="-fx-text-fill: #E2E8F0; -fx-font-size: 11px; -fx-font-weight: bold;" />
                     </children>
                 </VBox>
