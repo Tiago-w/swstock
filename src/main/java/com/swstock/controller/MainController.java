@@ -524,13 +524,22 @@ public class MainController {
                 carregarProdutos();
 
                 StringBuilder msg = new StringBuilder();
-                msg.append("Sincronização Inteligente Concluída com Sucesso!\n\n");
-                msg.append("Resumo da Sincronização:\n");
+                msg.append("Sincronização / Restauração Inteligente Concluída com Sucesso!\n\n");
+                msg.append("Resumo da Operação:\n");
                 msg.append(String.format("• Total de itens lidos do XML: %d\n", result.totalLidos()));
                 msg.append(String.format("• Produtos já existentes atualizados: %d\n", result.atualizadosPreservados()));
                 msg.append(String.format("• Novos produtos cadastrados no catálogo: %d\n", result.novosInseridos()));
                 msg.append(String.format("• Preços reajustados: %d\n", result.precosAlterados()));
                 msg.append(String.format("• Nomes alterados no catálogo: %d\n", result.nomesAlterados()));
+                if (result.coresProcessadas() > 0) {
+                    msg.append(String.format("• Variações de cores restauradas/sincronizadas: %d\n", result.coresProcessadas()));
+                }
+                if (result.movimentacoesHistoricoRestauradas() > 0) {
+                    msg.append(String.format("• Movimentações do histórico restauradas: %d\n", result.movimentacoesHistoricoRestauradas()));
+                }
+                if (result.funcionariosProcessados() > 0) {
+                    msg.append(String.format("• Funcionários sincronizados: %d\n", result.funcionariosProcessados()));
+                }
                 msg.append(String.format("• Itens do estoque mantidos (não presentes no XML): %d\n\n", result.itensMantidosNoBancoNaoPresentesNoXml()));
                 msg.append("PROTEÇÃO DE ESTOQUE:\n");
                 msg.append("100% das quantidades físicas de estoque e posições de estantes foram congeladas e preservadas com segurança.");

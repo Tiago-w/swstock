@@ -41,7 +41,7 @@
                         styleClass="nav-button" text="Mapa do Depósito: 1º Andar" />
 
                 <Button fx:id="btnHistoricoGeral" maxWidth="Infinity" onAction="#handleAbrirHistoricoGeral"
-                        styleClass="nav-button" text="Calendário &amp; Histórico Geral" />
+                        styleClass="nav-button" text="Histórico Geral" />
 
                 <Button fx:id="btnLevantamentoEstoque" maxWidth="Infinity" onAction="#handleAbrirLevantamentoEstoque"
                         styleClass="nav-button" text="Levantamento de Estoque" />

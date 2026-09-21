@@ -1,8 +1,14 @@
 package com.swstock;
 
 import com.swstock.database.DatabaseManager;
+import com.swstock.database.FuncionarioDAO;
+import com.swstock.database.HistoricoEstoqueDAO;
+import com.swstock.database.ProdutoCorDAO;
 import com.swstock.database.ProdutoDAO;
+import com.swstock.model.Funcionario;
+import com.swstock.model.HistoricoEstoque;
 import com.swstock.model.Produto;
+import com.swstock.model.ProdutoCor;
 import com.swstock.service.XmlService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,6 +31,9 @@ class XmlServiceTest {
     private static final String TEST_DB_PATH = "test_xml_swstock.db";
     private static DatabaseManager dbManager;
     private static ProdutoDAO produtoDAO;
+    private static HistoricoEstoqueDAO historicoDAO;
+    private static ProdutoCorDAO produtoCorDAO;
+    private static FuncionarioDAO funcionarioDAO;
     private static XmlService xmlService;
 
     @BeforeAll
@@ -38,7 +47,10 @@ class XmlServiceTest {
         }
         dbManager = DatabaseManager.getInstance(TEST_DB_PATH);
         produtoDAO = new ProdutoDAO(dbManager);
-        xmlService = new XmlService(produtoDAO);
+        historicoDAO = new HistoricoEstoqueDAO(dbManager);
+        produtoCorDAO = new ProdutoCorDAO(dbManager);
+        funcionarioDAO = new FuncionarioDAO(dbManager);
+        xmlService = new XmlService(produtoDAO, historicoDAO, produtoCorDAO, funcionarioDAO);
     }
 
     @AfterAll
@@ -103,6 +115,10 @@ class XmlServiceTest {
         assertTrue(exportedXml.contains("<codigoLoja>TEST-001</codigoLoja>"));
         assertTrue(exportedXml.contains("<nome>Placa de Vídeo RTX 4060</nome>"));
         assertTrue(exportedXml.contains("<codigoLoja>TEST-002</codigoLoja>"));
+        assertTrue(exportedXml.contains("<produtos>"));
+        assertTrue(exportedXml.contains("<produto_cores"));
+        assertTrue(exportedXml.contains("<historico_estoque"));
+        assertTrue(exportedXml.contains("<funcionarios"));
 
         if (!tempImportFile.delete()) tempImportFile.deleteOnExit();
         if (!tempExportFile.delete()) tempExportFile.deleteOnExit();
@@ -167,5 +183,87 @@ class XmlServiceTest {
         assertEquals(20, novo.getQuantidade());
 
         if (!tempXml.delete()) tempXml.deleteOnExit();
+    }
+
+    @Test
+    @Order(3)
+    void testBackupCompleto360ERestauracaoEmBancoLimpo() throws Exception {
+        // 1. Cadastrar dados completos: cores, historico, funcionario
+        Produto p1 = produtoDAO.findByCodigoLoja("TEST-001");
+        assertNotNull(p1);
+
+        produtoCorDAO.addCor(p1.getId(), "PRETO FOSCO", 15, "Operador 1");
+        produtoCorDAO.addCor(p1.getId(), "BRANCO TITÂNIO", 30, "Operador 2");
+
+        funcionarioDAO.insert(new Funcionario("Carlos Supervisor"));
+
+        HistoricoEstoque hManual = new HistoricoEstoque(
+                p1.getId(),
+                "ENTRADA",
+                10,
+                35,
+                45,
+                "Recebimento de Lote de Fábrica",
+                "Operador 1"
+        );
+        hManual.setDataHora("2026-09-20 10:15:30");
+        historicoDAO.insert(hManual);
+
+        // 2. Exportar o backup completo 360 graus
+        File backupFile = File.createTempFile("swstock_full_backup_", ".xml");
+        xmlService.exportarProdutos(backupFile);
+        assertTrue(backupFile.exists());
+
+        String xmlStr = Files.readString(backupFile.toPath());
+        assertTrue(xmlStr.contains("<swstock_backup"));
+        assertTrue(xmlStr.contains("<nome_cor>PRETO FOSCO</nome_cor>"));
+        assertTrue(xmlStr.contains("<nome_cor>BRANCO TITÂNIO</nome_cor>"));
+        assertTrue(xmlStr.contains("<motivo>Recebimento de Lote de Fábrica</motivo>"));
+        assertTrue(xmlStr.contains("<nome>Carlos Supervisor</nome>"));
+
+        // 3. Simular restauração em um NOVO banco limpo (ex: PC queimou e usou pen drive)
+        String freshDbPath = "test_fresh_restore_swstock.db";
+        File freshDbFile = new File(freshDbPath);
+        if (freshDbFile.exists()) freshDbFile.delete();
+
+        DatabaseManager freshDbManager = DatabaseManager.getInstance(freshDbPath);
+        ProdutoDAO freshProdutoDAO = new ProdutoDAO(freshDbManager);
+        HistoricoEstoqueDAO freshHistoricoDAO = new HistoricoEstoqueDAO(freshDbManager);
+        ProdutoCorDAO freshProdutoCorDAO = new ProdutoCorDAO(freshDbManager);
+        FuncionarioDAO freshFuncionarioDAO = new FuncionarioDAO(freshDbManager);
+        XmlService freshXmlService = new XmlService(freshProdutoDAO, freshHistoricoDAO, freshProdutoCorDAO, freshFuncionarioDAO);
+
+        XmlService.ImportResult restoreResult = freshXmlService.importarProdutos(backupFile);
+
+        assertEquals(3, restoreResult.novosInseridos());
+        assertTrue(restoreResult.coresProcessadas() >= 2);
+        assertTrue(restoreResult.movimentacoesHistoricoRestauradas() >= 1);
+        assertTrue(restoreResult.funcionariosProcessados() >= 1);
+        assertTrue(restoreResult.isSucesso());
+
+        // Verificar restauração dos produtos
+        List<Produto> produtosRestaurados = freshProdutoDAO.findAll();
+        assertEquals(3, produtosRestaurados.size());
+
+        Produto pRestaurado = freshProdutoDAO.findByCodigoLoja("TEST-001");
+        assertNotNull(pRestaurado);
+        assertEquals(45, pRestaurado.getQuantidade());
+        assertEquals("Estante A1", pRestaurado.getLocalizacao());
+
+        // Verificar restauração das cores
+        List<ProdutoCor> coresRestauradas = freshProdutoCorDAO.findByProdutoId(pRestaurado.getId());
+        assertEquals(2, coresRestauradas.size());
+
+        // Verificar restauração do histórico
+        List<HistoricoEstoque> historicoRestaurado = freshHistoricoDAO.findByProduto(pRestaurado.getId());
+        assertTrue(historicoRestaurado.stream().anyMatch(h -> "Recebimento de Lote de Fábrica".equals(h.getMotivo())));
+
+        // Verificar restauração dos funcionários
+        List<String> funcionariosRestaurados = freshFuncionarioDAO.getNomesFuncionarios();
+        assertTrue(funcionariosRestaurados.contains("Carlos Supervisor"));
+
+        freshDbManager.close();
+        if (!freshDbFile.delete()) freshDbFile.deleteOnExit();
+        if (!backupFile.delete()) backupFile.deleteOnExit();
     }
 }
