@@ -1,140 +1,159 @@
-# SWStock - Sistema Desktop Offline de Gerenciamento de Estoque
+# 📦 SWStock - Sistema Desktop de Gerenciamento de Estoque
 
-**SWStock** é uma aplicação desktop offline moderna, robusta e modular desenvolvida em **Java 25**, **JavaFX**, **SQLite (JDBC)** e estruturada sob o padrão arquitetural **MVC (Model-View-Controller)**.
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-21%2B-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 21+" />
+  <img src="https://img.shields.io/badge/JavaFX-23-FF6F00?style=for-the-badge&logo=java&logoColor=white" alt="JavaFX 23" />
+  <img src="https://img.shields.io/badge/SQLite-3-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+  <img src="https://img.shields.io/badge/Apache%20Maven-3.9%2B-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" alt="Maven" />
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Plataforma" />
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT" />
+</p>
+
+**SWStock** é uma aplicação desktop offline moderna, rápida e modular desenvolvida para controle de estoque físico, catalogação de produtos, visualização 2D de armazém e gestão de inventário.
 
 ---
 
-##  Stack Tecnológica
-
-- **Linguagem**: Java 25
-- **Interface Gráfica**: JavaFX 23 (BorderPane, FXML desacoplados, CSS customizado)
-- **Banco de Dados**: SQLite offline com driver oficial `sqlite-jdbc` (WAL mode, Foreign Keys)
-- **Build & Gerenciamento**: Apache Maven 3.9+
-- **Testes**: JUnit 5
+> [!IMPORTANT]
+> ### 🚧 Status do Projeto: Módulo de Estoque em Desenvolvimento Ativo
+> Este projeto está em constante evolução. O **módulo avançado de controle e movimentação de estoque** (levantamento detalhado, auditoria de lotes, transferências internas e relatórios analíticos) está sendo **ativamente desenvolvido e aprimorado**. Fique à vontade para acompanhar as novidades e sugerir melhorias!
 
 ---
 
-##  Estrutura de Diretórios (MVC)
+## ✨ Funcionalidades
+
+### 🛒 1. Catálogo de Produtos e Variações
+- Cadastro, consulta e edição rápida de produtos (SKU, nomes, valores à vista/prazo e descrições).
+- **Variações de Cores**: Gerenciamento de múltiplas cores por item com quantitativos dedicados.
+- **Filtro Instantâneo**: Busca textual reativa por código, nome ou localização na prateleira.
+
+### 🗺️ 2. Mapa 2D do Depósito Físico
+- Representação gráfica bidimensional das estantes e corredores do depósito (Corredores A, B, C, etc.).
+- Indicadores visuais de ocupação e capacidade em tempo real.
+- **Filtro Interativo**: Clicar em qualquer estante isola e lista imediatamente os produtos armazenados nela.
+
+### 👥 3. Gestão de Funcionários
+- Cadastro e administração de colaboradores responsáveis pelas operações de depósito e movimentações.
+
+### 📊 4. Levantamento e Histórico de Estoque *(Em Desenvolvimento ⚙️)*
+- Registro cronológico de movimentações e auditoria de entradas e saídas.
+- Interface modal para contagem física e levantamento de inventário.
+
+### 📄 5. Relatórios em PDF & Backup XML
+- **Geração de Relatórios PDF**: Exportação de listas e catálogos offline com visual limpo via OpenPDF.
+- **Backup & Restauração XML**: Importação e exportação de inventário completo em formato XML estruturado com suporte a pendrives/mídias externas e validação de schema.
+
+### 🔒 6. Arquitetura 100% Offline & Segura
+- Banco de dados **SQLite embarcado** em modo WAL (*Write-Ahead Logging*), integridade referencial com chaves estrangeiras e encerramento com *graceful shutdown*.
+
+---
+
+## 📥 Download para Windows (.exe)
+
+O executável portátil para Windows pode ser baixado diretamente da seção de [Releases](https://github.com/Tiago-w/swstock/releases):
+
+1. Acesse a aba [**Releases**](https://github.com/Tiago-w/swstock/releases).
+2. Baixe o arquivo **`SWStock-Windows-x64.zip`**.
+3. Extraia a pasta e execute o **`SWStock.exe`**.
+4. ✨ **Pronto! Não é necessário instalar o Java** (o runtime JRE 21 já vem embutido no pacote).
+
+---
+
+## 🛠️ Arquitetura e Estrutura do Projeto
+
+O projeto segue o padrão arquitetural **MVC (Model-View-Controller)**:
 
 ```text
 swstock/
-├── pom.xml
-├── README.md
-├── sample_data/
-│   └── produtos_exemplo.xml               # Arquivo XML de teste para importação via Pendrive
+├── pom.xml                               # Configurações do Maven, dependências e plugins de build
+├── dist/
+│   └── build-windows-dist.sh             # Script de automação do pacote Windows portátil
+├── .github/
+│   └── workflows/
+│       └── build-and-release.yml         # Pipeline CI/CD (Testes + Compilação + Release)
 ├── src/
 │   ├── main/
-│   │   ├── java/
-│   │   │   └── com/
-│   │   │       └── swstock/
-│   │   │           ├── MainApp.java       # Ponto de entrada JavaFX e hook de encerramento seguro
-│   │   │           ├── Launcher.java      # Wrapper de execução
-│   │   │           ├── model/
-│   │   │           │   └── Produto.java   # Entidade de domínio (POJO / JavaFX ready)
-│   │   │           ├── database/
-│   │   │           │   ├── DatabaseManager.java # Singleton SQLite, DDL, WAL e safe close
-│   │   │           │   └── ProdutoDAO.java      # CRUD, UPSERT atômico e filtros
-│   │   │           ├── service/
-│   │   │           │   └── XmlService.java      # Importação/Exportação XML estruturado
-│   │   │           └── controller/
-│   │   │               ├── MainController.java  # Controlador da janela principal e tabela
-│   │   │               ├── Map2DController.java # Layout físico 2D do depósito e filtro visual
-│   │   │               └── ProductDetailController.java # Modal de detalhes, auto-save e pipeline IA
-│   │   └── resources/
-│   │       └── com/
-│   │           └── swstock/
-│   │               ├── view/
-│   │               │   ├── MainView.fxml        # Layout principal com Banner e Sidebar retrátil
-│   │               │   ├── Map2DView.fxml       # Grid 2D interativo das estantes
-│   │               │   └── ProductDetailModal.fxml # Modal com stepper +/- e área de IA
-│   │               └── css/
-│   │                   └── styles.css           # Design System moderno em azul vibrante
-│   └── test/
-│       └── java/
-│           └── com/
-│               └── swstock/
-│                   ├── ProdutoDAOTest.java      # Testes de persistência, filtros e UPSERT
-│                   └── XmlServiceTest.java      # Testes de importação e exportação XML
+│   │   ├── java/com/swstock/
+│   │   │   ├── Launcher.java             # Entry point para compatibilidade Fat JAR/EXE
+│   │   │   ├── MainApp.java              # Ciclo de vida da aplicação JavaFX
+│   │   │   ├── model/                    # Entidades de domínio (Produto, Funcionario, etc.)
+│   │   │   ├── database/                 # Singleton DatabaseManager e DAOs (SQLite)
+│   │   │   ├── service/                  # Regras de negócio (XML, Relatórios PDF)
+│   │   │   ├── controller/               # Controladores JavaFX desacoplados
+│   │   │   └── util/                     # Helpers e utilitários
+│   │   └── resources/com/swstock/
+│   │       ├── view/                     # Telas e modais FXML
+│   │       └── css/styles.css            # Estilização visual (Design System)
+│   └── test/                             # Testes automatizados (JUnit 5)
 ```
 
 ---
 
-##  Funcionalidades Principais
-
-### 1. Banner Superior & Menu Retrátil
-- **Banner Vibrante**: Fundo em degradê azul (#1565C0 / #0D47A1), tipografia estilizada e contador geral de itens.
-- **Menu Sanduíche (MENU)**: Botão de alternância que expande e recolhe o painel lateral com animação responsiva.
-
-### 2. Mapa 2D do Depósito Físico
-- Renderiza graficamente as estantes do armazém (Corredores A, B, C e setores customizados).
-- Mostra indicadores de ocupação (unidades armazenadas e status Livre/Ocupada).
-- Clicar em qualquer estante filtra instantaneamente os produtos correspondentes na tabela principal.
-
-### 3. Importação e Exportação XML
-- **Importação**: Aciona `FileChooser` otimizado para pendrives e mídias removíveis, executa validação e realiza **UPSERT** atômico no SQLite.
-- **Exportação**: Gera arquivo XML estruturado contendo o inventário completo com metadados e data de exportação.
-
-### 4. Tabela Principal Reativa
-- Virtualização e paginação nativa de alta performance.
-- Colunas: *Código da Loja*, *Nome*, *Valor à Vista (R$)*, *Valor a Prazo (R$)*, *Localização*, *Quantidade (Badges de status)* e *Ações*.
-- Busca textual instantânea por nome, SKU ou descrição.
-
-### 5. Modal de Detalhes & Preparação para IA
-- **Edição Rápida de Estoque**: Botões `[ + ]` e `[ - ]` com auto-save em tempo real no SQLite e feedback visual imediato.
-- **Preparação para IA**: Placeholder para injeção de fotos de produtos e área de texto integrada para síntese de descrições comerciais geradas por agentes automatizados.
-
-### 6. Encerramento Seguro
-- Botão "Encerrar & Fechar DB" e handlers de fechamento de janela que garantem o `commit()` de transações ativas e a chamada segura de `.close()` no driver SQLite.
-
----
-
-##  Como Compilar e Executar
+## 💻 Como Compilar e Executar Localmente
 
 ### Pré-requisitos
-- JDK 25 (ou JDK 21+ LTS)
-- Apache Maven 3.9+
+- **JDK 21 ou 25** instalado
+- **Apache Maven 3.9+**
 
-### 1. Executar os Testes Unitários
+### 1. Clonar o Repositório
+```bash
+git clone git@github.com:Tiago-w/swstock.git
+cd swstock
+```
+
+### 2. Rodar os Testes Automatizados
 ```bash
 mvn clean test
 ```
 
-### 2. Executar a Aplicação via JavaFX Plugin
+### 3. Executar a Aplicação em Desenvolvimento
 ```bash
 mvn javafx:run
 ```
 
-### 3. Executar via Launcher (Maven Exec)
+### 4. Gerar o Executável Windows (.exe) e o Pacote Portátil
 ```bash
-mvn compile exec:java
-```
-
-### 4. Gerar Executável Windows e Pacote Portátil (.exe)
-```bash
-# Gera o Fat JAR e o executável SWStock.exe no diretório target/
+# Compilar e empacotar via Maven
 mvn clean package
 
-# Ou execute o script completo para gerar o pacote portátil com JRE embutido e ZIP:
+# Gerar a distribuição portátil completa (com JRE embutido e ZIP):
 ./dist/build-windows-dist.sh
 ```
-O pacote final será gerado em `dist/SWStock-Windows-x64.zip`.
 
 ---
 
-## 🚀 CI/CD & Releases no GitHub
+## 🚀 CI/CD & Deploy Automatizado
 
-O repositório possui uma pipeline do **GitHub Actions** configurada em `.github/workflows/build-and-release.yml`.
+Este repositório utiliza **GitHub Actions** (`.github/workflows/build-and-release.yml`).
 
-### Como Lançar uma Nova Versão:
-1. Faça suas alterações no código e valide os testes localmente (`mvn test`).
-2. Crie um commit semântico: `git commit -m "feat: descrição da melhoria"`.
-3. Crie uma tag de versão:
-   ```bash
-   git tag v1.0.0
-   git push origin main --tags
-   ```
-4. O GitHub Actions irá automaticamente:
-   - Rodar a suíte de testes unitários.
-   - Compilar o projeto e gerar o `SWStock.exe`.
-   - Empacotar com o JRE Windows x64.
-   - Criar uma **Release no GitHub** com o arquivo `SWStock-Windows-x64.zip` disponível para download!
+Sempre que uma nova tag de versão for publicada:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+A pipeline automaticamente:
+- Executa a suíte completa de testes unitários.
+- Compila a aplicação e gera o executável nativo Windows `SWStock.exe`.
+- Empacota o runtime Java portátil em `SWStock-Windows-x64.zip`.
+- Cria a **Release no GitHub** disponibilizando o download para os usuários.
+
+---
+
+## 🗺️ Roadmap de Desenvolvimento
+
+- [x] Cadastro de Produtos e Variações de Cores
+- [x] Visualização 2D do Depósito Físico
+- [x] Módulo de Funcionários
+- [x] Exportação de Relatórios PDF e Backup XML
+- [x] Empacotamento Nativo Windows (.exe) e CI/CD
+- [ ] **Módulo Avançado de Controle de Estoque** *(Em andamento)*
+  - [ ] Auditoria e conciliação de inventário físico vs sistêmico
+  - [ ] Alertas visuais e notificações de estoque mínimo/crítico
+  - [ ] Histórico detalhado com rastreabilidade por funcionário e lote
+- [ ] Dashboard analítico com indicadores de giro de estoque
+
+---
+
+## 📄 Licença
+
+Distribuído sob a licença **MIT**. Veja [`LICENSE`](LICENSE) para mais informações.
+
