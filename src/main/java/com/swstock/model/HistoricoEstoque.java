@@ -134,10 +134,17 @@ public class HistoricoEstoque {
 
     public String getMovimentoFormatado() {
         if (quantidadeAlterada == null) return "0 un.";
-        if (quantidadeAlterada > 0) {
-            return "+" + quantidadeAlterada + " un.";
+        if ("SAIDA".equalsIgnoreCase(tipo)) {
+            int abs = Math.abs(quantidadeAlterada);
+            return (abs > 0 ? "-" : "") + abs + " un.";
+        } else if ("ENTRADA".equalsIgnoreCase(tipo)) {
+            int abs = Math.abs(quantidadeAlterada);
+            return (abs > 0 ? "+" : "") + abs + " un.";
+        } else {
+            if (quantidadeAlterada > 0) return "+" + quantidadeAlterada + " un.";
+            if (quantidadeAlterada < 0) return quantidadeAlterada + " un.";
+            return "0 un.";
         }
-        return quantidadeAlterada + " un.";
     }
 
     public Integer getQuantidadeAnterior() {

@@ -22,17 +22,17 @@ class PdfReportServiceTest {
         movimentos.add(new HistoricoEstoque(
                 1, 101, "2026-08-28 10:15:00", "SAIDA",
                 -5, 45, 40, "Retirada para Expedição", "Operador 1",
-                "Produto Teste 100", "SKU-100", "Estante A1"
+                "Produto Teste 101", "SKU-101", "Estante A1"
         ));
         movimentos.add(new HistoricoEstoque(
                 2, 102, "2026-08-28 11:30:00", "ENTRADA",
                 +20, 10, 30, "Chegada de Nota Fiscal", "Operador 2",
-                "Produto Teste 200", "SKU-200", "Estante B2"
+                "Produto Teste 102", "SKU-102", "Estante B2"
         ));
         movimentos.add(new HistoricoEstoque(
                 3, 103, "2026-08-27 09:00:00", "SAIDA",
                 -10, 50, 40, "Venda Direta Balcão", "Operador 3",
-                "Parafuso Autoatarraxante 4,2x38", "305011", "Estante C3"
+                "Produto Teste 103", "SKU-103", "Estante C3"
         ));
 
         service.gerarRelatorio(tempPdf, movimentos, LocalDate.of(2026, 8, 27), LocalDate.of(2026, 8, 28),

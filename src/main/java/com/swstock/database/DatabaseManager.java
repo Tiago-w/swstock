@@ -165,6 +165,13 @@ public class DatabaseManager {
             stmt.execute(createIndexCoresProd);
             stmt.execute(createIndexCoresNome);
 
+            // Sanitização e autocorreção de registros históricos antigos
+            try {
+                stmt.execute("UPDATE historico_estoque SET quantidade_alterada = -ABS(quantidade_alterada) WHERE UPPER(tipo) = 'SAIDA' AND quantidade_alterada > 0;");
+                stmt.execute("UPDATE historico_estoque SET quantidade_alterada = ABS(quantidade_alterada) WHERE UPPER(tipo) = 'ENTRADA' AND quantidade_alterada < 0;");
+            } catch (SQLException ignored) {
+            }
+
             LOGGER.info("Schema das tabelas 'produtos', 'historico_estoque', 'funcionarios', 'produto_cores' e índices verificados com sucesso.");
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao inicializar o schema SQLite.", e);

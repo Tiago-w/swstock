@@ -284,9 +284,10 @@ public class GlobalStockHistoryController {
 
             for (HistoricoEstoque h : lista) {
                 int delta = h.getQuantidadeAlterada() != null ? h.getQuantidadeAlterada() : 0;
-                if (delta > 0) {
-                    totalEntradas += delta;
-                } else if (delta < 0) {
+                String tipoOp = h.getTipo() != null ? h.getTipo().toUpperCase() : "";
+                if ("ENTRADA".equals(tipoOp) || delta > 0) {
+                    totalEntradas += Math.abs(delta);
+                } else if ("SAIDA".equals(tipoOp) || delta < 0) {
                     totalSaidas += Math.abs(delta);
                 }
             }

@@ -229,7 +229,7 @@ public class ProdutoCorDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, produtoId);
             stmt.setString(2, tipo);
-            stmt.setInt(3, Math.abs(diff));
+            stmt.setInt(3, diff);
             stmt.setInt(4, anterior);
             stmt.setInt(5, novo);
             stmt.setString(6, motivoFinal);
