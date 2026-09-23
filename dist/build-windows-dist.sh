@@ -52,7 +52,7 @@ if exist "jre\bin\java.exe" (
     set "JAVA_EXE=java"
 )
 
-"%JAVA_EXE%" --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow -Dfile.encoding=UTF-8 -jar swstock.jar
+"%JAVA_EXE%" --enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -jar swstock.jar
 
 if %ERRORLEVEL% neq 0 (
     echo.

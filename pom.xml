@@ -104,7 +104,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
                 <configuration>
-                    <argLine>--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow -Dtestfx.robot=glass -Dtestfx.headless=true -Dglass.platform=Monocle -Dprism.order=sw -Dprism.text=t2k</argLine>
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
 
@@ -121,7 +121,6 @@
                             <options>
                                 <option>--enable-native-access=javafx.graphics</option>
                                 <option>--enable-native-access=ALL-UNNAMED</option>
-                                <option>--sun-misc-unsafe-memory-access=allow</option>
                             </options>
                         </configuration>
                     </execution>
@@ -201,7 +200,6 @@
                                 <minVersion>21</minVersion>
                                 <opts>
                                     <opt>--enable-native-access=ALL-UNNAMED</opt>
-                                    <opt>--sun-misc-unsafe-memory-access=allow</opt>
                                     <opt>-Dfile.encoding=UTF-8</opt>
                                 </opts>
                             </jre>
