@@ -2,20 +2,34 @@ package com.swstock;
 
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class FxmlLoadTest {
 
+    private static boolean javaFxAvailable = false;
+
     @BeforeAll
     static void initJavaFX() {
         try {
             Platform.startup(() -> {});
+            javaFxAvailable = true;
         } catch (IllegalStateException ignored) {
             // Toolkit already initialized
+            javaFxAvailable = true;
+        } catch (Throwable t) {
+            // Em ambiente headless (sem display X11/Wayland), marcar como indisponível
+            javaFxAvailable = false;
         }
+    }
+
+    @BeforeEach
+    void checkJavaFx() {
+        Assumptions.assumeTrue(javaFxAvailable, "JavaFX toolkit não inicializado neste ambiente headless");
     }
 
     @Test
