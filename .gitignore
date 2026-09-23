@@ -26,5 +26,13 @@ buildNumber.properties
 *.sqlite
 *.log
 
+# Distribution & Binaries
+dist/swstock-windows/
+dist/*.zip
+dist/*.exe
+dist/*.jar
+*.exe
+*.jar
+
 # Sample data
 sample_data/
