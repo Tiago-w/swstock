@@ -109,7 +109,32 @@ mvn javafx:run
 mvn compile exec:java
 ```
 
-### 4. Gerar o Pacote JAR
+### 4. Gerar Executável Windows e Pacote Portátil (.exe)
 ```bash
+# Gera o Fat JAR e o executável SWStock.exe no diretório target/
 mvn clean package
+
+# Ou execute o script completo para gerar o pacote portátil com JRE embutido e ZIP:
+./dist/build-windows-dist.sh
 ```
+O pacote final será gerado em `dist/SWStock-Windows-x64.zip`.
+
+---
+
+## 🚀 CI/CD & Releases no GitHub
+
+O repositório possui uma pipeline do **GitHub Actions** configurada em `.github/workflows/build-and-release.yml`.
+
+### Como Lançar uma Nova Versão:
+1. Faça suas alterações no código e valide os testes localmente (`mvn test`).
+2. Crie um commit semântico: `git commit -m "feat: descrição da melhoria"`.
+3. Crie uma tag de versão:
+   ```bash
+   git tag v1.0.0
+   git push origin main --tags
+   ```
+4. O GitHub Actions irá automaticamente:
+   - Rodar a suíte de testes unitários.
+   - Compilar o projeto e gerar o `SWStock.exe`.
+   - Empacotar com o JRE Windows x64.
+   - Criar uma **Release no GitHub** com o arquivo `SWStock-Windows-x64.zip` disponível para download!
