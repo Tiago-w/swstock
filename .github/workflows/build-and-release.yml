@@ -27,7 +27,7 @@ jobs:
           cache: 'maven'
 
       - name: Run Unit Tests
-        run: xvfb-run --auto-servernum mvn clean test
+        run: mvn clean test
 
       - name: Package Windows Binary & EXE
         run: mvn clean package -DskipTests
