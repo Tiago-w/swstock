@@ -13,13 +13,13 @@
 
 ---
 
-> [!IMPORTANT]
+> [!IMPORTANTE]
 > ### 🚧 Status do Projeto: Módulo de Estoque em Desenvolvimento Ativo
 > Este projeto está em constante evolução. O **módulo avançado de controle e movimentação de estoque** (levantamento detalhado, auditoria de lotes, transferências internas e relatórios analíticos) está sendo **ativamente desenvolvido e aprimorado**. Fique à vontade para acompanhar as novidades e sugerir melhorias!
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 ### 🛒 1. Catálogo de Produtos e Variações
 - Cadastro, consulta e edição rápida de produtos (SKU, nomes, valores à vista/prazo e descrições).
