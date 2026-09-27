@@ -15,14 +15,20 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+
+import java.text.Normalizer;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -120,8 +126,13 @@ public class ProductDetailController {
         configurarSeletorCores();
     }
 
+    private long lastKeyCorTime = 0;
+    private String typedPrefixCor = "";
+
     private void configurarSeletorCores() {
         if (cbCorAtual != null) {
+            cbCorAtual.setTooltip(new Tooltip("Selecione a cor ou pressione a letra inicial no teclado (ex: 'V' para alternar Verde/Vermelho)"));
+
             cbCorAtual.getSelectionModel().selectedIndexProperty().addListener((obs, oldVal, newVal) -> {
                 if (isUpdatingProgrammatically || newVal == null) return;
                 int idx = newVal.intValue();
@@ -131,7 +142,170 @@ public class ProductDetailController {
                     selecionarCorAtiva(coresDoProduto.get(idx - 1));
                 }
             });
+
+            // Captura de teclas diretamente no ComboBox quando ele está com foco
+            cbCorAtual.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyNavigationCor);
+
+            // Captura de teclas no popup ListView quando o dropdown está aberto
+            cbCorAtual.showingProperty().addListener((obs, wasShowing, isShowing) -> {
+                if (isShowing) {
+                    if (cbCorAtual.getSkin() instanceof ComboBoxListViewSkin<?> skin) {
+                        Node popupContent = skin.getPopupContent();
+                        if (popupContent instanceof ListView<?> lv) {
+                            if (lv.getProperties().get("swstock_key_filter_cor") == null) {
+                                lv.getProperties().put("swstock_key_filter_cor", Boolean.TRUE);
+                                lv.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyNavigationCor);
+                            }
+                        }
+                    }
+                }
+            });
         }
+
+        // Captura global no modal: permite pressionar 'v' (ou outra letra) para alternar cores
+        // sempre que o usuário não estiver digitando dentro de um campo de texto (TextField/TextArea)
+        if (tabPanePrincipal != null) {
+            tabPanePrincipal.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                Node focusOwner = tabPanePrincipal.getScene() != null ? tabPanePrincipal.getScene().getFocusOwner() : null;
+                if (focusOwner instanceof TextInputControl) {
+                    return; // Não interceptar digitação nos campos de texto
+                }
+
+                if (!coresDoProduto.isEmpty() && cbCorAtual != null && cbCorAtual.getItems().size() > 1) {
+                    if (event.getCode().isLetterKey() || (event.getText() != null && !event.getText().isEmpty() && Character.isLetter(event.getText().charAt(0)))) {
+                        handleKeyNavigationCor(event);
+                    }
+                }
+            });
+        }
+    }
+
+    public void handleKeyNavigationCor(KeyEvent event) {
+        if (event == null || event.isAltDown() || event.isControlDown() || event.isMetaDown()) {
+            return;
+        }
+
+        if (cbCorAtual == null) return;
+        ObservableList<String> items = cbCorAtual.getItems();
+        if (items == null || items.size() <= 1) return;
+
+        int currentIndex = cbCorAtual.getSelectionModel().getSelectedIndex();
+        int targetIndex = calcularProximoIndiceCor(items, currentIndex, event.getText(), event.getCode(), System.currentTimeMillis());
+
+        if (targetIndex != -1) {
+            cbCorAtual.getSelectionModel().select(targetIndex);
+
+            // Se o popup estiver aberto, sincroniza também a ListView
+            if (cbCorAtual.getSkin() instanceof ComboBoxListViewSkin<?> skin) {
+                Node popup = skin.getPopupContent();
+                if (popup instanceof ListView<?> lv) {
+                    lv.getSelectionModel().select(targetIndex);
+                    lv.scrollTo(targetIndex);
+                }
+            }
+            event.consume();
+        }
+    }
+
+    public int calcularProximoIndiceCor(List<String> items, int currentIndex, String keyChar, KeyCode keyCode, long eventTime) {
+        if (items == null || items.isEmpty()) return -1;
+
+        if (keyChar == null || keyChar.isEmpty()) {
+            if (keyCode != null && keyCode.isLetterKey()) {
+                keyChar = keyCode.name().toLowerCase();
+            }
+        }
+
+        if (keyChar == null || keyChar.isEmpty()) {
+            if (keyCode == KeyCode.BACK_SPACE) {
+                if (!typedPrefixCor.isEmpty()) {
+                    typedPrefixCor = typedPrefixCor.substring(0, typedPrefixCor.length() - 1);
+                    lastKeyCorTime = eventTime;
+                }
+            }
+            return -1;
+        }
+
+        char ch = keyChar.charAt(0);
+        if (!Character.isLetterOrDigit(ch) && ch != ' ') {
+            return -1;
+        }
+
+        boolean sameKeyAgain = (eventTime - lastKeyCorTime < 1500) && typedPrefixCor.length() == 1 &&
+                stripAccents(typedPrefixCor).equalsIgnoreCase(stripAccents(String.valueOf(ch)));
+
+        if (eventTime - lastKeyCorTime > 1500) {
+            typedPrefixCor = String.valueOf(ch);
+        } else if (sameKeyAgain) {
+            // Mantém tamanho 1 para continuar ciclando entre cores com a mesma letra inicial
+        } else {
+            typedPrefixCor += ch;
+        }
+        lastKeyCorTime = eventTime;
+
+        int targetIndex = -1;
+
+        if (sameKeyAgain || typedPrefixCor.length() == 1) {
+            // Modo de ciclagem: busca a próxima cor estritamente após a posição atual, com wrap-around
+            String searchChar = stripAccents(String.valueOf(ch)).toLowerCase();
+
+            // 1. Busca estritamente após o índice atual
+            for (int i = currentIndex + 1; i < items.size(); i++) {
+                if (corItemMatches(items.get(i), searchChar)) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+
+            // 2. Se não encontrou após o atual, reinicia do início até o índice atual
+            if (targetIndex == -1) {
+                for (int i = 0; i <= currentIndex && i < items.size(); i++) {
+                    if (corItemMatches(items.get(i), searchChar)) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+            }
+        } else {
+            // Modo de digitação por prefixo multi-letras (ex: 'verm' -> Vermelho, 'verd' -> Verde)
+            String searchPrefix = stripAccents(typedPrefixCor).toLowerCase().trim();
+            for (int i = 0; i < items.size(); i++) {
+                if (corItemMatches(items.get(i), searchPrefix)) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+        }
+
+        return targetIndex;
+    }
+
+    public boolean corItemMatches(String itemText, String prefix) {
+        if (itemText == null || prefix == null || prefix.isEmpty()) {
+            return false;
+        }
+        String normalizedItem = stripAccents(itemText).toLowerCase().trim();
+        String normalizedPrefix = stripAccents(prefix).toLowerCase().trim();
+
+        if (normalizedItem.startsWith(normalizedPrefix)) {
+            return true;
+        }
+
+        int parenIdx = normalizedItem.indexOf('(');
+        if (parenIdx > 0) {
+            String nameOnly = normalizedItem.substring(0, parenIdx).trim();
+            if (nameOnly.startsWith(normalizedPrefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static String stripAccents(String s) {
+        if (s == null) return "";
+        String normalized = Normalizer.normalize(s, Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{M}", "");
     }
 
     private void configurarTabelaHistorico() {
@@ -217,7 +391,7 @@ public class ProductDetailController {
                         corAtiva.setQuantidade(novaQtd);
                         lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
                         lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
-                    } else {
+                    } else if (coresDoProduto.isEmpty()) {
                         produto.setQuantidade(novaQtd);
                         if (novaQtd != estoqueInicial) {
                             lblAutoSaveStatus.setText("Alteração pendente de salvamento");
@@ -370,6 +544,7 @@ public class ProductDetailController {
             if (lblEstoqueInicial != null) lblEstoqueInicial.setText((produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0) + " un.");
         }
         isUpdatingProgrammatically = false;
+        atualizarEstadoTravaQuantidade();
     }
 
     public void selecionarCorAtiva(ProdutoCor cor) {
@@ -383,6 +558,46 @@ public class ProductDetailController {
             int q = produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0;
             setQuantidadeDisplay(q);
             if (lblEstoqueInicial != null) lblEstoqueInicial.setText(q + " un.");
+        }
+        atualizarEstadoTravaQuantidade();
+    }
+
+    /**
+     * Trava para modificação de estoque:
+     * Se o produto possui variações de cores cadastradas e nenhuma cor específica foi selecionada,
+     * o campo de quantidade e os botões de ajuste (+ / -) ficam travados.
+     * Produtos que não possuem cores podem ter o estoque alterado livremente.
+     */
+    private void atualizarEstadoTravaQuantidade() {
+        boolean temCores = !coresDoProduto.isEmpty();
+        if (temCores && corAtiva == null) {
+            // TRAVADO: Produto tem cores, mas nenhuma cor específica está selecionada
+            if (txtQuantidade != null) {
+                txtQuantidade.setDisable(true);
+                txtQuantidade.setTooltip(new Tooltip("Este produto possui variações de cor cadastradas. Selecione uma cor específica no menu acima para alterar seu estoque."));
+            }
+            if (btnIncrement != null) btnIncrement.setDisable(true);
+            if (btnDecrement != null) btnDecrement.setDisable(true);
+            if (lblQuantidadeDesc != null) {
+                lblQuantidadeDesc.setText("ESTOQUE TOTAL (TRAVADO - SELECIONE UMA COR)");
+                lblQuantidadeDesc.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
+            }
+        } else {
+            // LIBERADO: Produto sem cores OU com cor específica selecionada
+            if (txtQuantidade != null) {
+                txtQuantidade.setDisable(false);
+                txtQuantidade.setTooltip(null);
+            }
+            if (btnIncrement != null) btnIncrement.setDisable(false);
+            if (btnDecrement != null) btnDecrement.setDisable(false);
+            if (lblQuantidadeDesc != null) {
+                if (corAtiva != null) {
+                    lblQuantidadeDesc.setText("ESTOQUE DA COR: " + corAtiva.getNomeCor());
+                } else {
+                    lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
+                }
+                lblQuantidadeDesc.setStyle("");
+            }
         }
     }
 
@@ -461,6 +676,7 @@ public class ProductDetailController {
             controller.setProdutoCorDAO(produtoCorDAO);
             controller.setProdutoDAO(produtoDAO);
             controller.setProduto(produto);
+            controller.configurarAtalhosTeclado(root);
 
             controller.setOnCorSelecionadaCallback(cor -> {
                 this.corAtiva = cor;
@@ -669,6 +885,11 @@ public class ProductDetailController {
 
     @FXML
     private void handleIncrement() {
+        if (!coresDoProduto.isEmpty() && corAtiva == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Seleção de Cor Necessária",
+                    "Este produto possui controle por cores.\nSelecione uma cor no menu para alterar a quantidade.");
+            return;
+        }
         int atual = parseQuantidadeAtual();
         int novo = atual + 1;
         setQuantidadeDisplay(novo);
@@ -676,7 +897,7 @@ public class ProductDetailController {
             corAtiva.setQuantidade(novo);
             lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
             lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
-        } else {
+        } else if (coresDoProduto.isEmpty()) {
             produto.setQuantidade(novo);
             lblAutoSaveStatus.setText("Alteração pendente de salvamento");
             lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
@@ -685,6 +906,11 @@ public class ProductDetailController {
 
     @FXML
     private void handleDecrement() {
+        if (!coresDoProduto.isEmpty() && corAtiva == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Seleção de Cor Necessária",
+                    "Este produto possui controle por cores.\nSelecione uma cor no menu para alterar a quantidade.");
+            return;
+        }
         int atual = parseQuantidadeAtual();
         if (atual > 0) {
             int novo = atual - 1;
@@ -693,7 +919,7 @@ public class ProductDetailController {
                 corAtiva.setQuantidade(novo);
                 lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
                 lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
-            } else {
+            } else if (coresDoProduto.isEmpty()) {
                 produto.setQuantidade(novo);
                 lblAutoSaveStatus.setText("Alteração pendente de salvamento");
                 lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
@@ -779,7 +1005,16 @@ public class ProductDetailController {
         produto.setPrecoVista(Double.parseDouble(txtPrecoVista.getText().trim().replace(",", ".")));
         produto.setPrecoPrazo(Double.parseDouble(txtPrecoPrazo.getText().trim().replace(",", ".")));
         produto.setLocalizacao(txtLocalizacao.getText().trim());
-        produto.setQuantidade(qtdFinal);
+        // Se o produto possui cores mas nenhuma cor está selecionada, preserva o estoque real calculado das cores
+        if (produto.getId() != null && !coresDoProduto.isEmpty() && corAtiva == null) {
+            try {
+                int totalCores = produtoCorDAO.getTotalQuantidadeCores(produto.getId());
+                produto.setQuantidade(totalCores);
+                qtdFinal = totalCores;
+            } catch (SQLException ignored) {}
+        } else {
+            produto.setQuantidade(qtdFinal);
+        }
         produto.setUrlImagem(txtUrlImagem.getText().trim());
         produto.setDescricaoBreve(txtDescricaoBreve.getText().trim());
 
@@ -800,7 +1035,11 @@ public class ProductDetailController {
                 }
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Produto cadastrado com sucesso!");
             } else {
-                produtoDAO.update(produto, responsavel, "Modificação de estoque");
+                if (!coresDoProduto.isEmpty() && corAtiva == null) {
+                    produtoDAO.updateSemHistorico(produto);
+                } else {
+                    produtoDAO.update(produto, responsavel, "Modificação de estoque");
+                }
                 this.estoqueInicial = qtdFinal;
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Alterações salvas no SQLite!");
             }
@@ -893,14 +1132,12 @@ public class ProductDetailController {
 
     private void carregarImagem(String url) {
         if (url != null && !url.trim().isEmpty()) {
+            String urlLimpa = url.trim();
             try {
-                Image image = new Image(url.trim(), true);
+                Image image = new Image(urlLimpa, true);
                 image.errorProperty().addListener((obs, oldV, hasError) -> {
                     if (hasError) {
-                        lblFotoPlaceholder.setText("Não foi possível carregar a imagem da URL.");
-                        lblFotoPlaceholder.setVisible(true);
-                        lblFotoPlaceholder.setManaged(true);
-                        imgProduto.setImage(null);
+                        baixarImagemComHttpClient(urlLimpa);
                     }
                 });
                 image.progressProperty().addListener((obs, oldV, progress) -> {
@@ -911,9 +1148,7 @@ public class ProductDetailController {
                 });
                 imgProduto.setImage(image);
             } catch (Exception e) {
-                lblFotoPlaceholder.setText("URL de imagem inválida.");
-                lblFotoPlaceholder.setVisible(true);
-                lblFotoPlaceholder.setManaged(true);
+                baixarImagemComHttpClient(urlLimpa);
             }
         } else {
             imgProduto.setImage(null);
@@ -921,6 +1156,52 @@ public class ProductDetailController {
             lblFotoPlaceholder.setVisible(true);
             lblFotoPlaceholder.setManaged(true);
         }
+    }
+
+    private void baixarImagemComHttpClient(String url) {
+        new Thread(() -> {
+            try {
+                java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                        .connectTimeout(java.time.Duration.ofSeconds(6))
+                        .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+                        .build();
+
+                java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(url))
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+                        .timeout(java.time.Duration.ofSeconds(8))
+                        .GET()
+                        .build();
+
+                java.net.http.HttpResponse<byte[]> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+                if (resp.statusCode() == 200 && resp.body().length > 0) {
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            Image fallbackImg = new Image(new java.io.ByteArrayInputStream(resp.body()));
+                            if (!fallbackImg.isError()) {
+                                imgProduto.setImage(fallbackImg);
+                                lblFotoPlaceholder.setVisible(false);
+                                lblFotoPlaceholder.setManaged(false);
+                                return;
+                            }
+                        } catch (Exception ignored) {}
+                        exibirErroImagem();
+                    });
+                } else {
+                    javafx.application.Platform.runLater(this::exibirErroImagem);
+                }
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(this::exibirErroImagem);
+            }
+        }).start();
+    }
+
+    private void exibirErroImagem() {
+        lblFotoPlaceholder.setText("Não foi possível carregar a imagem da URL.");
+        lblFotoPlaceholder.setVisible(true);
+        lblFotoPlaceholder.setManaged(true);
+        imgProduto.setImage(null);
     }
 
     private void mostrarAlerta(Alert.AlertType tipo, String titulo, String msg) {

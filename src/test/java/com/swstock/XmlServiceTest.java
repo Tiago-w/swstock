@@ -1,11 +1,15 @@
 package com.swstock;
 
+import com.swstock.database.BaseDAO;
 import com.swstock.database.DatabaseManager;
 import com.swstock.database.FuncionarioDAO;
+import com.swstock.database.HistoricoBaseDAO;
 import com.swstock.database.HistoricoEstoqueDAO;
 import com.swstock.database.ProdutoCorDAO;
 import com.swstock.database.ProdutoDAO;
+import com.swstock.model.Base;
 import com.swstock.model.Funcionario;
+import com.swstock.model.HistoricoBase;
 import com.swstock.model.HistoricoEstoque;
 import com.swstock.model.Produto;
 import com.swstock.model.ProdutoCor;
@@ -34,6 +38,8 @@ class XmlServiceTest {
     private static HistoricoEstoqueDAO historicoDAO;
     private static ProdutoCorDAO produtoCorDAO;
     private static FuncionarioDAO funcionarioDAO;
+    private static BaseDAO baseDAO;
+    private static HistoricoBaseDAO historicoBaseDAO;
     private static XmlService xmlService;
 
     @BeforeAll
@@ -50,7 +56,9 @@ class XmlServiceTest {
         historicoDAO = new HistoricoEstoqueDAO(dbManager);
         produtoCorDAO = new ProdutoCorDAO(dbManager);
         funcionarioDAO = new FuncionarioDAO(dbManager);
-        xmlService = new XmlService(produtoDAO, historicoDAO, produtoCorDAO, funcionarioDAO);
+        baseDAO = new BaseDAO(dbManager);
+        historicoBaseDAO = new HistoricoBaseDAO(dbManager);
+        xmlService = new XmlService(produtoDAO, historicoDAO, produtoCorDAO, funcionarioDAO, baseDAO, historicoBaseDAO);
     }
 
     @AfterAll
@@ -209,6 +217,10 @@ class XmlServiceTest {
         hManual.setDataHora("2026-09-20 10:15:30");
         historicoDAO.insert(hManual);
 
+        // Cadastrar Base de Tintas
+        Base baseAuto = new Base("BASE-AT-01", "Base Poliéster Amarelo Trator", "AUTOMOTIVA", "Lazzuril", 12, 85.50);
+        baseDAO.insert(baseAuto, "Carlos Supervisor");
+
         // 2. Exportar o backup completo 360 graus
         File backupFile = File.createTempFile("swstock_full_backup_", ".xml");
         xmlService.exportarProdutos(backupFile);
@@ -220,6 +232,9 @@ class XmlServiceTest {
         assertTrue(xmlStr.contains("<nome_cor>BRANCO TITÂNIO</nome_cor>"));
         assertTrue(xmlStr.contains("<motivo>Recebimento de Lote de Fábrica</motivo>"));
         assertTrue(xmlStr.contains("<nome>Carlos Supervisor</nome>"));
+        assertTrue(xmlStr.contains("<base>"));
+        assertTrue(xmlStr.contains("<codigo>BASE-AT-01</codigo>"));
+        assertTrue(xmlStr.contains("<nome>Base Poliéster Amarelo Trator</nome>"));
 
         // 3. Simular restauração em um NOVO banco limpo (ex: PC queimou e usou pen drive)
         String freshDbPath = "test_fresh_restore_swstock.db";
@@ -231,7 +246,9 @@ class XmlServiceTest {
         HistoricoEstoqueDAO freshHistoricoDAO = new HistoricoEstoqueDAO(freshDbManager);
         ProdutoCorDAO freshProdutoCorDAO = new ProdutoCorDAO(freshDbManager);
         FuncionarioDAO freshFuncionarioDAO = new FuncionarioDAO(freshDbManager);
-        XmlService freshXmlService = new XmlService(freshProdutoDAO, freshHistoricoDAO, freshProdutoCorDAO, freshFuncionarioDAO);
+        BaseDAO freshBaseDAO = new BaseDAO(freshDbManager);
+        HistoricoBaseDAO freshHistBaseDAO = new HistoricoBaseDAO(freshDbManager);
+        XmlService freshXmlService = new XmlService(freshProdutoDAO, freshHistoricoDAO, freshProdutoCorDAO, freshFuncionarioDAO, freshBaseDAO, freshHistBaseDAO);
 
         XmlService.ImportResult restoreResult = freshXmlService.importarProdutos(backupFile);
 
@@ -239,6 +256,8 @@ class XmlServiceTest {
         assertTrue(restoreResult.coresProcessadas() >= 2);
         assertTrue(restoreResult.movimentacoesHistoricoRestauradas() >= 1);
         assertTrue(restoreResult.funcionariosProcessados() >= 1);
+        assertTrue(restoreResult.basesProcessadas() >= 1);
+        assertTrue(restoreResult.movimentacoesBasesRestauradas() >= 1);
         assertTrue(restoreResult.isSucesso());
 
         // Verificar restauração dos produtos
@@ -261,6 +280,21 @@ class XmlServiceTest {
         // Verificar restauração dos funcionários
         List<String> funcionariosRestaurados = freshFuncionarioDAO.getNomesFuncionarios();
         assertTrue(funcionariosRestaurados.contains("Carlos Supervisor"));
+
+        // Verificar restauração das Bases
+        List<Base> basesRestauradas = freshBaseDAO.findAll();
+        assertEquals(1, basesRestauradas.size());
+        Base bRestaurada = freshBaseDAO.findByCodigo("BASE-AT-01");
+        assertNotNull(bRestaurada);
+        assertEquals("Base Poliéster Amarelo Trator", bRestaurada.getNome());
+        assertEquals("AUTOMOTIVA", bRestaurada.getTipo());
+        assertEquals("Lazzuril", bRestaurada.getFabricante());
+        assertEquals(12, bRestaurada.getQuantidade());
+        assertEquals(85.50, bRestaurada.getValorCompra());
+
+        // Verificar restauração do histórico das Bases
+        List<HistoricoBase> histBasesRestaurado = freshHistBaseDAO.findByBase(bRestaurada.getId());
+        assertEquals(1, histBasesRestaurado.size());
 
         freshDbManager.close();
         if (!freshDbFile.delete()) freshDbFile.deleteOnExit();

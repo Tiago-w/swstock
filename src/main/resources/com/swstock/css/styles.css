@@ -191,6 +191,9 @@
     -fx-table-cell-border-color: transparent;
     -fx-padding: 0;
     -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.04), 8, 0, 0, 2);
+    -fx-selection-bar: #DBEAFE;
+    -fx-selection-bar-non-focused: #EFF6FF;
+    -fx-selection-bar-text: #0F172A;
 }
 
 .table-view .column-header-background {
@@ -258,11 +261,61 @@
 
 .table-row-cell:selected {
     -fx-background-color: #DBEAFE;
-    -fx-text-fill: #1E3A8A;
+    -fx-text-fill: #0F172A;
+}
+
+.table-row-cell:selected .table-cell,
+.table-row-cell:filled:selected .table-cell,
+.table-row-cell:selected .text,
+.table-row-cell:filled:selected .text,
+.table-cell:selected,
+.table-cell:selected .text {
+    -fx-text-fill: #0F172A;
+}
+
+.table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected,
+.table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected > .table-cell,
+.table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected .text,
+.table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:selected,
+.table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:selected > .table-cell,
+.table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:selected .text {
+    -fx-background: #DBEAFE;
+    -fx-background-color: #DBEAFE;
+    -fx-text-fill: #0F172A;
+}
+
+.table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected,
+.table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected > .table-cell,
+.table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected .text {
+    -fx-background: #DBEAFE;
+    -fx-background-color: #DBEAFE;
+    -fx-text-fill: #0F172A;
 }
 
 .table-cell {
     -fx-padding: 8px 14px;
+}
+
+.nav-button-sub {
+    -fx-background-color: transparent;
+    -fx-text-fill: #CBD5E1;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 8px 14px 8px 24px;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+    -fx-pref-width: 206px;
+}
+
+.nav-button-sub:hover {
+    -fx-background-color: #1E293B;
+    -fx-text-fill: #60A5FA;
+}
+
+.nav-button-sub:pressed {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: #FFFFFF;
 }
 
 /* Botão de Linha "Ver Detalhes" */

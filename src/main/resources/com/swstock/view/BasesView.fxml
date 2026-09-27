@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox prefHeight="700.0" prefWidth="1100.0"
+      stylesheets="@../css/styles.css"
+      style="-fx-background-color: #F8FAFC;"
+      xmlns="http://javafx.com/javafx/23"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.swstock.controller.BasesController">
+
+    <children>
+        <!-- Topo: Banner Superior -->
+        <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="header-banner">
+            <children>
+                <VBox alignment="CENTER_LEFT" spacing="2.0">
+                    <children>
+                        <Label styleClass="brand-title" text="SWStock" />
+                        <Label fx:id="lblHeaderSubtitulo" text="Gestão de Bases de Tintas: Automotivas e Prediais"
+                               style="-fx-text-fill: #E2E8F0; -fx-font-size: 11px; -fx-font-weight: bold;" />
+                    </children>
+                </VBox>
+                <Region HBox.hgrow="ALWAYS" />
+                <Button onAction="#handleAbrirHistoricoBases"
+                        style="-fx-background-color: #0D47A1; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6px; -fx-padding: 8px 16px; -fx-font-size: 12px;"
+                        text=" Histórico Geral de Bases" />
+                <Button onAction="#handleFechar" styleClass="btn-secondary" text="Fechar" />
+            </children>
+        </HBox>
+
+        <!-- Conteúdo Principal -->
+        <VBox spacing="14.0" VBox.vgrow="ALWAYS" style="-fx-padding: 18px 24px;">
+            <children>
+                <!-- Seletor de Tipo de Base (Segmented Control) e Barra de Ações -->
+                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="action-bar">
+                    <children>
+                        <!-- Botões de Seleção: Bases Automotivas e Bases Prediais -->
+                        <HBox spacing="0.0" style="-fx-background-color: #E2E8F0; -fx-background-radius: 8px; -fx-padding: 3px;">
+                            <children>
+                                <Button fx:id="btnTabAutomotivas" onAction="#handleSelecionarAutomotivas"
+                                        text="Bases Automotivas"
+                                        style="-fx-background-color: #1565C0; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 6px 0 0 6px; -fx-cursor: hand; -fx-font-size: 12px;" />
+                                <Button fx:id="btnTabPrediais" onAction="#handleSelecionarPrediais"
+                                        text="Bases Prediais"
+                                        style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 0 6px 6px 0; -fx-cursor: hand; -fx-font-size: 12px;" />
+                            </children>
+                        </HBox>
+
+                        <Separator orientation="VERTICAL" style="-fx-opacity: 0.4;" />
+
+                        <TextField fx:id="txtBusca" promptText="Buscar por código, nome ou fabricante..."
+                                   styleClass="search-field" prefWidth="280.0" />
+
+                        <ComboBox fx:id="cbFabricanteFiltro" prefWidth="170.0" promptText="Fabricante"
+                                  styleClass="search-field" />
+
+                        <Button onAction="#handleNovaBase" styleClass="btn-primary" text="+ Nova Base" />
+
+                        <Button onAction="#handleRecarregar" styleClass="btn-secondary" text="Atualizar" />
+
+                        <Region HBox.hgrow="ALWAYS" />
+
+                        <Label fx:id="lblTotalBasesExibidas" styleClass="badge-location" text="0 bases cadastradas" />
+                    </children>
+                </HBox>
+
+                <!-- Tabela de Bases -->
+                <TableView fx:id="tblBases" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colCodigo" minWidth="90.0" prefWidth="110.0" text="CÓDIGO" styleClass="col-left" />
+                        <TableColumn fx:id="colNome" minWidth="220.0" prefWidth="300.0" text="NOME DA BASE" styleClass="col-left" />
+                        <TableColumn fx:id="colTipo" minWidth="110.0" prefWidth="130.0" text="TIPO" styleClass="col-center" />
+                        <TableColumn fx:id="colFabricante" minWidth="110.0" prefWidth="140.0" text="FABRICANTE" styleClass="col-left" />
+                        <TableColumn fx:id="colValorCompra" minWidth="110.0" prefWidth="130.0" text="VALOR DE COMPRA" styleClass="col-right" />
+                        <TableColumn fx:id="colQuantidade" minWidth="100.0" prefWidth="120.0" text="QUANTIDADE" styleClass="col-center" />
+                        <TableColumn fx:id="colAcoes" minWidth="160.0" prefWidth="180.0" text="AÇÕES" sortable="false" styleClass="col-center" />
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                    <placeholder>
+                        <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 14px;"
+                               text="Nenhuma base cadastrada para este tipo ou filtro." />
+                    </placeholder>
+                </TableView>
+            </children>
+        </VBox>
+    </children>
+</VBox>

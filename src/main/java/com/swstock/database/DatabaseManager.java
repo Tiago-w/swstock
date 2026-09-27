@@ -165,6 +165,51 @@ public class DatabaseManager {
             stmt.execute(createIndexCoresProd);
             stmt.execute(createIndexCoresNome);
 
+            String createTableBases = """
+                CREATE TABLE IF NOT EXISTS bases (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    codigo TEXT NOT NULL UNIQUE,
+                    nome TEXT NOT NULL,
+                    tipo TEXT NOT NULL,
+                    fabricante TEXT DEFAULT 'Geral',
+                    quantidade INTEGER NOT NULL DEFAULT 0,
+                    valor_compra REAL NOT NULL DEFAULT 0.0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                """;
+
+            String createIndexBasesCodigo = "CREATE INDEX IF NOT EXISTS idx_bases_codigo ON bases(codigo);";
+            String createIndexBasesTipo = "CREATE INDEX IF NOT EXISTS idx_bases_tipo ON bases(tipo);";
+            String createIndexBasesNome = "CREATE INDEX IF NOT EXISTS idx_bases_nome ON bases(nome);";
+
+            String createTableHistoricoBases = """
+                CREATE TABLE IF NOT EXISTS historico_bases (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    base_id INTEGER NOT NULL,
+                    data_hora TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                    tipo TEXT NOT NULL,
+                    quantidade_alterada INTEGER NOT NULL,
+                    quantidade_anterior INTEGER NOT NULL,
+                    quantidade_nova INTEGER NOT NULL,
+                    motivo TEXT,
+                    responsavel TEXT DEFAULT 'Não informado',
+                    FOREIGN KEY(base_id) REFERENCES bases(id) ON DELETE CASCADE
+                );
+                """;
+
+            String createIndexHistBasesBase = "CREATE INDEX IF NOT EXISTS idx_hist_bases_base ON historico_bases(base_id);";
+            String createIndexHistBasesData = "CREATE INDEX IF NOT EXISTS idx_hist_bases_data ON historico_bases(data_hora);";
+
+            stmt.execute(createTableBases);
+            stmt.execute(createIndexBasesCodigo);
+            stmt.execute(createIndexBasesTipo);
+            stmt.execute(createIndexBasesNome);
+
+            stmt.execute(createTableHistoricoBases);
+            stmt.execute(createIndexHistBasesBase);
+            stmt.execute(createIndexHistBasesData);
+
             // Sanitização e autocorreção de registros históricos antigos
             try {
                 stmt.execute("UPDATE historico_estoque SET quantidade_alterada = -ABS(quantidade_alterada) WHERE UPPER(tipo) = 'SAIDA' AND quantidade_alterada > 0;");
@@ -172,7 +217,7 @@ public class DatabaseManager {
             } catch (SQLException ignored) {
             }
 
-            LOGGER.info("Schema das tabelas 'produtos', 'historico_estoque', 'funcionarios', 'produto_cores' e índices verificados com sucesso.");
+            LOGGER.info("Schema das tabelas 'produtos', 'historico_estoque', 'funcionarios', 'produto_cores', 'bases' e 'historico_bases' verificado com sucesso.");
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao inicializar o schema SQLite.", e);
             throw new RuntimeException("Falha ao criar tabelas no SQLite.", e);
@@ -186,6 +231,7 @@ public class DatabaseManager {
         try {
             if (connection == null || connection.isClosed()) {
                 initConnection();
+                initSchema();
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao verificar estado da conexão SQLite.", e);
@@ -208,6 +254,10 @@ public class DatabaseManager {
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao fechar conexão com SQLite.", e);
+        } finally {
+            if (this == instance) {
+                instance = null;
+            }
         }
     }
 

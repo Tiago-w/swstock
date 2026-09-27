@@ -43,6 +43,13 @@ public class MainController {
     @FXML private Button btnToggleSidebar;
     @FXML private Label lblHeaderStats;
 
+    @FXML private Button btnHistoricoGeralBases;
+    @FXML private Button btnBases;
+    @FXML private VBox boxSubmenuBases;
+    @FXML private Button btnBasesAutomotivas;
+    @FXML private Button btnBasesPrediais;
+    @FXML private Button btnConfiguracoes;
+
     @FXML private TextField txtSearch;
     @FXML private Button btnNovoProduto;
     @FXML private Button btnRecarregar;
@@ -73,6 +80,10 @@ public class MainController {
         if (sidebar != null) {
             sidebar.setVisible(false);
             sidebar.setManaged(false);
+        }
+        if (boxSubmenuBases != null) {
+            boxSubmenuBases.setVisible(false);
+            boxSubmenuBases.setManaged(false);
         }
         configurarTabela();
         configurarBuscaInstantanea();
@@ -397,6 +408,77 @@ public class MainController {
     }
 
     @FXML
+    private void handleAbrirHistoricoGeralBases() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/BasesHistoryView.fxml"));
+            Parent root = loader.load();
+
+            BasesHistoryController controller = loader.getController();
+            Stage stage = new Stage();
+            stage.setTitle("SWStock - Histórico Geral de Bases de Tintas");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initOwner(rootPane.getScene().getWindow());
+            stage.setScene(new Scene(root));
+
+            controller.setStage(stage);
+
+            stage.setMaximized(true);
+            stage.show();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir histórico geral de bases.", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível carregar o histórico de bases: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleToggleMenuBases() {
+        if (boxSubmenuBases != null) {
+            boolean isVisible = boxSubmenuBases.isVisible();
+            boxSubmenuBases.setVisible(!isVisible);
+            boxSubmenuBases.setManaged(!isVisible);
+            if (btnBases != null) {
+                btnBases.setText(!isVisible ? "Bases  ▲" : "Bases  ▼");
+            }
+        }
+    }
+
+    @FXML
+    private void handleAbrirBasesAutomotivas() {
+        abrirTelaBases("AUTOMOTIVA");
+    }
+
+    @FXML
+    private void handleAbrirBasesPrediais() {
+        abrirTelaBases("PREDIAL");
+    }
+
+    private void abrirTelaBases(String tipoInicial) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/BasesView.fxml"));
+            Parent root = loader.load();
+
+            BasesController controller = loader.getController();
+            Stage stage = new Stage();
+            String titulo = "SWStock - Gestão de Bases de Tintas (" + ("AUTOMOTIVA".equalsIgnoreCase(tipoInicial) ? "Bases Automotivas" : "Bases Prediais") + ")";
+            stage.setTitle(titulo);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initOwner(rootPane.getScene().getWindow());
+            stage.setScene(new Scene(root));
+
+            controller.setStage(stage);
+            if (tipoInicial != null) {
+                controller.selecionarTipo(tipoInicial);
+            }
+
+            stage.setMaximized(true);
+            stage.show();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir tela de bases.", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível carregar o módulo de bases: " + e.getMessage());
+        }
+    }
+
+    @FXML
     private void handleAbrirLevantamentoEstoque() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/StockInventoryModal.fxml"));
@@ -419,6 +501,32 @@ public class MainController {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Erro ao abrir tela de levantamento de estoque.", e);
             mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível abrir o módulo de levantamento de estoque: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleAbrirConfiguracoes() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/ConfiguracoesView.fxml"));
+            Parent root = loader.load();
+
+            ConfiguracoesController controller = loader.getController();
+            Stage stage = new Stage();
+            stage.setTitle("SWStock - Configurações & Gestão Financeira de Estoque");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initOwner(rootPane.getScene().getWindow());
+            stage.setScene(new Scene(root));
+
+            controller.setStage(stage);
+            controller.setProdutoDAO(produtoDAO);
+            controller.setProdutoCorDAO(new com.swstock.database.ProdutoCorDAO());
+            controller.carregarDados();
+
+            stage.setMaximized(true);
+            stage.show();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir painel de configurações.", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível abrir o módulo de configurações: " + e.getMessage());
         }
     }
 
@@ -539,6 +647,12 @@ public class MainController {
                 }
                 if (result.funcionariosProcessados() > 0) {
                     msg.append(String.format("• Funcionários sincronizados: %d\n", result.funcionariosProcessados()));
+                }
+                if (result.basesProcessadas() > 0) {
+                    msg.append(String.format("• Bases de tintas restauradas/sincronizadas: %d\n", result.basesProcessadas()));
+                }
+                if (result.movimentacoesBasesRestauradas() > 0) {
+                    msg.append(String.format("• Movimentações de bases restauradas: %d\n", result.movimentacoesBasesRestauradas()));
                 }
                 msg.append(String.format("• Itens do estoque mantidos (não presentes no XML): %d\n\n", result.itensMantidosNoBancoNaoPresentesNoXml()));
                 msg.append("PROTEÇÃO DE ESTOQUE:\n");

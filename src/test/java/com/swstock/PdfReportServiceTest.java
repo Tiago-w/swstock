@@ -109,4 +109,44 @@ class PdfReportServiceTest {
         assertTrue(tempPdf.exists(), "O arquivo PDF de levantamento deve ser gerado.");
         assertTrue(tempPdf.length() > 500, "O arquivo PDF de levantamento deve conter conteúdo válido.");
     }
+
+    @Test
+    void testGerarRelatorioBases() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File tempPdf = File.createTempFile("teste_relatorio_bases_", ".pdf");
+        tempPdf.deleteOnExit();
+
+        List<com.swstock.model.HistoricoBase> movs = new ArrayList<>();
+        movs.add(new com.swstock.model.HistoricoBase(
+                1, 10, "2026-09-26 14:00:00", "ENTRADA",
+                5, 10, 15, "Chegada de lote", "Operador 1",
+                "BASE-01", "Base Vermelho Wanda", "AUTOMOTIVA", "Wanda"
+        ));
+        movs.add(new com.swstock.model.HistoricoBase(
+                2, 20, "2026-09-26 15:30:00", "SAIDA",
+                -2, 8, 6, "Uso na oficina", "Operador 2",
+                "BASE-02", "Base Acrílica Branco Neve", "PREDIAL", "Suvinil"
+        ));
+
+        service.gerarRelatorioBases(tempPdf, movs, LocalDate.now(), LocalDate.now(), "Todas as Bases", "Todas as Operações", null);
+
+        assertTrue(tempPdf.exists(), "O arquivo PDF de histórico de bases deve ser gerado.");
+        assertTrue(tempPdf.length() > 500, "O arquivo PDF de bases deve conter dados válidos.");
+    }
+
+    @Test
+    void testGerarRelatorioValorEstoque() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File tempPdf = File.createTempFile("teste_valor_estoque_", ".pdf");
+        tempPdf.deleteOnExit();
+
+        List<PdfReportService.ItemValorEstoque> itens = new ArrayList<>();
+        itens.add(new PdfReportService.ItemValorEstoque("SKU-001", "Verniz PU Wanda", "Wanda", "ÚNICA", 10, 45.0, 450.0, 52.0, 520.0));
+        itens.add(new PdfReportService.ItemValorEstoque("SKU-002", "Tinta Suvinil Fosco", "Suvinil", "BRANCO", 5, 80.0, 400.0, 92.0, 460.0));
+
+        service.gerarRelatorioValorEstoque(tempPdf, itens, "Todos os Grupos", null, 850.0, 980.0);
+
+        assertTrue(tempPdf.exists(), "O arquivo PDF de valor de estoque deve ser gerado.");
+        assertTrue(tempPdf.length() > 500, "O arquivo PDF de valor de estoque deve conter dados válidos.");
+    }
 }

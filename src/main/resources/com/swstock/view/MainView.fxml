@@ -43,8 +43,26 @@
                 <Button fx:id="btnHistoricoGeral" maxWidth="Infinity" onAction="#handleAbrirHistoricoGeral"
                         styleClass="nav-button" text="Histórico Geral" />
 
+                <Button fx:id="btnHistoricoGeralBases" maxWidth="Infinity" onAction="#handleAbrirHistoricoGeralBases"
+                        styleClass="nav-button" text="Histórico geral (bases)" />
+
+                <Button fx:id="btnBases" maxWidth="Infinity" onAction="#handleToggleMenuBases"
+                        styleClass="nav-button" text="Bases  ▼" />
+
+                <VBox fx:id="boxSubmenuBases" spacing="4.0" style="-fx-padding: 0 0 0 12;" visible="false" managed="false">
+                    <children>
+                        <Button fx:id="btnBasesAutomotivas" maxWidth="Infinity" onAction="#handleAbrirBasesAutomotivas"
+                                styleClass="nav-button-sub" text="• Bases Automotivas" />
+                        <Button fx:id="btnBasesPrediais" maxWidth="Infinity" onAction="#handleAbrirBasesPrediais"
+                                styleClass="nav-button-sub" text="• Bases Prediais" />
+                    </children>
+                </VBox>
+
                 <Button fx:id="btnLevantamentoEstoque" maxWidth="Infinity" onAction="#handleAbrirLevantamentoEstoque"
                         styleClass="nav-button" text="Levantamento de Estoque" />
+
+                <Button fx:id="btnConfiguracoes" maxWidth="Infinity" onAction="#handleAbrirConfiguracoes"
+                        styleClass="nav-button" text="Configurações" />
 
                 <Button fx:id="btnImportarXml" maxWidth="Infinity" onAction="#handleImportarXml"
                         styleClass="nav-button" text="Importar Estoque XML" />

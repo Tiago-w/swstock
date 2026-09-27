@@ -3,6 +3,7 @@ package com.swstock.service;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.pdf.*;
+import com.swstock.model.HistoricoBase;
 import com.swstock.model.HistoricoEstoque;
 
 import java.awt.Color;
@@ -425,14 +426,13 @@ public class PdfReportService {
                     ? grupoFiltro.toUpperCase() : "TODOS OS GRUPOS / FABRICANTES";
 
             int totalQtdGeral = produtos.stream().mapToInt(p -> p.getQuantidade() != null ? p.getQuantidade() : 0).sum();
-            double valorTotalEstoque = produtos.stream().mapToDouble(p -> (p.getQuantidade() != null ? p.getQuantidade() : 0) * (p.getPrecoVista() != null ? p.getPrecoVista() : 0.0)).sum();
 
             StringBuilder sub = new StringBuilder();
             sub.append("Emissão: ").append(dataHora).append("  |  Grupo: ").append(grupoTxt);
             if (termoBusca != null && !termoBusca.trim().isEmpty()) {
                 sub.append("  |  Busca: '").append(termoBusca.trim()).append("'");
             }
-            sub.append("\nTotal de Itens: ").append(produtos.size()).append(" produtos  |  Estoque Total: ").append(totalQtdGeral).append(" un.  |  Valor em Estoque (à vista): R$ ").append(String.format(Locale.of("pt", "BR"), "%,.2f", valorTotalEstoque));
+            sub.append("\nTotal de Itens: ").append(produtos.size()).append(" produtos  |  Estoque Total: ").append(totalQtdGeral).append(" un.");
 
             Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
             pSub.setSpacingAfter(10);
@@ -474,14 +474,12 @@ public class PdfReportService {
                     adicionarCabecalhoColuna(table, "PEDIDO", Element.ALIGN_CENTER);
 
                     int subtotalQtdGrupo = 0;
-                    double subtotalValorGrupo = 0.0;
                     int totalLinhasGrupo = 0;
                     int linhaIndex = 0;
 
                     for (int i = 0; i < listaGrupo.size(); i++) {
                         com.swstock.model.Produto p = listaGrupo.get(i);
                         double precoV = p.getPrecoVista() != null ? p.getPrecoVista() : 0.0;
-
                         List<com.swstock.model.ProdutoCor> cores = (mapaCores != null && p.getId() != null) ? mapaCores.get(p.getId()) : null;
 
                         if (cores != null && !cores.isEmpty()) {
@@ -493,7 +491,6 @@ public class PdfReportService {
 
                                 int qtdCor = cor.getQuantidade();
                                 subtotalQtdGrupo += qtdCor;
-                                subtotalValorGrupo += (qtdCor * precoV);
 
                                 // 1. Código
                                 PdfPCell cellCod = new PdfPCell(new Phrase(p.getCodigoLoja() != null ? p.getCodigoLoja() : "-", FONT_CELL_BOLD));
@@ -554,7 +551,6 @@ public class PdfReportService {
 
                             int qtd = p.getQuantidade() != null ? p.getQuantidade() : 0;
                             subtotalQtdGrupo += qtd;
-                            subtotalValorGrupo += (qtd * precoV);
 
                             // 1. Código
                             PdfPCell cellCod = new PdfPCell(new Phrase(p.getCodigoLoja() != null ? p.getCodigoLoja() : "-", FONT_CELL_BOLD));
@@ -609,7 +605,7 @@ public class PdfReportService {
                         }
                     }
 
-                    // Subtotal do Grupo
+                    // Subtotal do Grupo (Apenas quantitativo)
                     PdfPCell cellSubLabel = new PdfPCell(new Phrase("Subtotal (" + nomeGrupo + "): " + totalLinhasGrupo + " itens/variações", FONT_CELL_BOLD));
                     cellSubLabel.setColspan(3);
                     cellSubLabel.setBackgroundColor(new Color(241, 245, 249));
@@ -624,12 +620,12 @@ public class PdfReportService {
                     cellSubEstoque.setBorderColor(new Color(203, 213, 225));
                     table.addCell(cellSubEstoque);
 
-                    PdfPCell cellSubValor = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", subtotalValorGrupo), FONT_CELL_BOLD));
-                    cellSubValor.setHorizontalAlignment(Element.ALIGN_RIGHT);
-                    cellSubValor.setBackgroundColor(new Color(241, 245, 249));
-                    cellSubValor.setPadding(5);
-                    cellSubValor.setBorderColor(new Color(203, 213, 225));
-                    table.addCell(cellSubValor);
+                    PdfPCell cellSubPreco = new PdfPCell(new Phrase("-", FONT_CELL));
+                    cellSubPreco.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    cellSubPreco.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubPreco.setPadding(5);
+                    cellSubPreco.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubPreco);
 
                     PdfPCell cellSubVazio = new PdfPCell(new Phrase(" ", FONT_CELL));
                     cellSubVazio.setBackgroundColor(new Color(241, 245, 249));
@@ -648,6 +644,434 @@ public class PdfReportService {
 
             document.close();
             LOGGER.info("Relatório PDF de Levantamento de Estoque gerado com sucesso: " + arquivoDestino.getAbsolutePath());
+        }
+    }
+
+    /**
+     * Gera o relatório PDF das movimentações do Histórico Geral de Bases de Tintas (Automotivas & Prediais).
+     */
+    public void gerarRelatorioBases(File arquivoDestino, List<HistoricoBase> movimentos,
+                                   LocalDate dataInicio, LocalDate dataFim,
+                                   String tipoBaseFiltro, String tipoOperacaoFiltro, String termoBusca) throws Exception {
+        Document document = new Document(PageSize.A4, 28, 28, 28, 28);
+
+        try (FileOutputStream out = new FileOutputStream(arquivoDestino)) {
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+
+            // Rodapé com numeração de páginas
+            writer.setPageEvent(new PdfPageEventHelper() {
+                @Override
+                public void onEndPage(PdfWriter writer, Document doc) {
+                    PdfContentByte cb = writer.getDirectContent();
+                    ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
+                            new Phrase(String.format("SWStock - Histórico Geral de Bases de Tintas | Página %d", writer.getPageNumber()), FONT_FOOTER),
+                            (doc.right() - doc.left()) / 2 + doc.leftMargin(), doc.bottom() - 14, 0);
+                }
+            });
+
+            document.open();
+
+            // 1. Cabeçalho
+            String titulo = "SWStock - Relatório de Histórico das Bases";
+            if (tipoBaseFiltro != null && !tipoBaseFiltro.trim().isEmpty() && !tipoBaseFiltro.contains("Todas")) {
+                titulo += " (" + tipoBaseFiltro.trim() + ")";
+            }
+            Paragraph pTitulo = new Paragraph(titulo, FONT_TITLE);
+            document.add(pTitulo);
+
+            StringBuilder sub = new StringBuilder();
+            if (dataInicio != null && dataFim != null) {
+                sub.append("Período: ").append(dataInicio.format(DATE_FORMATTER)).append(" até ").append(dataFim.format(DATE_FORMATTER));
+            } else if (dataInicio != null) {
+                sub.append("Data: ").append(dataInicio.format(DATE_FORMATTER));
+            } else {
+                sub.append("Período: Todo o Histórico");
+            }
+
+            if (tipoBaseFiltro != null && !tipoBaseFiltro.trim().isEmpty()) {
+                sub.append(" | Tipo: ").append(tipoBaseFiltro);
+            }
+            if (tipoOperacaoFiltro != null && !tipoOperacaoFiltro.trim().isEmpty()) {
+                sub.append(" | Operação: ").append(tipoOperacaoFiltro);
+            }
+            if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+                sub.append(" | Busca: '").append(termoBusca.trim()).append("'");
+            }
+            sub.append(" | Emitido em: ").append(LocalDateTime.now().format(DATE_TIME_FORMATTER));
+
+            Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
+            pSub.setSpacingAfter(8);
+            document.add(pSub);
+
+            // Métricas
+            int totalEntradas = 0;
+            int totalSaidas = 0;
+            for (HistoricoBase h : movimentos) {
+                int delta = h.getQuantidadeAlterada() != null ? h.getQuantidadeAlterada() : 0;
+                if (delta > 0) totalEntradas += delta;
+                else if (delta < 0) totalSaidas += Math.abs(delta);
+            }
+            int balanco = totalEntradas - totalSaidas;
+
+            PdfPTable tblResumo = new PdfPTable(4);
+            tblResumo.setWidthPercentage(100);
+            tblResumo.setWidths(new float[]{25f, 25f, 25f, 25f});
+            tblResumo.setSpacingBefore(2);
+            tblResumo.setSpacingAfter(10);
+
+            tblResumo.addCell(criarCardResumo("REGISTROS", movimentos.size() + " mov.", new Color(241, 245, 249), new Color(15, 23, 42)));
+            tblResumo.addCell(criarCardResumo("TOTAL ENTRADAS", "+" + totalEntradas + " un.", new Color(240, 253, 244), new Color(22, 101, 52)));
+            tblResumo.addCell(criarCardResumo("TOTAL SAÍDAS", "-" + totalSaidas + " un.", new Color(254, 242, 242), new Color(185, 28, 28)));
+            tblResumo.addCell(criarCardResumo("BALANÇO LÍQUIDO", (balanco >= 0 ? "+" : "") + balanco + " un.", new Color(239, 246, 255), new Color(29, 78, 216)));
+            document.add(tblResumo);
+
+            // Agrupamento por Dia
+            Map<String, List<HistoricoBase>> agrupadoPorDia = agruparBasesPorData(movimentos);
+
+            if (agrupadoPorDia.isEmpty()) {
+                Paragraph pVazio = new Paragraph("\nNenhuma movimentação de base encontrada para os filtros selecionados.", FONT_CELL);
+                pVazio.setAlignment(Element.ALIGN_CENTER);
+                document.add(pVazio);
+            } else {
+                for (Map.Entry<String, List<HistoricoBase>> entry : agrupadoPorDia.entrySet()) {
+                    String dataFormatada = entry.getKey();
+                    List<HistoricoBase> listaDia = entry.getValue();
+
+                    Paragraph pDia = new Paragraph("Data: " + dataFormatada + " (" + listaDia.size() + " movimentações)", FONT_SECTION_DATE);
+                    pDia.setSpacingBefore(8);
+                    pDia.setSpacingAfter(4);
+                    document.add(pDia);
+
+                    // Tabela: Movimento | Responsável | Código & Nome da Base | Tipo | Saldo | Motivo
+                    PdfPTable table = new PdfPTable(6);
+                    table.setWidthPercentage(100);
+                    table.setWidths(new float[]{11f, 15f, 32f, 12f, 14f, 16f});
+                    table.setSpacingAfter(8);
+
+                    adicionarCabecalhoColuna(table, "MOVIMENTO", Element.ALIGN_CENTER);
+                    adicionarCabecalhoColuna(table, "RESPONSÁVEL", Element.ALIGN_LEFT);
+                    adicionarCabecalhoColuna(table, "BASE DE TINTA (CÓDIGO & NOME)", Element.ALIGN_LEFT);
+                    adicionarCabecalhoColuna(table, "TIPO", Element.ALIGN_CENTER);
+                    adicionarCabecalhoColuna(table, "SALDO", Element.ALIGN_CENTER);
+                    adicionarCabecalhoColuna(table, "MOTIVO / ORIGEM", Element.ALIGN_LEFT);
+
+                    int totalDiaEntradas = 0;
+                    int totalDiaSaidas = 0;
+
+                    for (int i = 0; i < listaDia.size(); i++) {
+                        HistoricoBase h = listaDia.get(i);
+                        Color bg = (i % 2 == 0) ? Color.WHITE : new Color(248, 250, 252);
+
+                        int delta = h.getQuantidadeAlterada() != null ? h.getQuantidadeAlterada() : 0;
+                        if (delta > 0) totalDiaEntradas += delta;
+                        else if (delta < 0) totalDiaSaidas += Math.abs(delta);
+
+                        String responsavel = h.getResponsavel();
+                        String baseDesc = "[" + h.getBaseCodigo() + "] " + h.getBaseNome();
+                        String tipoBase = h.getBaseTipoFormatado();
+                        String saldo = h.getSaldoFormatado();
+                        String motivo = h.getMotivo();
+
+                        Font movFont = delta > 0 ? FONT_CELL_GREEN : (delta < 0 ? FONT_CELL_RED : FONT_CELL_BOLD);
+                        PdfPCell cellQtd = new PdfPCell(new Phrase(h.getMovimentoFormatado(), movFont));
+                        cellQtd.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cellQtd.setBackgroundColor(bg);
+                        cellQtd.setPadding(4);
+                        cellQtd.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellQtd);
+
+                        PdfPCell cellResp = new PdfPCell(new Phrase(responsavel, FONT_CELL_BOLD));
+                        cellResp.setHorizontalAlignment(Element.ALIGN_LEFT);
+                        cellResp.setBackgroundColor(bg);
+                        cellResp.setPadding(4);
+                        cellResp.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellResp);
+
+                        PdfPCell cellBase = new PdfPCell(new Phrase(baseDesc, FONT_CELL));
+                        cellBase.setHorizontalAlignment(Element.ALIGN_LEFT);
+                        cellBase.setBackgroundColor(bg);
+                        cellBase.setPadding(4);
+                        cellBase.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellBase);
+
+                        PdfPCell cellTipo = new PdfPCell(new Phrase(tipoBase, FONT_CELL_BOLD));
+                        cellTipo.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cellTipo.setBackgroundColor(bg);
+                        cellTipo.setPadding(4);
+                        cellTipo.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellTipo);
+
+                        PdfPCell cellSaldo = new PdfPCell(new Phrase(saldo, FONT_CELL));
+                        cellSaldo.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cellSaldo.setBackgroundColor(bg);
+                        cellSaldo.setPadding(4);
+                        cellSaldo.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellSaldo);
+
+                        PdfPCell cellMotivo = new PdfPCell(new Phrase(motivo, FONT_CELL));
+                        cellMotivo.setHorizontalAlignment(Element.ALIGN_LEFT);
+                        cellMotivo.setBackgroundColor(bg);
+                        cellMotivo.setPadding(4);
+                        cellMotivo.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellMotivo);
+                    }
+
+                    // Subtotal
+                    String subtotalTexto;
+                    if (totalDiaEntradas > 0 && totalDiaSaidas > 0) {
+                        subtotalTexto = String.format("Entradas: +%d un.  |  Saídas: -%d un.  |  Balanço: %s%d un.",
+                                totalDiaEntradas, totalDiaSaidas, (totalDiaEntradas - totalDiaSaidas >= 0 ? "+" : ""), (totalDiaEntradas - totalDiaSaidas));
+                    } else if (totalDiaEntradas > 0) {
+                        subtotalTexto = String.format("Total Adicionado no Dia: +%d un.", totalDiaEntradas);
+                    } else {
+                        subtotalTexto = String.format("Total Retirado no Dia: -%d un.", totalDiaSaidas);
+                    }
+
+                    PdfPCell cellSubLabel = new PdfPCell(new Phrase("Subtotal (" + dataFormatada + "):", FONT_CELL_BOLD));
+                    cellSubLabel.setColspan(1);
+                    cellSubLabel.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubLabel.setPadding(5);
+                    cellSubLabel.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubLabel);
+
+                    PdfPCell cellSubQtd = new PdfPCell(new Phrase(subtotalTexto, FONT_CELL_BOLD));
+                    cellSubQtd.setColspan(5);
+                    cellSubQtd.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubQtd.setPadding(5);
+                    cellSubQtd.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubQtd);
+
+                    document.add(table);
+                }
+            }
+
+            document.close();
+            LOGGER.info("Relatório PDF de histórico de bases gerado com sucesso: " + arquivoDestino.getAbsolutePath());
+        }
+    }
+
+    private Map<String, List<HistoricoBase>> agruparBasesPorData(List<HistoricoBase> lista) {
+        Map<String, List<HistoricoBase>> mapa = new LinkedHashMap<>();
+        for (HistoricoBase h : lista) {
+            String dataHora = h.getDataHora();
+            String diaStr = "Data não identificada";
+            if (dataHora != null && !dataHora.trim().isEmpty()) {
+                try {
+                    String limpo = dataHora.replace("T", " ");
+                    if (limpo.length() >= 10) {
+                        String dataParte = limpo.substring(0, 10);
+                        LocalDate ld = LocalDate.parse(dataParte);
+                        diaStr = ld.format(DATE_FORMATTER);
+                    }
+                } catch (Exception e) {
+                    diaStr = dataHora;
+                }
+            }
+            mapa.computeIfAbsent(diaStr, k -> new ArrayList<>()).add(h);
+        }
+        return mapa;
+    }
+
+    /**
+     * Modelo de item para o Relatório Financeiro de Valor de Estoque.
+     */
+    public static class ItemValorEstoque {
+        private final String codigo;
+        private final String nome;
+        private final String grupo;
+        private final String cor;
+        private final Integer estoque;
+        private final Double precoVista;
+        private final Double subtotalVista;
+        private final Double precoPrazo;
+        private final Double subtotalPrazo;
+
+        public ItemValorEstoque(String codigo, String nome, String grupo, String cor, Integer estoque, Double precoVista, Double subtotalVista, Double precoPrazo, Double subtotalPrazo) {
+            this.codigo = codigo;
+            this.nome = nome;
+            this.grupo = grupo;
+            this.cor = cor;
+            this.estoque = estoque;
+            this.precoVista = precoVista;
+            this.subtotalVista = subtotalVista;
+            this.precoPrazo = precoPrazo;
+            this.subtotalPrazo = subtotalPrazo;
+        }
+
+        public String getCodigo() { return codigo; }
+        public String getNome() { return nome; }
+        public String getGrupo() { return grupo; }
+        public String getCor() { return cor; }
+        public Integer getEstoque() { return estoque; }
+        public Double getPrecoVista() { return precoVista; }
+        public Double getSubtotalVista() { return subtotalVista; }
+        public Double getPrecoPrazo() { return precoPrazo; }
+        public Double getSubtotalPrazo() { return subtotalPrazo; }
+    }
+
+    /**
+     * Gera o relatório PDF de Avaliação Financeira / Valor de Estoque.
+     */
+    public void gerarRelatorioValorEstoque(File arquivoDestino, List<ItemValorEstoque> itens,
+                                          String grupoFiltro, String termoBusca,
+                                          double totalVista, double totalPrazo) throws Exception {
+        Document document = new Document(PageSize.A4.rotate(), 24, 24, 28, 28);
+
+        try (FileOutputStream out = new FileOutputStream(arquivoDestino)) {
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+
+            writer.setPageEvent(new PdfPageEventHelper() {
+                @Override
+                public void onEndPage(PdfWriter writer, Document doc) {
+                    PdfContentByte cb = writer.getDirectContent();
+                    ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
+                            new Phrase(String.format("SWStock - Extrato de Avaliação de Valor de Estoque | Página %d", writer.getPageNumber()), FONT_FOOTER),
+                            (doc.right() - doc.left()) / 2 + doc.leftMargin(), doc.bottom() - 14, 0);
+                }
+            });
+
+            document.open();
+
+            // Cabeçalho
+            Paragraph pTitulo = new Paragraph("SWStock - Relatório de Avaliação Financeira de Estoque", FONT_TITLE);
+            pTitulo.setSpacingAfter(3);
+            document.add(pTitulo);
+
+            String dataHora = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+            String grupoTxt = (grupoFiltro != null && !grupoFiltro.trim().isEmpty() && !grupoFiltro.toUpperCase().contains("TODOS") && !grupoFiltro.toUpperCase().contains("TODAS"))
+                    ? grupoFiltro.toUpperCase() : "TODOS OS FABRICANTES / GRUPOS";
+
+            int totalUnidades = itens.stream().mapToInt(i -> i.getEstoque() != null ? i.getEstoque() : 0).sum();
+
+            StringBuilder sub = new StringBuilder();
+            sub.append("Emissão: ").append(dataHora).append("  |  Filtro: ").append(grupoTxt);
+            if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+                sub.append("  |  Busca: '").append(termoBusca.trim()).append("'");
+            }
+            Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
+            pSub.setSpacingAfter(8);
+            document.add(pSub);
+
+            // Resumo
+            PdfPTable tblResumo = new PdfPTable(4);
+            tblResumo.setWidthPercentage(100);
+            tblResumo.setWidths(new float[]{25f, 25f, 25f, 25f});
+            tblResumo.setSpacingBefore(2);
+            tblResumo.setSpacingAfter(10);
+
+            tblResumo.addCell(criarCardResumo("ITENS LISTADOS", itens.size() + " produtos", new Color(241, 245, 249), new Color(15, 23, 42)));
+            tblResumo.addCell(criarCardResumo("TOTAL UNIDADES", totalUnidades + " un.", new Color(239, 246, 255), new Color(29, 78, 216)));
+            tblResumo.addCell(criarCardResumo("VALOR TOTAL (À VISTA)", String.format(Locale.of("pt", "BR"), "R$ %,.2f", totalVista), new Color(240, 253, 244), new Color(22, 101, 52)));
+            tblResumo.addCell(criarCardResumo("VALOR TOTAL (A PRAZO)", String.format(Locale.of("pt", "BR"), "R$ %,.2f", totalPrazo), new Color(254, 243, 199), new Color(180, 83, 9)));
+            document.add(tblResumo);
+
+            if (itens.isEmpty()) {
+                Paragraph pVazio = new Paragraph("\nNenhum produto com estoque encontrado para os filtros selecionados.", FONT_CELL);
+                pVazio.setAlignment(Element.ALIGN_CENTER);
+                document.add(pVazio);
+            } else {
+                // Tabela em modo paisagem:
+                // CÓDIGO (10%) | PRODUTO (30%) | GRUPO (12%) | COR (10%) | ESTOQUE (8%) | UNIT. VISTA (10%) | TOTAL VISTA (10%) | UNIT. PRAZO (10%)
+                PdfPTable table = new PdfPTable(8);
+                table.setWidthPercentage(100);
+                table.setWidths(new float[]{10f, 28f, 13f, 11f, 8f, 10f, 10f, 10f});
+                table.setSpacingAfter(8);
+
+                adicionarCabecalhoColuna(table, "CÓDIGO", Element.ALIGN_CENTER);
+                adicionarCabecalhoColuna(table, "NOME DO PRODUTO", Element.ALIGN_LEFT);
+                adicionarCabecalhoColuna(table, "GRUPO", Element.ALIGN_LEFT);
+                adicionarCabecalhoColuna(table, "COR", Element.ALIGN_CENTER);
+                adicionarCabecalhoColuna(table, "ESTOQUE", Element.ALIGN_CENTER);
+                adicionarCabecalhoColuna(table, "UNIT. VISTA", Element.ALIGN_RIGHT);
+                adicionarCabecalhoColuna(table, "SUBTOTAL VISTA", Element.ALIGN_RIGHT);
+                adicionarCabecalhoColuna(table, "SUBTOTAL PRAZO", Element.ALIGN_RIGHT);
+
+                for (int i = 0; i < itens.size(); i++) {
+                    ItemValorEstoque it = itens.get(i);
+                    Color bg = (i % 2 == 0) ? Color.WHITE : new Color(248, 250, 252);
+
+                    PdfPCell c1 = new PdfPCell(new Phrase(it.getCodigo(), FONT_CELL_BOLD));
+                    c1.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    c1.setBackgroundColor(bg); c1.setPadding(4); c1.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c1);
+
+                    PdfPCell c2 = new PdfPCell(new Phrase(it.getNome(), FONT_CELL));
+                    c2.setHorizontalAlignment(Element.ALIGN_LEFT);
+                    c2.setBackgroundColor(bg); c2.setPadding(4); c2.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c2);
+
+                    PdfPCell c3 = new PdfPCell(new Phrase(it.getGrupo(), FONT_CELL_BOLD));
+                    c3.setHorizontalAlignment(Element.ALIGN_LEFT);
+                    c3.setBackgroundColor(bg); c3.setPadding(4); c3.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c3);
+
+                    PdfPCell c4 = new PdfPCell(new Phrase(it.getCor(), FONT_CELL));
+                    c4.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    c4.setBackgroundColor(bg); c4.setPadding(4); c4.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c4);
+
+                    PdfPCell c5 = new PdfPCell(new Phrase(it.getEstoque() + " un.", it.getEstoque() > 0 ? FONT_CELL_GREEN : FONT_CELL_RED));
+                    c5.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    c5.setBackgroundColor(bg); c5.setPadding(4); c5.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c5);
+
+                    PdfPCell c6 = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", it.getPrecoVista()), FONT_CELL));
+                    c6.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                    c6.setBackgroundColor(bg); c6.setPadding(4); c6.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c6);
+
+                    PdfPCell c7 = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", it.getSubtotalVista()), FONT_CELL_BOLD));
+                    c7.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                    c7.setBackgroundColor(bg); c7.setPadding(4); c7.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c7);
+
+                    PdfPCell c8 = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", it.getSubtotalPrazo()), FONT_CELL_BOLD));
+                    c8.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                    c8.setBackgroundColor(bg); c8.setPadding(4); c8.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c8);
+                }
+
+                // Linha de Total Geral
+                PdfPCell cTotLabel = new PdfPCell(new Phrase("TOTAL GERAL CONSOLIDADO (" + itens.size() + " itens):", FONT_CELL_BOLD));
+                cTotLabel.setColspan(4);
+                cTotLabel.setBackgroundColor(new Color(241, 245, 249));
+                cTotLabel.setPadding(6);
+                cTotLabel.setBorderColor(new Color(203, 213, 225));
+                table.addCell(cTotLabel);
+
+                PdfPCell cTotQtd = new PdfPCell(new Phrase(totalUnidades + " un.", FONT_CELL_BOLD));
+                cTotQtd.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cTotQtd.setBackgroundColor(new Color(241, 245, 249));
+                cTotQtd.setPadding(6);
+                cTotQtd.setBorderColor(new Color(203, 213, 225));
+                table.addCell(cTotQtd);
+
+                PdfPCell cTotVazio = new PdfPCell(new Phrase("-", FONT_CELL));
+                cTotVazio.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cTotVazio.setBackgroundColor(new Color(241, 245, 249));
+                cTotVazio.setPadding(6);
+                cTotVazio.setBorderColor(new Color(203, 213, 225));
+                table.addCell(cTotVazio);
+
+                PdfPCell cTotVista = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %,.2f", totalVista), FONT_CELL_GREEN));
+                cTotVista.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                cTotVista.setBackgroundColor(new Color(241, 245, 249));
+                cTotVista.setPadding(6);
+                cTotVista.setBorderColor(new Color(203, 213, 225));
+                table.addCell(cTotVista);
+
+                PdfPCell cTotPrazo = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %,.2f", totalPrazo), FONT_CELL_BOLD));
+                cTotPrazo.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                cTotPrazo.setBackgroundColor(new Color(241, 245, 249));
+                cTotPrazo.setPadding(6);
+                cTotPrazo.setBorderColor(new Color(203, 213, 225));
+                table.addCell(cTotPrazo);
+
+                document.add(table);
+            }
+
+            document.close();
+            LOGGER.info("Relatório PDF de Avaliação de Estoque gerado com sucesso: " + arquivoDestino.getAbsolutePath());
         }
     }
 }

@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 public class ProductEnrichmentService {
 
     private static final Logger LOGGER = Logger.getLogger(ProductEnrichmentService.class.getName());
-    private static final String USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     private final HttpClient httpClient;
 
@@ -52,8 +52,81 @@ public class ProductEnrichmentService {
         String queryLimpa = termoBusca.trim();
         LOGGER.info("Iniciando busca web para enriquecimento do produto: " + queryLimpa);
 
+        // 1. Tentar busca via Bing Images Async (rápida, fotos reais em alta definição)
+        ProductMediaResult resultadoBing = buscarViaBing(queryLimpa);
+        if (resultadoBing != null && resultadoBing.success()) {
+            return resultadoBing;
+        }
+
+        // 2. Fallback via DuckDuckGo com headers e regex resilientes
+        ProductMediaResult resultadoDuck = buscarViaDuckDuckGo(queryLimpa);
+        if (resultadoDuck != null && resultadoDuck.success()) {
+            return resultadoDuck;
+        }
+
+        // 3. Fallback informativo caso ambos os motores estejam indisponíveis
+        return gerarResultadoFallback(queryLimpa, "Nenhuma imagem encontrada na internet para o termo pesquisado.");
+    }
+
+    private ProductMediaResult buscarViaBing(String queryLimpa) {
         try {
-            // 1. Obter VQD token do DuckDuckGo para busca de imagens e web
+            String encoded = URLEncoder.encode(queryLimpa, StandardCharsets.UTF_8);
+            String url = "https://www.bing.com/images/async?q=" + encoded + "&first=1&count=20";
+
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", USER_AGENT)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+                    .header("Accept-Language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7")
+                    .timeout(Duration.ofSeconds(8))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200) {
+                String html = resp.body();
+
+                List<String> rawUrls = extrairLista(html, "murl&quot;:&quot;([^&]+)&quot;");
+                List<String> rawTitles = extrairLista(html, "&quot;t&quot;:&quot;([^&]+)&quot;");
+
+                if (!rawUrls.isEmpty()) {
+                    List<String> urlsValidas = rawUrls.stream()
+                            .map(this::desescaparHtml)
+                            .map(this::limparUrl)
+                            .filter(u -> u.startsWith("http://") || u.startsWith("https://"))
+                            .distinct()
+                            .toList();
+
+                    List<String> titulosLimpos = rawTitles.stream()
+                            .map(this::desescaparHtml)
+                            .map(t -> limparTitulo(t, queryLimpa))
+                            .toList();
+
+                    if (!urlsValidas.isEmpty()) {
+                        String fotoPrincipal = urlsValidas.get(0);
+                        String melhorTitulo = titulosLimpos.isEmpty() ? queryLimpa : titulosLimpos.get(0);
+                        String descricao = sintetizarDescricao(queryLimpa, melhorTitulo, titulosLimpos);
+
+                        return new ProductMediaResult(
+                                queryLimpa,
+                                melhorTitulo,
+                                fotoPrincipal,
+                                urlsValidas,
+                                descricao,
+                                true,
+                                "Fotos e detalhes obtidos com sucesso via Bing Images!"
+                        );
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Falha na busca Bing Images para: " + queryLimpa + ": " + e.getMessage());
+        }
+        return null;
+    }
+
+    private ProductMediaResult buscarViaDuckDuckGo(String queryLimpa) {
+        try {
             String encoded = URLEncoder.encode(queryLimpa, StandardCharsets.UTF_8);
             String initialUrl = "https://duckduckgo.com/?q=" + encoded;
 
@@ -67,62 +140,54 @@ public class ProductEnrichmentService {
             HttpResponse<String> initResp = httpClient.send(initReq, HttpResponse.BodyHandlers.ofString());
             String html = initResp.body();
 
-            Pattern vqdPattern = Pattern.compile("vqd=([\\d-]+)");
+            Pattern vqdPattern = Pattern.compile("vqd=[\"']?([\\d-]+)[\"']?");
             Matcher vqdMatcher = vqdPattern.matcher(html);
 
-            if (!vqdMatcher.find()) {
-                LOGGER.warning("Não foi possível obter o token VQD para: " + queryLimpa);
-                return gerarResultadoFallback(queryLimpa, "Não foi possível conectar ao índice de busca.");
+            if (vqdMatcher.find()) {
+                String vqd = vqdMatcher.group(1);
+                String imgApiUrl = "https://duckduckgo.com/i.js?l=wt-wt&o=json&q=" + encoded + "&vqd=" + vqd + "&f=,,,&p=1";
+
+                HttpRequest imgReq = HttpRequest.newBuilder()
+                        .uri(URI.create(imgApiUrl))
+                        .header("User-Agent", USER_AGENT)
+                        .timeout(Duration.ofSeconds(8))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> imgResp = httpClient.send(imgReq, HttpResponse.BodyHandlers.ofString());
+                String jsonResp = imgResp.body();
+
+                List<String> imageUrls = extrairLista(jsonResp, "\"image\":\"([^\"]+)\"");
+                List<String> titles = extrairLista(jsonResp, "\"title\":\"([^\"]+)\"");
+
+                if (!imageUrls.isEmpty()) {
+                    List<String> urlsValidas = imageUrls.stream()
+                            .map(this::limparUrl)
+                            .filter(url -> url.startsWith("http://") || url.startsWith("https://"))
+                            .distinct()
+                            .toList();
+
+                    if (!urlsValidas.isEmpty()) {
+                        String fotoPrincipal = urlsValidas.get(0);
+                        String melhorTitulo = limparTitulo(titles.isEmpty() ? queryLimpa : titles.get(0), queryLimpa);
+                        String descricao = sintetizarDescricao(queryLimpa, melhorTitulo, titles);
+
+                        return new ProductMediaResult(
+                                queryLimpa,
+                                melhorTitulo,
+                                fotoPrincipal,
+                                urlsValidas,
+                                descricao,
+                                true,
+                                "Fotos e detalhes obtidos via DuckDuckGo!"
+                        );
+                    }
+                }
             }
-
-            String vqd = vqdMatcher.group(1);
-
-            // 2. Consultar API de imagens com metadados detalhados
-            String imgApiUrl = "https://duckduckgo.com/i.js?l=wt-wt&o=json&q=" + encoded + "&vqd=" + vqd + "&f=,,,&p=1";
-            HttpRequest imgReq = HttpRequest.newBuilder()
-                    .uri(URI.create(imgApiUrl))
-                    .header("User-Agent", USER_AGENT)
-                    .timeout(Duration.ofSeconds(8))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> imgResp = httpClient.send(imgReq, HttpResponse.BodyHandlers.ofString());
-            String jsonResp = imgResp.body();
-
-            List<String> imageUrls = extrairLista(jsonResp, "\"image\":\"([^\"]+)\"");
-            List<String> titles = extrairLista(jsonResp, "\"title\":\"([^\"]+)\"");
-
-            if (imageUrls.isEmpty()) {
-                return gerarResultadoFallback(queryLimpa, "Nenhuma imagem encontrada na internet para o termo.");
-            }
-
-            // Filtra e limpa as URLs de imagem (prioriza HTTPS e formatos suportados pelo JavaFX)
-            List<String> urlsValidas = imageUrls.stream()
-                    .map(this::limparUrl)
-                    .filter(url -> url.startsWith("http://") || url.startsWith("https://"))
-                    .distinct()
-                    .toList();
-
-            String fotoPrincipal = urlsValidas.isEmpty() ? null : urlsValidas.get(0);
-
-            // 3. Sintetizar título limpo e descrição rica baseada nos títulos e termos encontrados
-            String melhorTitulo = limparTitulo(titles.isEmpty() ? queryLimpa : titles.get(0), queryLimpa);
-            String descricaoGerada = sintetizarDescricao(queryLimpa, melhorTitulo, titles);
-
-            return new ProductMediaResult(
-                    queryLimpa,
-                    melhorTitulo,
-                    fotoPrincipal,
-                    urlsValidas,
-                    descricaoGerada,
-                    true,
-                    "Foto e descrição obtidas da internet com sucesso!"
-            );
-
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Erro ao buscar na internet para o produto: " + queryLimpa, e);
-            return gerarResultadoFallback(queryLimpa, "Erro de rede ao consultar a internet: " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Falha na busca DuckDuckGo para: " + queryLimpa + ": " + e.getMessage());
         }
+        return null;
     }
 
     /**
@@ -169,6 +234,12 @@ public class ProductEnrichmentService {
     private String extrairMarca(String termoOriginal, List<String> titulos) {
         String lower = termoOriginal.toLowerCase();
         if (lower.contains("etaniz")) return "Etaniz";
+        if (lower.contains("wanda")) return "Wanda";
+        if (lower.contains("lazzuril")) return "Lazzuril";
+        if (lower.contains("suvinil")) return "Suvinil";
+        if (lower.contains("coral")) return "Coral";
+        if (lower.contains("sherwin")) return "Sherwin Williams";
+        if (lower.contains("skol")) return "Skol";
         if (lower.contains("logitech")) return "Logitech";
         if (lower.contains("redragon")) return "Redragon";
         if (lower.contains("makita")) return "Makita";
@@ -180,7 +251,7 @@ public class ProductEnrichmentService {
     }
 
     private String identificarCategoria(String termo, String titulo) {
-        if (termo.contains("spray") || termo.contains("tinta") || termo.contains("verniz")) return "Insumo Químico / Revestimento";
+        if (termo.contains("spray") || termo.contains("tinta") || termo.contains("verniz") || termo.contains("base")) return "Insumo Químico / Revestimento";
         if (termo.contains("oleo") || termo.contains("graxa") || termo.contains("lubrificante")) return "Lubrificante e Manutenção";
         if (termo.contains("ferramenta") || termo.contains("chave") || termo.contains("furadeira")) return "Ferramenta e Equipamento";
         if (termo.contains("eletronico") || termo.contains("cabo") || termo.contains("placa")) return "Eletrônico / Hardware";
@@ -198,15 +269,25 @@ public class ProductEnrichmentService {
         return limpo.isEmpty() ? fallback : limpo;
     }
 
+    private String desescaparHtml(String str) {
+        if (str == null) return "";
+        return str.replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .trim();
+    }
+
     private String limparUrl(String url) {
         if (url == null) return "";
         return url.replace("\\u0026", "&").replace("\\/", "/").trim();
     }
 
-    private List<String> extrairLista(String json, String regexPattern) {
+    private List<String> extrairLista(String texto, String regexPattern) {
         List<String> resultados = new ArrayList<>();
         Pattern pattern = Pattern.compile(regexPattern);
-        Matcher matcher = pattern.matcher(json);
+        Matcher matcher = pattern.matcher(texto);
         while (matcher.find()) {
             resultados.add(matcher.group(1));
         }

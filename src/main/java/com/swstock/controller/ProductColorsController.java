@@ -10,10 +10,15 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
+import java.text.Normalizer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -187,6 +192,138 @@ public class ProductColorsController {
         });
 
         tblCores.setItems(coresList);
+
+        // Captura de teclas para busca rápida/ciclagem de cores
+        tblCores.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyNavigationCor);
+
+        // Pressionar ENTER define a cor como ativa e fecha o modal
+        tblCores.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                handleDefinirAtiva();
+                event.consume();
+            }
+        });
+
+        // Duplo clique na linha define a cor como ativa e fecha o modal
+        tblCores.setRowFactory(tv -> {
+            TableRow<ProdutoCor> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    handleDefinirAtiva();
+                }
+            });
+            return row;
+        });
+    }
+
+    private long lastKeyTime = 0;
+    private String typedPrefix = "";
+
+    public void configurarAtalhosTeclado(Parent root) {
+        if (root != null) {
+            root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                Node focusOwner = root.getScene() != null ? root.getScene().getFocusOwner() : null;
+                if (focusOwner instanceof TextInputControl) {
+                    return; // Não intercepta se estiver digitando em txtNomeCor ou txtQtdInicial
+                }
+                if (event.getCode().isLetterKey() || (event.getText() != null && !event.getText().isEmpty() && Character.isLetter(event.getText().charAt(0)))) {
+                    handleKeyNavigationCor(event);
+                }
+            });
+        }
+    }
+
+    public void handleKeyNavigationCor(KeyEvent event) {
+        if (event == null || event.isAltDown() || event.isControlDown() || event.isMetaDown()) {
+            return;
+        }
+
+        if (coresList.isEmpty()) return;
+
+        int currentIndex = tblCores.getSelectionModel().getSelectedIndex();
+        int targetIndex = calcularProximoIndiceCor(coresList, currentIndex, event.getText(), event.getCode(), System.currentTimeMillis());
+
+        if (targetIndex != -1) {
+            tblCores.getSelectionModel().select(targetIndex);
+            tblCores.scrollTo(targetIndex);
+            event.consume();
+        }
+    }
+
+    public int calcularProximoIndiceCor(List<ProdutoCor> items, int currentIndex, String keyChar, KeyCode keyCode, long eventTime) {
+        if (items == null || items.isEmpty()) return -1;
+
+        if (keyChar == null || keyChar.isEmpty()) {
+            if (keyCode != null && keyCode.isLetterKey()) {
+                keyChar = keyCode.name().toLowerCase();
+            }
+        }
+
+        if (keyChar == null || keyChar.isEmpty()) {
+            if (keyCode == KeyCode.BACK_SPACE) {
+                if (!typedPrefix.isEmpty()) {
+                    typedPrefix = typedPrefix.substring(0, typedPrefix.length() - 1);
+                    lastKeyTime = eventTime;
+                }
+            }
+            return -1;
+        }
+
+        char ch = keyChar.charAt(0);
+        if (!Character.isLetterOrDigit(ch) && ch != ' ') {
+            return -1;
+        }
+
+        boolean sameKeyAgain = (eventTime - lastKeyTime < 1500) && typedPrefix.length() == 1 &&
+                stripAccents(typedPrefix).equalsIgnoreCase(stripAccents(String.valueOf(ch)));
+
+        if (eventTime - lastKeyTime > 1500) {
+            typedPrefix = String.valueOf(ch);
+        } else if (sameKeyAgain) {
+            // Mantém tamanho 1 para continuar ciclando
+        } else {
+            typedPrefix += ch;
+        }
+        lastKeyTime = eventTime;
+
+        int targetIndex = -1;
+
+        if (sameKeyAgain || typedPrefix.length() == 1) {
+            String searchChar = stripAccents(String.valueOf(ch)).toLowerCase();
+            for (int i = currentIndex + 1; i < items.size(); i++) {
+                String nome = stripAccents(items.get(i).getNomeCor()).toLowerCase().trim();
+                if (nome.startsWith(searchChar)) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+            if (targetIndex == -1) {
+                for (int i = 0; i <= currentIndex && i < items.size(); i++) {
+                    String nome = stripAccents(items.get(i).getNomeCor()).toLowerCase().trim();
+                    if (nome.startsWith(searchChar)) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+            }
+        } else {
+            String searchPrefix = stripAccents(typedPrefix).toLowerCase().trim();
+            for (int i = 0; i < items.size(); i++) {
+                String nome = stripAccents(items.get(i).getNomeCor()).toLowerCase().trim();
+                if (nome.startsWith(searchPrefix)) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+        }
+
+        return targetIndex;
+    }
+
+    public static String stripAccents(String s) {
+        if (s == null) return "";
+        String normalized = Normalizer.normalize(s, Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{M}", "");
     }
 
     public void setDialogStage(Stage stage) {

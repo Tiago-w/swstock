@@ -80,4 +80,25 @@ class FxmlLoadTest {
         Object root = loader.load();
         assertNotNull(root);
     }
+
+    @Test
+    void testLoadBasesViewFxml() throws Exception {
+        FXMLLoader loader = new FXMLLoader(FxmlLoadTest.class.getResource("/com/swstock/view/BasesView.fxml"));
+        Object root = loader.load();
+        assertNotNull(root);
+    }
+
+    @Test
+    void testLoadBasesHistoryViewFxml() throws Exception {
+        FXMLLoader loader = new FXMLLoader(FxmlLoadTest.class.getResource("/com/swstock/view/BasesHistoryView.fxml"));
+        Object root = loader.load();
+        assertNotNull(root);
+    }
+
+    @Test
+    void testLoadConfiguracoesViewFxml() throws Exception {
+        FXMLLoader loader = new FXMLLoader(FxmlLoadTest.class.getResource("/com/swstock/view/ConfiguracoesView.fxml"));
+        Object root = loader.load();
+        assertNotNull(root);
+    }
 }

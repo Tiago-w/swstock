@@ -37,7 +37,6 @@ public class StockInventoryController {
 
     @FXML private Label lblTotalItens;
     @FXML private Label lblTotalUnidades;
-    @FXML private Label lblValorTotalEstoque;
     @FXML private Label lblStatusFiltro;
 
     @FXML private TableView<ItemLevantamento> tblProdutos;
@@ -296,13 +295,9 @@ public class StockInventoryController {
             // Calcula métricas sobre as linhas geradas
             int totalItens = linhas.size();
             int totalQtd = linhas.stream().mapToInt(ItemLevantamento::getEstoque).sum();
-            double valorTotal = linhas.stream()
-                    .mapToDouble(item -> item.getEstoque() * item.getPrecoVista())
-                    .sum();
 
             lblTotalItens.setText(totalItens + " variações / itens");
             lblTotalUnidades.setText(totalQtd + " un.");
-            lblValorTotalEstoque.setText(String.format(Locale.of("pt", "BR"), "R$ %,.2f", valorTotal));
 
             // Status
             StringBuilder status = new StringBuilder("Exibindo: ");
