@@ -44,6 +44,9 @@
                                        text="Localização do Produto: ESTANTE A1 (Piscando)" />
                             </children>
                         </HBox>
+
+                        <Button fx:id="btnResponsavelSessao" onAction="#handleTrocarResponsavel"
+                                styleClass="badge-responsavel" text="👤 Responsável: Administrador" />
                     </children>
                 </HBox>
             </children>
@@ -170,7 +173,7 @@
                                 <TableColumn fx:id="colEstantePreco" prefWidth="80.0" text="VALOR" />
                             </columns>
                             <columnResizePolicy>
-                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                             </columnResizePolicy>
                             <placeholder>
                                 <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"

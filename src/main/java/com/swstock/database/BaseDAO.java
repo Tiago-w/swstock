@@ -30,20 +30,20 @@ public class BaseDAO {
     }
 
     public Base insert(Base base, String responsavel) throws SQLException {
-        if (base.getCodigo() == null || base.getCodigo().trim().isEmpty()) {
-            throw new IllegalArgumentException("Código da base é obrigatório.");
+        if (base.getTamanho() == null || base.getTamanho().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tamanho da base é obrigatório.");
         }
         if (base.getNome() == null || base.getNome().trim().isEmpty()) {
             throw new IllegalArgumentException("Nome da base é obrigatório.");
         }
 
         String sql = """
-            INSERT INTO bases (codigo, nome, tipo, fabricante, quantidade, valor_compra)
+            INSERT INTO bases (tamanho, nome, tipo, fabricante, quantidade, valor_compra)
             VALUES (?, ?, ?, ?, ?, ?);
         """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, base.getCodigo().trim().toUpperCase());
+            stmt.setString(1, base.getTamanho().trim());
             stmt.setString(2, base.getNome().trim());
             stmt.setString(3, base.getTipo() != null ? base.getTipo().trim().toUpperCase() : "AUTOMOTIVA");
             stmt.setString(4, base.getFabricante() != null ? base.getFabricante().trim() : "Geral");
@@ -91,12 +91,12 @@ public class BaseDAO {
 
         String sql = """
             UPDATE bases
-            SET codigo = ?, nome = ?, tipo = ?, fabricante = ?, quantidade = ?, valor_compra = ?, updated_at = CURRENT_TIMESTAMP
+            SET tamanho = ?, nome = ?, tipo = ?, fabricante = ?, quantidade = ?, valor_compra = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?;
         """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
-            stmt.setString(1, base.getCodigo().trim().toUpperCase());
+            stmt.setString(1, base.getTamanho().trim());
             stmt.setString(2, base.getNome().trim());
             stmt.setString(3, base.getTipo() != null ? base.getTipo().trim().toUpperCase() : "AUTOMOTIVA");
             stmt.setString(4, base.getFabricante() != null ? base.getFabricante().trim() : "Geral");
@@ -156,7 +156,7 @@ public class BaseDAO {
     }
 
     public Base findById(int id) throws SQLException {
-        String sql = "SELECT id, codigo, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE id = ?;";
+        String sql = "SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE id = ?;";
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -169,10 +169,30 @@ public class BaseDAO {
     }
 
     public Base findByCodigo(String codigo) throws SQLException {
-        if (codigo == null || codigo.trim().isEmpty()) return null;
-        String sql = "SELECT id, codigo, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE UPPER(codigo) = ?;";
+        return findByTamanho(codigo);
+    }
+
+    public Base findByTamanho(String tamanho) throws SQLException {
+        if (tamanho == null || tamanho.trim().isEmpty()) return null;
+        String sql = "SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE UPPER(tamanho) = ?;";
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
-            stmt.setString(1, codigo.trim().toUpperCase());
+            stmt.setString(1, tamanho.trim().toUpperCase());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSet(rs);
+                }
+            }
+        }
+        return null;
+    }
+
+    public Base findByTamanhoNomeTipo(String tamanho, String nome, String tipo, String fabricante) throws SQLException {
+        String sql = "SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE UPPER(tamanho) = ? AND UPPER(nome) = ? AND UPPER(tipo) = ? AND UPPER(fabricante) = ?;";
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setString(1, tamanho != null ? tamanho.trim().toUpperCase() : "");
+            stmt.setString(2, nome != null ? nome.trim().toUpperCase() : "");
+            stmt.setString(3, tipo != null ? tipo.trim().toUpperCase() : "AUTOMOTIVA");
+            stmt.setString(4, fabricante != null ? fabricante.trim().toUpperCase() : "GERAL");
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return mapResultSet(rs);
@@ -183,7 +203,7 @@ public class BaseDAO {
     }
 
     public List<Base> findAll() throws SQLException {
-        String sql = "SELECT id, codigo, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases ORDER BY tipo ASC, nome ASC;";
+        String sql = "SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases ORDER BY tipo ASC, nome ASC;";
         List<Base> lista = new ArrayList<>();
         try (Statement stmt = getConnection().createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -196,7 +216,7 @@ public class BaseDAO {
 
     public List<Base> findByTipo(String tipo) throws SQLException {
         if (tipo == null || tipo.trim().isEmpty()) return findAll();
-        String sql = "SELECT id, codigo, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE UPPER(tipo) = ? ORDER BY nome ASC;";
+        String sql = "SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE UPPER(tipo) = ? ORDER BY nome ASC;";
         List<Base> lista = new ArrayList<>();
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             stmt.setString(1, tipo.trim().toUpperCase());
@@ -210,7 +230,7 @@ public class BaseDAO {
     }
 
     public List<Base> search(String tipo, String termo, String fabricante) throws SQLException {
-        StringBuilder sql = new StringBuilder("SELECT id, codigo, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
 
         if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS")) {
@@ -224,8 +244,8 @@ public class BaseDAO {
         }
 
         if (termo != null && !termo.trim().isEmpty()) {
-            sql.append(" AND (codigo LIKE ? OR nome LIKE ? OR fabricante LIKE ?) ");
-            String wild = "%" + termo.trim() + "%";
+            sql.append(" AND (UNACCENT(tamanho) LIKE ? OR UNACCENT(nome) LIKE ? OR UNACCENT(fabricante) LIKE ?) ");
+            String wild = "%" + DatabaseManager.unaccent(termo.trim()) + "%";
             params.add(wild);
             params.add(wild);
             params.add(wild);
@@ -274,9 +294,17 @@ public class BaseDAO {
     }
 
     private Base mapResultSet(ResultSet rs) throws SQLException {
+        String tam = null;
+        try {
+            tam = rs.getString("tamanho");
+        } catch (SQLException ignored) {
+            try {
+                tam = rs.getString("codigo");
+            } catch (SQLException ignored2) {}
+        }
         return new Base(
                 rs.getInt("id"),
-                rs.getString("codigo"),
+                tam != null ? tam : "",
                 rs.getString("nome"),
                 rs.getString("tipo"),
                 rs.getString("fabricante"),

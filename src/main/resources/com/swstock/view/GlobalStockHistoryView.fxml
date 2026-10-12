@@ -23,6 +23,8 @@
                     </children>
                 </VBox>
                 <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="btnResponsavelSessao" onAction="#handleTrocarResponsavel"
+                        styleClass="badge-responsavel" text="👤 Responsável: Administrador" />
                 <Button onAction="#handleExportarPdf"
                         style="-fx-background-color: #0D47A1; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6px; -fx-padding: 8px 16px; -fx-font-size: 12px;"
                         text=" Exportar Relatório PDF" />
@@ -149,7 +151,7 @@
                         <TableColumn fx:id="colAcoes" text="Ações" prefWidth="85.0" style="-fx-alignment: CENTER;" />
                     </columns>
                     <columnResizePolicy>
-                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <placeholder>
                         <Label text="Nenhuma movimentação de estoque encontrada para os filtros selecionados."

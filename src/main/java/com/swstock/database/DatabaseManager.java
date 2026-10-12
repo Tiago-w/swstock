@@ -2,8 +2,11 @@ package com.swstock.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.Normalizer;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,6 +51,7 @@ public class DatabaseManager {
         try {
             if (connection == null || connection.isClosed()) {
                 connection = DriverManager.getConnection(dbUrl);
+                registerCustomFunctions(connection);
                 // Ativa verificação de Foreign Keys e modo WAL para alta performance
                 try (Statement stmt = connection.createStatement()) {
                     stmt.execute("PRAGMA foreign_keys = ON;");
@@ -60,6 +64,34 @@ public class DatabaseManager {
             LOGGER.log(Level.SEVERE, "Erro ao conectar ao banco SQLite: " + dbUrl, e);
             throw new RuntimeException("Falha ao inicializar o banco de dados offline.", e);
         }
+    }
+
+    private void registerCustomFunctions(Connection conn) {
+        try {
+            org.sqlite.Function.create(conn, "UNACCENT", new org.sqlite.Function() {
+                @Override
+                protected void xFunc() throws SQLException {
+                    String val = value_text(0);
+                    if (val == null) {
+                        result();
+                        return;
+                    }
+                    result(unaccent(val));
+                }
+            });
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Erro ao registrar função personalizada UNACCENT no SQLite.", e);
+        }
+    }
+
+    /**
+     * Remove acentuação e caracteres diacríticos, convertendo para minúsculas.
+     */
+    public static String unaccent(String text) {
+        if (text == null) return null;
+        return Normalizer.normalize(text, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     private void initSchema() {
@@ -107,14 +139,15 @@ public class DatabaseManager {
             CREATE TABLE IF NOT EXISTS funcionarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nome TEXT NOT NULL UNIQUE,
+                numero TEXT DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """;
 
         String seedFuncionarios = """
-            INSERT OR IGNORE INTO funcionarios (nome) VALUES 
-            ('Administrador'),
-            ('Padrão');
+            INSERT OR IGNORE INTO funcionarios (nome, numero) VALUES 
+            ('Administrador', '01'),
+            ('Padrão', '02');
             """;
 
         String createTableProdutoCores = """
@@ -159,16 +192,62 @@ public class DatabaseManager {
             }
 
             stmt.execute(createTableFuncionarios);
+            // Migração da coluna numero em funcionarios
+            try {
+                stmt.execute("ALTER TABLE funcionarios ADD COLUMN numero TEXT DEFAULT '';");
+            } catch (SQLException ignored) {
+                // Coluna já existe
+            }
             stmt.execute(seedFuncionarios);
 
             stmt.execute(createTableProdutoCores);
             stmt.execute(createIndexCoresProd);
             stmt.execute(createIndexCoresNome);
 
+            // Migração da tabela bases: de 'codigo' (UNIQUE) para 'tamanho' (sem restrição UNIQUE)
+            try {
+                boolean temCodigo = false;
+                boolean temTamanho = false;
+                try (ResultSet rs = stmt.executeQuery("PRAGMA table_info(bases);")) {
+                    while (rs.next()) {
+                        String colName = rs.getString("name");
+                        if ("codigo".equalsIgnoreCase(colName)) temCodigo = true;
+                        if ("tamanho".equalsIgnoreCase(colName)) temTamanho = true;
+                    }
+                }
+                if (temCodigo && !temTamanho) {
+                    LOGGER.info("Migrando tabela 'bases' de 'codigo' para 'tamanho' (sem restrição UNIQUE)...");
+                    stmt.execute("PRAGMA foreign_keys = OFF;");
+                    stmt.execute("""
+                        CREATE TABLE bases_migration (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            tamanho TEXT NOT NULL,
+                            nome TEXT NOT NULL,
+                            tipo TEXT NOT NULL,
+                            fabricante TEXT DEFAULT 'Geral',
+                            quantidade INTEGER NOT NULL DEFAULT 0,
+                            valor_compra REAL NOT NULL DEFAULT 0.0,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                    """);
+                    stmt.execute("""
+                        INSERT INTO bases_migration (id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at)
+                        SELECT id, codigo, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases;
+                    """);
+                    stmt.execute("DROP TABLE bases;");
+                    stmt.execute("ALTER TABLE bases_migration RENAME TO bases;");
+                    stmt.execute("PRAGMA foreign_keys = ON;");
+                    LOGGER.info("Tabela 'bases' migrada com sucesso para 'tamanho' (sem restrição UNIQUE).");
+                }
+            } catch (SQLException e) {
+                LOGGER.log(Level.WARNING, "Aviso na verificação/migração da tabela bases: " + e.getMessage());
+            }
+
             String createTableBases = """
                 CREATE TABLE IF NOT EXISTS bases (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    codigo TEXT NOT NULL UNIQUE,
+                    tamanho TEXT NOT NULL,
                     nome TEXT NOT NULL,
                     tipo TEXT NOT NULL,
                     fabricante TEXT DEFAULT 'Geral',
@@ -179,7 +258,7 @@ public class DatabaseManager {
                 );
                 """;
 
-            String createIndexBasesCodigo = "CREATE INDEX IF NOT EXISTS idx_bases_codigo ON bases(codigo);";
+            String createIndexBasesTamanho = "CREATE INDEX IF NOT EXISTS idx_bases_tamanho ON bases(tamanho);";
             String createIndexBasesTipo = "CREATE INDEX IF NOT EXISTS idx_bases_tipo ON bases(tipo);";
             String createIndexBasesNome = "CREATE INDEX IF NOT EXISTS idx_bases_nome ON bases(nome);";
 
@@ -202,7 +281,7 @@ public class DatabaseManager {
             String createIndexHistBasesData = "CREATE INDEX IF NOT EXISTS idx_hist_bases_data ON historico_bases(data_hora);";
 
             stmt.execute(createTableBases);
-            stmt.execute(createIndexBasesCodigo);
+            stmt.execute(createIndexBasesTamanho);
             stmt.execute(createIndexBasesTipo);
             stmt.execute(createIndexBasesNome);
 

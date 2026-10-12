@@ -80,4 +80,27 @@ class FuncionarioDAOTest {
         List<String> nomes = funcionarioDAO.getNomesFuncionarios();
         assertFalse(nomes.contains("Temporario"));
     }
+
+    @Test
+    @Order(4)
+    void testAtualizarFuncionarioComNumero() throws SQLException {
+        Funcionario f = new Funcionario("Maria Silva", "FUNC-100");
+        Funcionario inserido = funcionarioDAO.insert(f);
+        assertNotNull(inserido.getId());
+        assertEquals("FUNC-100", inserido.getNumero());
+
+        Funcionario buscado = funcionarioDAO.findById(inserido.getId());
+        assertNotNull(buscado);
+        assertEquals("FUNC-100", buscado.getNumero());
+
+        buscado.setNome("Maria Silva Santos");
+        buscado.setNumero("FUNC-101");
+        boolean ok = funcionarioDAO.update(buscado);
+        assertTrue(ok);
+
+        Funcionario atualizado = funcionarioDAO.findById(inserido.getId());
+        assertNotNull(atualizado);
+        assertEquals("Maria Silva Santos", atualizado.getNome());
+        assertEquals("FUNC-101", atualizado.getNumero());
+    }
 }

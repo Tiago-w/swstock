@@ -362,8 +362,9 @@ public class XmlService {
                 Element elem = (Element) node;
                 try {
                     String nomeFunc = getTagValue("nome", elem);
+                    String numFunc = getTagValue("numero", elem);
                     if (!nomeFunc.isEmpty()) {
-                        if (inserirFuncionarioSeNaoExistir(nomeFunc)) {
+                        if (inserirFuncionarioSeNaoExistir(nomeFunc, numFunc)) {
                             funcionariosProcessados++;
                         }
                     }
@@ -381,9 +382,12 @@ public class XmlService {
             if (node.getNodeType() == Node.ELEMENT_NODE) {
                 Element elem = (Element) node;
                 try {
-                    String codigo = getTagValue("codigo", elem);
+                    String tamanho = getTagValue("tamanho", elem);
+                    if (tamanho.isEmpty()) {
+                        tamanho = getTagValue("codigo", elem);
+                    }
                     String nome = getTagValue("nome", elem);
-                    if (codigo.isEmpty() || nome.isEmpty()) continue;
+                    if (tamanho.isEmpty() || nome.isEmpty()) continue;
 
                     String tipo = getTagValue("tipo", elem);
                     if (tipo.isEmpty()) tipo = "AUTOMOTIVA";
@@ -392,7 +396,7 @@ public class XmlService {
                     Double valorCompra = parseDoubleSafe(getTagValue("valor_compra", elem), 0.0);
                     Integer quantidade = parseIntSafe(getTagValue("quantidade", elem), 0);
 
-                    if (sincronizarBaseComPreservacaoEstoque(codigo, nome, tipo, fabricante, quantidade, valorCompra)) {
+                    if (sincronizarBaseComPreservacaoEstoque(tamanho, nome, tipo, fabricante, quantidade, valorCompra)) {
                         basesProcessadas++;
                     }
                 } catch (Exception ex) {
@@ -402,12 +406,15 @@ public class XmlService {
         }
 
         // Mapa de bases para correlacionar movimentacoes
-        Map<String, Base> basesPorCodigo = new HashMap<>();
+        Map<String, Base> basesPorChave = new HashMap<>();
         Map<Integer, Base> basesPorId = new HashMap<>();
         try {
             for (Base b : baseDAO.findAll()) {
-                if (b.getCodigo() != null) {
-                    basesPorCodigo.put(b.getCodigo().trim().toUpperCase(), b);
+                String tam = b.getTamanho() != null ? b.getTamanho().trim().toUpperCase() : "";
+                String nom = b.getNome() != null ? b.getNome().trim().toUpperCase() : "";
+                basesPorChave.put(tam + "|" + nom, b);
+                if (b.getTamanho() != null) {
+                    basesPorChave.put(b.getTamanho().trim().toUpperCase(), b);
                 }
                 if (b.getId() != null) {
                     basesPorId.put(b.getId(), b);
@@ -428,7 +435,10 @@ public class XmlService {
             if (node.getNodeType() == Node.ELEMENT_NODE) {
                 Element elem = (Element) node;
                 try {
-                    String codBase = getTagValue("base_codigo", elem);
+                    String codBase = getTagValue("base_tamanho", elem);
+                    if (codBase.isEmpty()) {
+                        codBase = getTagValue("base_codigo", elem);
+                    }
                     Integer bIdXml = parseIntSafe(getTagValue("base_id", elem), null);
                     String dataHora = getTagValue("data_hora", elem);
                     String tipo = getTagValue("tipo", elem);
@@ -443,7 +453,7 @@ public class XmlService {
 
                     Base targetBase = null;
                     if (!codBase.isEmpty()) {
-                        targetBase = basesPorCodigo.get(codBase.trim().toUpperCase());
+                        targetBase = basesPorChave.get(codBase.trim().toUpperCase());
                     }
                     if (targetBase == null && bIdXml != null) {
                         targetBase = basesPorId.get(bIdXml);
@@ -585,6 +595,7 @@ public class XmlService {
                 Element fElem = doc.createElement("funcionario");
                 appendElement(doc, fElem, "id", String.valueOf(f.getId() != null ? f.getId() : ""));
                 appendElement(doc, fElem, "nome", f.getNome() != null ? f.getNome() : "");
+                appendElement(doc, fElem, "numero", f.getNumero() != null ? f.getNumero() : "");
                 funcElem.appendChild(fElem);
             }
         } catch (Exception ex) {
@@ -600,7 +611,8 @@ public class XmlService {
             for (Base b : todasBases) {
                 Element bElem = doc.createElement("base");
                 appendElement(doc, bElem, "id", String.valueOf(b.getId() != null ? b.getId() : ""));
-                appendElement(doc, bElem, "codigo", b.getCodigo() != null ? b.getCodigo() : "");
+                appendElement(doc, bElem, "tamanho", b.getTamanho() != null ? b.getTamanho() : "");
+                appendElement(doc, bElem, "codigo", b.getTamanho() != null ? b.getTamanho() : "");
                 appendElement(doc, bElem, "nome", b.getNome() != null ? b.getNome() : "");
                 appendElement(doc, bElem, "tipo", b.getTipo() != null ? b.getTipo() : "AUTOMOTIVA");
                 appendElement(doc, bElem, "fabricante", b.getFabricante() != null ? b.getFabricante() : "Geral");
@@ -622,7 +634,9 @@ public class XmlService {
                 Element hbElem = doc.createElement("movimentacao_base");
                 appendElement(doc, hbElem, "id", String.valueOf(hb.getId() != null ? hb.getId() : ""));
                 appendElement(doc, hbElem, "base_id", String.valueOf(hb.getBaseId() != null ? hb.getBaseId() : ""));
-                appendElement(doc, hbElem, "base_codigo", hb.getBaseCodigo() != null ? hb.getBaseCodigo() : "");
+                String tamHb = hb.getBaseTamanho() != null ? hb.getBaseTamanho() : (hb.getBaseCodigo() != null ? hb.getBaseCodigo() : "");
+                appendElement(doc, hbElem, "base_tamanho", tamHb);
+                appendElement(doc, hbElem, "base_codigo", tamHb);
                 appendElement(doc, hbElem, "data_hora", hb.getDataHora() != null ? hb.getDataHora() : "");
                 appendElement(doc, hbElem, "tipo", hb.getTipo() != null ? hb.getTipo() : "AJUSTE");
                 appendElement(doc, hbElem, "quantidade_alterada", String.valueOf(hb.getQuantidadeAlterada() != null ? hb.getQuantidadeAlterada() : 0));
@@ -720,37 +734,61 @@ public class XmlService {
         }
     }
 
-    private boolean inserirFuncionarioSeNaoExistir(String nomeFuncionario) {
-        String sql = "INSERT OR IGNORE INTO funcionarios (nome) VALUES (?);";
+    private boolean inserirFuncionarioSeNaoExistir(String nomeFuncionario, String numero) {
+        String sqlCheck = "SELECT id, numero FROM funcionarios WHERE UPPER(TRIM(nome)) = ?;";
+        String sqlInsert = "INSERT INTO funcionarios (nome, numero) VALUES (?, ?);";
+        String sqlUpdate = "UPDATE funcionarios SET numero = ? WHERE id = ?;";
         try (Connection conn = databaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, nomeFuncionario.trim());
-            return stmt.executeUpdate() > 0;
+             PreparedStatement checkStmt = conn.prepareStatement(sqlCheck)) {
+            checkStmt.setString(1, nomeFuncionario.trim().toUpperCase());
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) {
+                    int id = rs.getInt("id");
+                    String numAtual = rs.getString("numero");
+                    if ((numAtual == null || numAtual.trim().isEmpty()) && numero != null && !numero.trim().isEmpty()) {
+                        try (PreparedStatement updateStmt = conn.prepareStatement(sqlUpdate)) {
+                            updateStmt.setString(1, numero.trim());
+                            updateStmt.setInt(2, id);
+                            updateStmt.executeUpdate();
+                        }
+                    }
+                    return false;
+                }
+            }
+            try (PreparedStatement insertStmt = conn.prepareStatement(sqlInsert)) {
+                insertStmt.setString(1, nomeFuncionario.trim());
+                insertStmt.setString(2, numero != null ? numero.trim() : "");
+                return insertStmt.executeUpdate() > 0;
+            }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Erro ao inserir funcionario do backup: " + nomeFuncionario, e);
             return false;
         }
     }
 
-    private boolean sincronizarBaseComPreservacaoEstoque(String codigo, String nome, String tipo, String fabricante, int quantidade, double valorCompra) {
-        String codLimpo = codigo.trim().toUpperCase();
-        String sqlCheck = "SELECT id, quantidade FROM bases WHERE UPPER(codigo) = ?;";
-        String sqlInsert = "INSERT INTO bases (codigo, nome, tipo, fabricante, quantidade, valor_compra) VALUES (?, ?, ?, ?, ?, ?);";
-        String sqlUpdatePreservando = "UPDATE bases SET nome = ?, tipo = ?, fabricante = ?, valor_compra = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;";
+    private boolean sincronizarBaseComPreservacaoEstoque(String tamanho, String nome, String tipo, String fabricante, int quantidade, double valorCompra) {
+        String tamLimpo = tamanho.trim();
+        String nomeLimpo = nome.trim();
+        String tipoLimpo = tipo.trim().toUpperCase();
+        String fabLimpo = fabricante.trim();
+
+        String sqlCheck = "SELECT id, quantidade FROM bases WHERE UPPER(tamanho) = ? AND UPPER(nome) = ? AND UPPER(tipo) = ? AND UPPER(fabricante) = ?;";
+        String sqlInsert = "INSERT INTO bases (tamanho, nome, tipo, fabricante, quantidade, valor_compra) VALUES (?, ?, ?, ?, ?, ?);";
+        String sqlUpdatePreservando = "UPDATE bases SET valor_compra = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;";
 
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement checkStmt = conn.prepareStatement(sqlCheck)) {
-            checkStmt.setString(1, codLimpo);
+            checkStmt.setString(1, tamLimpo.toUpperCase());
+            checkStmt.setString(2, nomeLimpo.toUpperCase());
+            checkStmt.setString(3, tipoLimpo);
+            checkStmt.setString(4, fabLimpo.toUpperCase());
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next()) {
                     // Ja existe: atualiza dados cadastrais, MAS PRESERVA o estoque fisico existente
                     int existingId = rs.getInt("id");
                     try (PreparedStatement updateStmt = conn.prepareStatement(sqlUpdatePreservando)) {
-                        updateStmt.setString(1, nome.trim());
-                        updateStmt.setString(2, tipo.trim().toUpperCase());
-                        updateStmt.setString(3, fabricante.trim());
-                        updateStmt.setDouble(4, valorCompra);
-                        updateStmt.setInt(5, existingId);
+                        updateStmt.setDouble(1, valorCompra);
+                        updateStmt.setInt(2, existingId);
                         return updateStmt.executeUpdate() > 0;
                     }
                 }
@@ -758,16 +796,16 @@ public class XmlService {
 
             // Nao existe: insere nova base com a quantidade inicial do XML
             try (PreparedStatement insertStmt = conn.prepareStatement(sqlInsert)) {
-                insertStmt.setString(1, codLimpo);
-                insertStmt.setString(2, nome.trim());
-                insertStmt.setString(3, tipo.trim().toUpperCase());
-                insertStmt.setString(4, fabricante.trim());
+                insertStmt.setString(1, tamLimpo);
+                insertStmt.setString(2, nomeLimpo);
+                insertStmt.setString(3, tipoLimpo);
+                insertStmt.setString(4, fabLimpo);
                 insertStmt.setInt(5, Math.max(0, quantidade));
                 insertStmt.setDouble(6, Math.max(0.0, valorCompra));
                 return insertStmt.executeUpdate() > 0;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Erro ao sincronizar base do XML: " + codigo, e);
+            LOGGER.log(Level.WARNING, "Erro ao sincronizar base do XML: " + tamanho + " - " + nome, e);
             return false;
         }
     }

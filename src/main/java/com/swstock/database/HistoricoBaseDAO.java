@@ -63,7 +63,7 @@ public class HistoricoBaseDAO {
     public List<HistoricoBase> findByBase(int baseId) throws SQLException {
         String sql = """
             SELECT h.id, h.base_id, h.data_hora, h.tipo, h.quantidade_alterada, h.quantidade_anterior, h.quantidade_nova, h.motivo, h.responsavel,
-                   b.codigo AS base_codigo, b.nome AS base_nome, b.tipo AS base_tipo, b.fabricante AS base_fabricante
+                   b.tamanho AS base_codigo, b.nome AS base_nome, b.tipo AS base_tipo, b.fabricante AS base_fabricante
             FROM historico_bases h
             JOIN bases b ON b.id = h.base_id
             WHERE h.base_id = ?
@@ -85,7 +85,7 @@ public class HistoricoBaseDAO {
     public List<HistoricoBase> findAllGlobal(LocalDate dataInicio, LocalDate dataFim, String tipoBaseFiltro, String tipoOperacaoFiltro, String termoBusca) throws SQLException {
         StringBuilder sql = new StringBuilder("""
             SELECT h.id, h.base_id, h.data_hora, h.tipo, h.quantidade_alterada, h.quantidade_anterior, h.quantidade_nova, h.motivo, h.responsavel,
-                   b.codigo AS base_codigo, b.nome AS base_nome, b.tipo AS base_tipo, b.fabricante AS base_fabricante
+                   b.tamanho AS base_codigo, b.nome AS base_nome, b.tipo AS base_tipo, b.fabricante AS base_fabricante
             FROM historico_bases h
             JOIN bases b ON b.id = h.base_id
             WHERE 1=1
@@ -119,8 +119,8 @@ public class HistoricoBaseDAO {
         }
 
         if (termoBusca != null && !termoBusca.trim().isEmpty()) {
-            sql.append(" AND (b.codigo LIKE ? OR b.nome LIKE ? OR b.fabricante LIKE ? OR h.motivo LIKE ? OR h.responsavel LIKE ?) ");
-            String wild = "%" + termoBusca.trim() + "%";
+            sql.append(" AND (UNACCENT(b.tamanho) LIKE ? OR UNACCENT(b.nome) LIKE ? OR UNACCENT(b.fabricante) LIKE ? OR UNACCENT(h.motivo) LIKE ? OR UNACCENT(h.responsavel) LIKE ?) ");
+            String wild = "%" + DatabaseManager.unaccent(termoBusca.trim()) + "%";
             params.add(wild);
             params.add(wild);
             params.add(wild);

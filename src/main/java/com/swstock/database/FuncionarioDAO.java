@@ -32,14 +32,19 @@ public class FuncionarioDAO {
      * Retorna todos os funcionários cadastrados ordenados alfabeticamente.
      */
     public List<Funcionario> findAll() throws SQLException {
-        String sql = "SELECT id, nome, created_at FROM funcionarios ORDER BY nome ASC;";
+        String sql = "SELECT id, nome, numero, created_at FROM funcionarios ORDER BY nome ASC;";
         List<Funcionario> lista = new ArrayList<>();
         try (Statement stmt = getConnection().createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
+                String num = "";
+                try {
+                    num = rs.getString("numero");
+                } catch (SQLException ignored) {}
                 lista.add(new Funcionario(
                         rs.getInt("id"),
                         rs.getString("nome"),
+                        num != null ? num : "",
                         rs.getString("created_at")
                 ));
             }
@@ -48,6 +53,26 @@ public class FuncionarioDAO {
             throw e;
         }
         return lista;
+    }
+
+    public Funcionario findById(int id) throws SQLException {
+        String sql = "SELECT id, nome, numero, created_at FROM funcionarios WHERE id = ?;";
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String num = "";
+                    try { num = rs.getString("numero"); } catch (SQLException ignored) {}
+                    return new Funcionario(
+                            rs.getInt("id"),
+                            rs.getString("nome"),
+                            num != null ? num : "",
+                            rs.getString("created_at")
+                    );
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -75,9 +100,10 @@ public class FuncionarioDAO {
             throw new IllegalArgumentException("Nome do funcionário não pode ser vazio.");
         }
 
-        String sql = "INSERT INTO funcionarios (nome) VALUES (?);";
+        String sql = "INSERT INTO funcionarios (nome, numero) VALUES (?, ?);";
         try (PreparedStatement stmt = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, funcionario.getNome().trim());
+            stmt.setString(2, funcionario.getNumero() != null ? funcionario.getNumero().trim() : "");
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -88,6 +114,29 @@ public class FuncionarioDAO {
             return funcionario;
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao inserir funcionário: " + funcionario.getNome(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Atualiza o nome e número do funcionário.
+     */
+    public boolean update(Funcionario funcionario) throws SQLException {
+        if (funcionario.getId() == null) {
+            throw new IllegalArgumentException("Funcionário deve possuir ID para ser atualizado.");
+        }
+        if (funcionario.getNome() == null || funcionario.getNome().trim().isEmpty()) {
+            throw new IllegalArgumentException("Nome do funcionário não pode ser vazio.");
+        }
+
+        String sql = "UPDATE funcionarios SET nome = ?, numero = ? WHERE id = ?;";
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setString(1, funcionario.getNome().trim());
+            stmt.setString(2, funcionario.getNumero() != null ? funcionario.getNumero().trim() : "");
+            stmt.setInt(3, funcionario.getId());
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Erro ao atualizar funcionário ID=" + funcionario.getId(), e);
             throw e;
         }
     }

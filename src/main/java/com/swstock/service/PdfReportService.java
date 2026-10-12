@@ -742,7 +742,7 @@ public class PdfReportService {
                     pDia.setSpacingAfter(4);
                     document.add(pDia);
 
-                    // Tabela: Movimento | Responsável | Código & Nome da Base | Tipo | Saldo | Motivo
+                    // Tabela: Movimento | Responsável | Tamanho & Nome da Base | Tipo | Saldo | Motivo
                     PdfPTable table = new PdfPTable(6);
                     table.setWidthPercentage(100);
                     table.setWidths(new float[]{11f, 15f, 32f, 12f, 14f, 16f});
@@ -750,7 +750,7 @@ public class PdfReportService {
 
                     adicionarCabecalhoColuna(table, "MOVIMENTO", Element.ALIGN_CENTER);
                     adicionarCabecalhoColuna(table, "RESPONSÁVEL", Element.ALIGN_LEFT);
-                    adicionarCabecalhoColuna(table, "BASE DE TINTA (CÓDIGO & NOME)", Element.ALIGN_LEFT);
+                    adicionarCabecalhoColuna(table, "BASE DE TINTA (TAMANHO & NOME)", Element.ALIGN_LEFT);
                     adicionarCabecalhoColuna(table, "TIPO", Element.ALIGN_CENTER);
                     adicionarCabecalhoColuna(table, "SALDO", Element.ALIGN_CENTER);
                     adicionarCabecalhoColuna(table, "MOTIVO / ORIGEM", Element.ALIGN_LEFT);
@@ -767,7 +767,7 @@ public class PdfReportService {
                         else if (delta < 0) totalDiaSaidas += Math.abs(delta);
 
                         String responsavel = h.getResponsavel();
-                        String baseDesc = "[" + h.getBaseCodigo() + "] " + h.getBaseNome();
+                        String baseDesc = "[" + (h.getBaseTamanho() != null ? h.getBaseTamanho() : h.getBaseCodigo()) + "] " + h.getBaseNome();
                         String tipoBase = h.getBaseTipoFormatado();
                         String saldo = h.getSaldoFormatado();
                         String motivo = h.getMotivo();

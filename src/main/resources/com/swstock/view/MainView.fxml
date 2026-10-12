@@ -24,6 +24,9 @@
                                style="-fx-text-fill: #E2E8F0; -fx-font-size: 11px; -fx-font-weight: bold;" />
                     </children>
                 </VBox>
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="btnResponsavelSessao" onAction="#handleTrocarResponsavel"
+                        styleClass="badge-responsavel" text="👤 Responsável: Administrador" />
             </children>
         </HBox>
     </top>
@@ -116,17 +119,17 @@
                 <!-- Tabela Principal de Produtos -->
                 <TableView fx:id="tblProdutos" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colCodigoLoja" minWidth="80.0" prefWidth="95.0" text="CÓD. LOJA" styleClass="col-left" />
-                        <TableColumn fx:id="colNome" minWidth="180.0" prefWidth="230.0" text="NOME DO PRODUTO" styleClass="col-left" />
-                        <TableColumn fx:id="colGrupo" minWidth="110.0" prefWidth="135.0" text="GRUPO / FABRICANTE" styleClass="col-left" />
-                        <TableColumn fx:id="colPrecoVista" minWidth="95.0" prefWidth="115.0" text="VALOR À VISTA" styleClass="col-right" />
-                        <TableColumn fx:id="colPrecoPrazo" minWidth="95.0" prefWidth="115.0" text="VALOR A PRAZO" styleClass="col-right" />
-                        <TableColumn fx:id="colLocalizacao" minWidth="110.0" prefWidth="125.0" text="LOCALIZAÇÃO" styleClass="col-left" />
-                        <TableColumn fx:id="colQuantidade" minWidth="90.0" prefWidth="105.0" text="QUANTIDADE" styleClass="col-center" />
-                        <TableColumn fx:id="colAcoes" minWidth="120.0" prefWidth="130.0" text="AÇÕES" sortable="false" styleClass="col-center" />
+                        <TableColumn fx:id="colCodigoLoja" minWidth="80.0" prefWidth="105.0" text="CÓD. LOJA" styleClass="col-left" />
+                        <TableColumn fx:id="colNome" minWidth="180.0" prefWidth="300.0" text="NOME DO PRODUTO" styleClass="col-left" />
+                        <TableColumn fx:id="colGrupo" minWidth="110.0" prefWidth="160.0" text="GRUPO / FABRICANTE" styleClass="col-left" />
+                        <TableColumn fx:id="colPrecoVista" minWidth="95.0" prefWidth="125.0" text="VALOR À VISTA" styleClass="col-right" />
+                        <TableColumn fx:id="colPrecoPrazo" minWidth="95.0" prefWidth="125.0" text="VALOR A PRAZO" styleClass="col-right" />
+                        <TableColumn fx:id="colLocalizacao" minWidth="110.0" prefWidth="135.0" text="LOCALIZAÇÃO" styleClass="col-left" />
+                        <TableColumn fx:id="colQuantidade" minWidth="90.0" prefWidth="115.0" text="QUANTIDADE" styleClass="col-center" />
+                        <TableColumn fx:id="colAcoes" minWidth="120.0" prefWidth="135.0" text="AÇÕES" sortable="false" styleClass="col-center" />
                     </columns>
                     <columnResizePolicy>
-                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <placeholder>
                         <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 14px;"

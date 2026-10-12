@@ -134,4 +134,27 @@ class ProdutoDAOTest {
         Produto busca = produtoDAO.findById(p.getId());
         assertNull(busca, "O produto não deve mais existir após exclusão.");
     }
+
+    @Test
+    @Order(7)
+    void testBuscaInsensivelAAcentos() throws SQLException {
+        Produto p = new Produto("Tinta Poliéster Branco Íris", 50.0, 60.0, "TINT-IRIS", "Estante C1", 5, "", "Tinta com acentos");
+        Produto ins = produtoDAO.insert(p);
+        assertNotNull(ins.getId());
+
+        // Busca com termo sem acento "iris" encontra "Íris"
+        List<Produto> res1 = produtoDAO.findByFilter("iris", null);
+        assertTrue(res1.stream().anyMatch(item -> "TINT-IRIS".equals(item.getCodigoLoja())));
+
+        // Busca com termo com acento "íris" encontra "Íris"
+        List<Produto> res2 = produtoDAO.findByFilter("íris", null);
+        assertTrue(res2.stream().anyMatch(item -> "TINT-IRIS".equals(item.getCodigoLoja())));
+
+        // Busca com "poliester" encontra "Poliéster"
+        List<Produto> res3 = produtoDAO.findByFilter("poliester", null);
+        assertTrue(res3.stream().anyMatch(item -> "TINT-IRIS".equals(item.getCodigoLoja())));
+
+        // Limpeza
+        produtoDAO.delete(ins.getId());
+    }
 }

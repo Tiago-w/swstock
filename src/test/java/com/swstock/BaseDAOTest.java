@@ -154,4 +154,20 @@ class BaseDAOTest {
         Base buscada = baseDAO.findById(base.getId());
         assertNull(buscada);
     }
+
+    @Test
+    @Order(6)
+    void testTamanhosRepetidosPermitidos() throws SQLException {
+        Base b1 = new Base("900ml", "Base Poliéster Vermelha", "AUTOMOTIVA", "Lazzuril", 10, 50.0);
+        Base b2 = new Base("900ml", "Base Poliéster Azul", "AUTOMOTIVA", "Lazzuril", 12, 55.0);
+
+        Base ins1 = baseDAO.insert(b1, "Admin");
+        Base ins2 = baseDAO.insert(b2, "Admin");
+
+        assertNotNull(ins1.getId());
+        assertNotNull(ins2.getId());
+        assertNotEquals(ins1.getId(), ins2.getId());
+        assertEquals("900ml", ins1.getTamanho());
+        assertEquals("900ml", ins2.getTamanho());
+    }
 }

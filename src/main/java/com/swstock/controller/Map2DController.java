@@ -47,6 +47,7 @@ public class Map2DController {
     @FXML private TableColumn<Produto, String> colEstanteNome;
     @FXML private TableColumn<Produto, String> colEstanteQtd;
     @FXML private TableColumn<Produto, String> colEstantePreco;
+    @FXML private Button btnResponsavelSessao;
     @FXML private Button btnFiltrarPrincipal;
 
     private ProdutoDAO produtoDAO;
@@ -62,7 +63,24 @@ public class Map2DController {
 
     @FXML
     public void initialize() {
+        configurarBadgeResponsavel();
         configurarTabelaEstante();
+    }
+
+    private void configurarBadgeResponsavel() {
+        if (btnResponsavelSessao != null) {
+            btnResponsavelSessao.setText("👤 Responsável: " + com.swstock.util.SessionManager.getInstance().getResponsavelAtual());
+            com.swstock.util.SessionManager.getInstance().responsavelAtualProperty().addListener((obs, oldVal, newVal) -> {
+                btnResponsavelSessao.setText("👤 Responsável: " + (newVal != null ? newVal : "Administrador"));
+            });
+            btnResponsavelSessao.setTooltip(new Tooltip("Responsável ativo na sessão. Clique para alternar."));
+        }
+    }
+
+    @FXML
+    private void handleTrocarResponsavel() {
+        javafx.stage.Window owner = stage != null ? stage : (btnResponsavelSessao != null && btnResponsavelSessao.getScene() != null ? btnResponsavelSessao.getScene().getWindow() : null);
+        com.swstock.util.SessionManager.getInstance().trocarResponsavel(owner);
     }
 
     private void configurarTabelaEstante() {

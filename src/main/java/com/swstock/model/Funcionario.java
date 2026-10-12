@@ -7,18 +7,34 @@ public class Funcionario {
 
     private Integer id;
     private String nome;
+    private String numero;
     private String createdAt;
 
     public Funcionario() {
+        this.numero = "";
     }
 
     public Funcionario(String nome) {
         this.nome = nome;
+        this.numero = "";
+    }
+
+    public Funcionario(String nome, String numero) {
+        this.nome = nome;
+        this.numero = numero != null ? numero.trim() : "";
     }
 
     public Funcionario(Integer id, String nome, String createdAt) {
         this.id = id;
         this.nome = nome;
+        this.numero = "";
+        this.createdAt = createdAt;
+    }
+
+    public Funcionario(Integer id, String nome, String numero, String createdAt) {
+        this.id = id;
+        this.nome = nome;
+        this.numero = numero != null ? numero.trim() : "";
         this.createdAt = createdAt;
     }
 
@@ -36,6 +52,14 @@ public class Funcionario {
 
     public void setNome(String nome) {
         this.nome = nome;
+    }
+
+    public String getNumero() {
+        return numero != null ? numero : "";
+    }
+
+    public void setNumero(String numero) {
+        this.numero = numero != null ? numero.trim() : "";
     }
 
     public String getCreatedAt() {

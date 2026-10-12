@@ -23,6 +23,8 @@
                     </children>
                 </VBox>
                 <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="btnResponsavelSessao" onAction="#handleTrocarResponsavel"
+                        styleClass="badge-responsavel" text="👤 Responsável: Administrador" />
                 <Button onAction="#handleAbrirHistoricoBases"
                         style="-fx-background-color: #0D47A1; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6px; -fx-padding: 8px 16px; -fx-font-size: 12px;"
                         text=" Histórico Geral de Bases" />
@@ -33,43 +35,45 @@
         <!-- Conteúdo Principal -->
         <VBox spacing="14.0" VBox.vgrow="ALWAYS" style="-fx-padding: 18px 24px;">
             <children>
-                <!-- Seletor de Tipo de Base (Segmented Control) e Barra de Ações -->
-                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="action-bar">
+                <!-- Faixa Fixa de Alternância de Abas -->
+                <HBox alignment="CENTER_LEFT" spacing="12.0"
+                      style="-fx-background-color: #FFFFFF; -fx-padding: 10px 18px; -fx-background-radius: 8px; -fx-border-color: #E2E8F0; -fx-border-radius: 8px;">
                     <children>
-                        <!-- Botões de Seleção: Bases Automotivas e Bases Prediais -->
+                        <Label text="Categoria de Bases:" style="-fx-font-weight: bold; -fx-text-fill: #1E293B; -fx-font-size: 13px;" />
                         <HBox spacing="0.0" style="-fx-background-color: #E2E8F0; -fx-background-radius: 8px; -fx-padding: 3px;">
                             <children>
                                 <Button fx:id="btnTabAutomotivas" onAction="#handleSelecionarAutomotivas"
-                                        text="Bases Automotivas"
-                                        style="-fx-background-color: #1565C0; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 6px 0 0 6px; -fx-cursor: hand; -fx-font-size: 12px;" />
+                                        text="Bases Automotivas" prefWidth="180.0"
+                                        style="-fx-background-color: #1565C0; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-padding: 8px 18px; -fx-background-radius: 6px 0 0 6px; -fx-cursor: hand; -fx-font-size: 12px;" />
                                 <Button fx:id="btnTabPrediais" onAction="#handleSelecionarPrediais"
-                                        text="Bases Prediais"
-                                        style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 0 6px 6px 0; -fx-cursor: hand; -fx-font-size: 12px;" />
+                                        text="Bases Prediais" prefWidth="180.0"
+                                        style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 8px 18px; -fx-background-radius: 0 6px 6px 0; -fx-cursor: hand; -fx-font-size: 12px;" />
                             </children>
                         </HBox>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="lblTotalBasesExibidas" styleClass="badge-location" text="0 bases cadastradas" />
+                    </children>
+                </HBox>
 
-                        <Separator orientation="VERTICAL" style="-fx-opacity: 0.4;" />
+                <!-- Barra de Ações e Filtros de Busca -->
+                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="action-bar">
+                    <children>
+                        <TextField fx:id="txtBusca" promptText="Buscar por tamanho, nome ou fabricante..."
+                                   styleClass="search-field" prefWidth="320.0" HBox.hgrow="ALWAYS" />
 
-                        <TextField fx:id="txtBusca" promptText="Buscar por código, nome ou fabricante..."
-                                   styleClass="search-field" prefWidth="280.0" />
-
-                        <ComboBox fx:id="cbFabricanteFiltro" prefWidth="170.0" promptText="Fabricante"
+                        <ComboBox fx:id="cbFabricanteFiltro" prefWidth="190.0" promptText="Fabricante"
                                   styleClass="search-field" />
 
                         <Button onAction="#handleNovaBase" styleClass="btn-primary" text="+ Nova Base" />
 
                         <Button onAction="#handleRecarregar" styleClass="btn-secondary" text="Atualizar" />
-
-                        <Region HBox.hgrow="ALWAYS" />
-
-                        <Label fx:id="lblTotalBasesExibidas" styleClass="badge-location" text="0 bases cadastradas" />
                     </children>
                 </HBox>
 
                 <!-- Tabela de Bases -->
                 <TableView fx:id="tblBases" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colCodigo" minWidth="90.0" prefWidth="110.0" text="CÓDIGO" styleClass="col-left" />
+                        <TableColumn fx:id="colTamanho" minWidth="90.0" prefWidth="110.0" text="TAMANHO" styleClass="col-left" />
                         <TableColumn fx:id="colNome" minWidth="220.0" prefWidth="300.0" text="NOME DA BASE" styleClass="col-left" />
                         <TableColumn fx:id="colTipo" minWidth="110.0" prefWidth="130.0" text="TIPO" styleClass="col-center" />
                         <TableColumn fx:id="colFabricante" minWidth="110.0" prefWidth="140.0" text="FABRICANTE" styleClass="col-left" />
@@ -78,7 +82,7 @@
                         <TableColumn fx:id="colAcoes" minWidth="160.0" prefWidth="180.0" text="AÇÕES" sortable="false" styleClass="col-center" />
                     </columns>
                     <columnResizePolicy>
-                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <placeholder>
                         <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 14px;"

@@ -32,6 +32,7 @@ public class BasesHistoryController {
     private static final Logger LOGGER = Logger.getLogger(BasesHistoryController.class.getName());
     private final PdfReportService pdfReportService = new PdfReportService();
 
+    @FXML private Button btnResponsavelSessao;
     @FXML private DatePicker dpDataInicio;
     @FXML private DatePicker dpDataFim;
     @FXML private ComboBox<String> cbTipoBase;
@@ -64,9 +65,27 @@ public class BasesHistoryController {
             historicoBaseDAO = new HistoricoBaseDAO();
         }
 
+        configurarBadgeResponsavel();
+        com.swstock.util.DeadKeyHelper.attach(txtBusca);
         configurarComboBoxes();
         configurarTabela();
         recarregarDados();
+    }
+
+    private void configurarBadgeResponsavel() {
+        if (btnResponsavelSessao != null) {
+            btnResponsavelSessao.setText("👤 Responsável: " + com.swstock.util.SessionManager.getInstance().getResponsavelAtual());
+            com.swstock.util.SessionManager.getInstance().responsavelAtualProperty().addListener((obs, oldVal, newVal) -> {
+                btnResponsavelSessao.setText("👤 Responsável: " + (newVal != null ? newVal : "Administrador"));
+            });
+            btnResponsavelSessao.setTooltip(new Tooltip("Responsável ativo na sessão. Clique para alternar."));
+        }
+    }
+
+    @FXML
+    private void handleTrocarResponsavel() {
+        javafx.stage.Window owner = stage != null ? stage : (btnResponsavelSessao != null && btnResponsavelSessao.getScene() != null ? btnResponsavelSessao.getScene().getWindow() : null);
+        com.swstock.util.SessionManager.getInstance().trocarResponsavel(owner);
     }
 
     public void setStage(Stage stage) {
@@ -103,7 +122,9 @@ public class BasesHistoryController {
 
     private void configurarTabela() {
         colDataHora.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDataHoraFormatada()));
-        colCodigo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBaseCodigo()));
+        colCodigo.setCellValueFactory(cell -> new SimpleStringProperty(
+                cell.getValue().getBaseTamanho() != null ? cell.getValue().getBaseTamanho() : cell.getValue().getBaseCodigo()
+        ));
         colNome.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBaseNome()));
 
         colTipoBase.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getBaseTipoFormatado()));

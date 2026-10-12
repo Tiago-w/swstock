@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
 public class Base {
 
     private Integer id;
-    private String codigo;
+    private String tamanho;
     private String nome;
     private String tipo; // "AUTOMOTIVA" ou "PREDIAL"
     private String fabricante; // ex: "Geral", "Coral", "Suvinil", "Lazzuril", "Wanda", etc.
@@ -26,8 +26,8 @@ public class Base {
         this.tipo = "AUTOMOTIVA";
     }
 
-    public Base(String codigo, String nome, String tipo, String fabricante, Integer quantidade, Double valorCompra) {
-        this.codigo = codigo;
+    public Base(String tamanho, String nome, String tipo, String fabricante, Integer quantidade, Double valorCompra) {
+        this.tamanho = tamanho != null ? tamanho.trim() : "";
         this.nome = nome;
         this.tipo = tipo != null ? tipo.trim().toUpperCase() : "AUTOMOTIVA";
         this.fabricante = (fabricante != null && !fabricante.trim().isEmpty()) ? fabricante.trim() : "Geral";
@@ -35,9 +35,9 @@ public class Base {
         this.valorCompra = valorCompra != null ? Math.max(0.0, valorCompra) : 0.0;
     }
 
-    public Base(Integer id, String codigo, String nome, String tipo, String fabricante, Integer quantidade, Double valorCompra, String createdAt, String updatedAt) {
+    public Base(Integer id, String tamanho, String nome, String tipo, String fabricante, Integer quantidade, Double valorCompra, String createdAt, String updatedAt) {
         this.id = id;
-        this.codigo = codigo;
+        this.tamanho = tamanho != null ? tamanho.trim() : "";
         this.nome = nome;
         this.tipo = tipo != null ? tipo.trim().toUpperCase() : "AUTOMOTIVA";
         this.fabricante = (fabricante != null && !fabricante.trim().isEmpty()) ? fabricante.trim() : "Geral";
@@ -55,12 +55,21 @@ public class Base {
         this.id = id;
     }
 
+    public String getTamanho() {
+        return tamanho != null ? tamanho : "";
+    }
+
+    public void setTamanho(String tamanho) {
+        this.tamanho = tamanho != null ? tamanho.trim() : "";
+    }
+
+    // Métodos de compatibilidade com versões anteriores
     public String getCodigo() {
-        return codigo;
+        return getTamanho();
     }
 
     public void setCodigo(String codigo) {
-        this.codigo = codigo;
+        setTamanho(codigo);
     }
 
     public String getNome() {
@@ -137,7 +146,7 @@ public class Base {
     public String toString() {
         return "Base{" +
                 "id=" + id +
-                ", codigo='" + codigo + '\'' +
+                ", tamanho='" + tamanho + '\'' +
                 ", nome='" + nome + '\'' +
                 ", tipo='" + tipo + '\'' +
                 ", fabricante='" + fabricante + '\'' +

@@ -49,6 +49,7 @@ public class MainController {
     @FXML private Button btnBasesAutomotivas;
     @FXML private Button btnBasesPrediais;
     @FXML private Button btnConfiguracoes;
+    @FXML private Button btnResponsavelSessao;
 
     @FXML private TextField txtSearch;
     @FXML private Button btnNovoProduto;
@@ -85,9 +86,25 @@ public class MainController {
             boxSubmenuBases.setVisible(false);
             boxSubmenuBases.setManaged(false);
         }
+        configurarBadgeResponsavel();
         configurarTabela();
         configurarBuscaInstantanea();
         carregarProdutos();
+    }
+
+    private void configurarBadgeResponsavel() {
+        if (btnResponsavelSessao != null) {
+            btnResponsavelSessao.setText("👤 Responsável: " + com.swstock.util.SessionManager.getInstance().getResponsavelAtual());
+            com.swstock.util.SessionManager.getInstance().responsavelAtualProperty().addListener((obs, oldVal, newVal) -> {
+                btnResponsavelSessao.setText("👤 Responsável: " + (newVal != null ? newVal : "Administrador"));
+            });
+            btnResponsavelSessao.setTooltip(new Tooltip("Responsável ativo na sessão. Clique para alternar."));
+        }
+    }
+
+    @FXML
+    private void handleTrocarResponsavel() {
+        com.swstock.util.SessionManager.getInstance().trocarResponsavel(rootPane.getScene().getWindow());
     }
 
     /**
@@ -315,6 +332,7 @@ public class MainController {
     }
 
     private void configurarBuscaInstantanea() {
+        com.swstock.util.DeadKeyHelper.attach(txtSearch);
         txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
             carregarProdutos();
         });

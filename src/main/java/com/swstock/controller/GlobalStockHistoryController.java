@@ -37,6 +37,7 @@ public class GlobalStockHistoryController {
     private static final Logger LOGGER = Logger.getLogger(GlobalStockHistoryController.class.getName());
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    @FXML private Button btnResponsavelSessao;
     @FXML private DatePicker dpDataInicio;
     @FXML private DatePicker dpDataFim;
     @FXML private ComboBox<String> cbTipoOperacao;
@@ -88,9 +89,26 @@ public class GlobalStockHistoryController {
         ));
         cbTipoOperacao.setValue("Todos os Tipos (Entradas, Saídas e Ajustes)");
 
+        configurarBadgeResponsavel();
         carregarOpcoesGrupos();
         configurarTabela();
         configurarBuscaInstantanea();
+    }
+
+    private void configurarBadgeResponsavel() {
+        if (btnResponsavelSessao != null) {
+            btnResponsavelSessao.setText("👤 Responsável: " + com.swstock.util.SessionManager.getInstance().getResponsavelAtual());
+            com.swstock.util.SessionManager.getInstance().responsavelAtualProperty().addListener((obs, oldVal, newVal) -> {
+                btnResponsavelSessao.setText("👤 Responsável: " + (newVal != null ? newVal : "Administrador"));
+            });
+            btnResponsavelSessao.setTooltip(new Tooltip("Responsável ativo na sessão. Clique para alternar."));
+        }
+    }
+
+    @FXML
+    private void handleTrocarResponsavel() {
+        javafx.stage.Window owner = stage != null ? stage : (btnResponsavelSessao != null && btnResponsavelSessao.getScene() != null ? btnResponsavelSessao.getScene().getWindow() : null);
+        com.swstock.util.SessionManager.getInstance().trocarResponsavel(owner);
     }
 
     public void carregarOpcoesGrupos() {

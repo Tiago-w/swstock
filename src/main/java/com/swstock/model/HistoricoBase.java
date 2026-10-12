@@ -153,12 +153,20 @@ public class HistoricoBase {
         this.responsavel = responsavel;
     }
 
-    public String getBaseCodigo() {
+    public String getBaseTamanho() {
         return baseCodigo != null ? baseCodigo : "-";
     }
 
+    public void setBaseTamanho(String baseTamanho) {
+        this.baseCodigo = baseTamanho;
+    }
+
+    public String getBaseCodigo() {
+        return getBaseTamanho();
+    }
+
     public void setBaseCodigo(String baseCodigo) {
-        this.baseCodigo = baseCodigo;
+        setBaseTamanho(baseCodigo);
     }
 
     public String getBaseNome() {

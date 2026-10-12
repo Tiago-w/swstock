@@ -321,8 +321,8 @@ public class ProdutoDAO {
         List<Object> params = new ArrayList<>();
 
         if (termo != null && !termo.trim().isEmpty()) {
-            sql.append("AND (LOWER(nome) LIKE ? OR LOWER(codigoLoja) LIKE ? OR LOWER(grupo) LIKE ? OR LOWER(descricaoBreve) LIKE ?) ");
-            String wild = "%" + termo.trim().toLowerCase() + "%";
+            sql.append("AND (UNACCENT(nome) LIKE ? OR UNACCENT(codigoLoja) LIKE ? OR UNACCENT(grupo) LIKE ? OR UNACCENT(descricaoBreve) LIKE ?) ");
+            String wild = "%" + DatabaseManager.unaccent(termo.trim()) + "%";
             params.add(wild);
             params.add(wild);
             params.add(wild);
@@ -426,8 +426,8 @@ public class ProdutoDAO {
         }
 
         if (termoBusca != null && !termoBusca.trim().isEmpty()) {
-            sql.append("AND (LOWER(nome) LIKE ? OR LOWER(codigoLoja) LIKE ? OR LOWER(localizacao) LIKE ? OR LOWER(descricaoBreve) LIKE ?) ");
-            String wild = "%" + termoBusca.trim().toLowerCase() + "%";
+            sql.append("AND (UNACCENT(nome) LIKE ? OR UNACCENT(codigoLoja) LIKE ? OR UNACCENT(localizacao) LIKE ? OR UNACCENT(descricaoBreve) LIKE ?) ");
+            String wild = "%" + DatabaseManager.unaccent(termoBusca.trim()) + "%";
             params.add(wild);
             params.add(wild);
             params.add(wild);

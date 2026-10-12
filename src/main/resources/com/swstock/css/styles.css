@@ -200,19 +200,40 @@
     -fx-background-color: #F8FAFC;
     -fx-background-radius: 8px 8px 0 0;
     -fx-padding: 0;
-    -fx-border-color: #E2E8F0;
-    -fx-border-width: 0 0 1 0;
+    -fx-border-color: #CBD5E1;
+    -fx-border-width: 0 0 1px 0;
 }
 
 .table-view .column-header {
-    -fx-background-color: transparent;
+    -fx-background-color: #F8FAFC;
     -fx-padding: 11px 14px;
+    -fx-border-color: transparent #94A3B8 #CBD5E1 transparent;
+    -fx-border-width: 0 2px 1px 0;
+    -fx-border-style: solid;
+}
+
+.table-view .column-header:hover {
+    -fx-background-color: #F1F5F9;
+    -fx-border-color: transparent #1E293B #CBD5E1 transparent;
 }
 
 .table-view .column-header .label {
-    -fx-text-fill: #475569;
+    -fx-text-fill: #1E293B;
     -fx-font-weight: bold;
     -fx-font-size: 12px;
+}
+
+.table-view .filler {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: transparent transparent #CBD5E1 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.table-view .column-resize-line {
+    -fx-background: #2563EB;
+    -fx-background-color: #2563EB;
+    -fx-pref-width: 3px;
+    -fx-padding: 0;
 }
 
 /* Alinhamento de Cabeçalhos por Classe */
@@ -294,6 +315,8 @@
 
 .table-cell {
     -fx-padding: 8px 14px;
+    -fx-border-color: transparent #F1F5F9 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
 }
 
 .nav-button-sub {
@@ -597,3 +620,101 @@
     -fx-padding: 2px 6px;
     -fx-background-radius: 4px;
 }
+
+/* ==========================================================================
+   Barras de Rolagem (ScrollBars Visíveis e Arrastáveis)
+   ========================================================================== */
+.scroll-bar:vertical {
+    -fx-background-color: #F1F5F9;
+    -fx-pref-width: 15px;
+    -fx-min-width: 15px;
+}
+
+.scroll-bar:horizontal {
+    -fx-background-color: #F1F5F9;
+    -fx-pref-height: 15px;
+    -fx-min-height: 15px;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #E2E8F0;
+    -fx-border-color: #CBD5E1;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #94A3B8;
+    -fx-background-insets: 1px;
+    -fx-background-radius: 6px;
+}
+
+.scroll-bar:vertical .thumb {
+    -fx-min-height: 36px;
+}
+
+.scroll-bar:horizontal .thumb {
+    -fx-min-width: 36px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #475569;
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #1E293B;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: #E2E8F0;
+    -fx-background-radius: 2px;
+    -fx-padding: 3px;
+}
+
+.scroll-bar .increment-button:hover,
+.scroll-bar .decrement-button:hover {
+    -fx-background-color: #CBD5E1;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: #475569;
+}
+
+/* Badge de Responsável Ativo da Sessão */
+.badge-responsavel {
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-border-color: rgba(255, 255, 255, 0.35);
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 6px 14px;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.badge-responsavel:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.28);
+    -fx-border-color: #FFFFFF;
+}
+
+.badge-responsavel-dark {
+    -fx-background-color: #EFF6FF;
+    -fx-border-color: #BFDBFE;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 5px 12px;
+    -fx-text-fill: #1D4ED8;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.badge-responsavel-dark:hover {
+    -fx-background-color: #DBEAFE;
+    -fx-border-color: #93C5FD;
+}
+
+

@@ -44,13 +44,14 @@ public class BasesController {
     @FXML private ComboBox<String> cbFabricanteFiltro;
 
     @FXML private TableView<Base> tblBases;
-    @FXML private TableColumn<Base, String> colCodigo;
+    @FXML private TableColumn<Base, String> colTamanho;
     @FXML private TableColumn<Base, String> colNome;
     @FXML private TableColumn<Base, String> colTipo;
     @FXML private TableColumn<Base, String> colFabricante;
     @FXML private TableColumn<Base, String> colValorCompra;
     @FXML private TableColumn<Base, Base> colQuantidade;
     @FXML private TableColumn<Base, Void> colAcoes;
+    @FXML private Button btnResponsavelSessao;
 
     private BaseDAO baseDAO;
     private HistoricoBaseDAO historicoBaseDAO;
@@ -67,11 +68,29 @@ public class BasesController {
             historicoBaseDAO = new HistoricoBaseDAO();
         }
 
+        configurarBadgeResponsavel();
+        com.swstock.util.DeadKeyHelper.attach(txtBusca);
         configurarTabela();
         configurarFiltros();
         atualizarEstiloTabs();
         carregarFabricantes();
         recarregarDados();
+    }
+
+    private void configurarBadgeResponsavel() {
+        if (btnResponsavelSessao != null) {
+            btnResponsavelSessao.setText("👤 Responsável: " + com.swstock.util.SessionManager.getInstance().getResponsavelAtual());
+            com.swstock.util.SessionManager.getInstance().responsavelAtualProperty().addListener((obs, oldVal, newVal) -> {
+                btnResponsavelSessao.setText("👤 Responsável: " + (newVal != null ? newVal : "Administrador"));
+            });
+            btnResponsavelSessao.setTooltip(new Tooltip("Responsável ativo na sessão. Clique para alternar."));
+        }
+    }
+
+    @FXML
+    private void handleTrocarResponsavel() {
+        javafx.stage.Window owner = stage != null ? stage : (tblBases != null && tblBases.getScene() != null ? tblBases.getScene().getWindow() : null);
+        com.swstock.util.SessionManager.getInstance().trocarResponsavel(owner);
     }
 
     public void setStage(Stage stage) {
@@ -87,7 +106,7 @@ public class BasesController {
     }
 
     private void configurarTabela() {
-        colCodigo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getCodigo()));
+        colTamanho.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTamanho()));
         colNome.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getNome()));
         
         colTipo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTipoFormatado()));
@@ -266,6 +285,55 @@ public class BasesController {
         }
     }
 
+    private VBox criarStepperEstoque(TextField txtQtd, int estoqueInicial) {
+        Button btnMenos = new Button("-");
+        btnMenos.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 34px; -fx-min-height: 28px; -fx-background-color: #EF4444; -fx-text-fill: white; -fx-background-radius: 4px; -fx-cursor: hand;");
+
+        Button btnMais = new Button("+");
+        btnMais.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 34px; -fx-min-height: 28px; -fx-background-color: #10B981; -fx-text-fill: white; -fx-background-radius: 4px; -fx-cursor: hand;");
+
+        Label lblDelta = new Label("");
+
+        Runnable atualizarDelta = () -> {
+            int atual = 0;
+            try {
+                atual = Integer.parseInt(txtQtd.getText().trim());
+            } catch (NumberFormatException ignored) {}
+            int diff = atual - estoqueInicial;
+            if (diff > 0) {
+                lblDelta.setText("Está sendo adicionado " + diff + (diff == 1 ? " item" : " itens"));
+                lblDelta.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #16A34A;");
+            } else if (diff < 0) {
+                lblDelta.setText("Está sendo retirado " + Math.abs(diff) + (Math.abs(diff) == 1 ? " item" : " itens"));
+                lblDelta.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #DC2626;");
+            } else {
+                lblDelta.setText("");
+            }
+        };
+
+        btnMenos.setOnAction(e -> {
+            int v = 0;
+            try { v = Integer.parseInt(txtQtd.getText().trim()); } catch (NumberFormatException ignored) {}
+            if (v > 0) {
+                txtQtd.setText(String.valueOf(v - 1));
+            }
+        });
+
+        btnMais.setOnAction(e -> {
+            int v = 0;
+            try { v = Integer.parseInt(txtQtd.getText().trim()); } catch (NumberFormatException ignored) {}
+            txtQtd.setText(String.valueOf(v + 1));
+        });
+
+        txtQtd.textProperty().addListener((obs, o, n) -> atualizarDelta.run());
+        atualizarDelta.run();
+
+        txtQtd.setPrefWidth(110);
+        HBox stepperBox = new HBox(6, btnMenos, txtQtd, btnMais);
+        stepperBox.setAlignment(Pos.CENTER_LEFT);
+        return new VBox(4, stepperBox, lblDelta);
+    }
+
     @FXML
     private void handleNovaBase() {
         Dialog<Base> dialog = new Dialog<>();
@@ -280,11 +348,13 @@ public class BasesController {
         grid.setVgap(12);
         grid.setPadding(new Insets(20, 20, 10, 10));
 
-        TextField txtCod = new TextField();
-        txtCod.setPromptText("Ex: B-01 ou 53-100");
+        TextField txtTamanho = new TextField();
+        txtTamanho.setPromptText("Ex: 3.6L, 900ml, 18L, 225ml...");
+        com.swstock.util.DeadKeyHelper.attach(txtTamanho);
 
         TextField txtNomeBase = new TextField();
         txtNomeBase.setPromptText("Ex: Base Branco Puro ou Amarelo Ouro");
+        com.swstock.util.DeadKeyHelper.attach(txtNomeBase);
 
         ComboBox<String> cbTipo = new ComboBox<>(FXCollections.observableArrayList("AUTOMOTIVA", "PREDIAL"));
         cbTipo.setValue(tipoAtivo);
@@ -292,15 +362,16 @@ public class BasesController {
         TextField txtFab = new TextField();
         txtFab.setPromptText("Ex: Coral, Suvinil, Wanda, Lazzuril...");
         txtFab.setText("Geral");
+        com.swstock.util.DeadKeyHelper.attach(txtFab);
 
         TextField txtQtd = new TextField("0");
-        txtQtd.setPromptText("Quantidade de latas/galões");
+        VBox boxQtd = criarStepperEstoque(txtQtd, 0);
 
         TextField txtPreco = new TextField("0.00");
         txtPreco.setPromptText("Valor de compra (R$)");
 
-        grid.add(new Label("Código da Base:"), 0, 0);
-        grid.add(txtCod, 1, 0);
+        grid.add(new Label("Tamanho da Base:"), 0, 0);
+        grid.add(txtTamanho, 1, 0);
         grid.add(new Label("Nome da Base:"), 0, 1);
         grid.add(txtNomeBase, 1, 1);
         grid.add(new Label("Linha / Tipo:"), 0, 2);
@@ -308,7 +379,7 @@ public class BasesController {
         grid.add(new Label("Fabricante / Marca:"), 0, 3);
         grid.add(txtFab, 1, 3);
         grid.add(new Label("Quantidade em Estoque:"), 0, 4);
-        grid.add(txtQtd, 1, 4);
+        grid.add(boxQtd, 1, 4);
         grid.add(new Label("Valor de Compra (R$):"), 0, 5);
         grid.add(txtPreco, 1, 5);
 
@@ -316,8 +387,8 @@ public class BasesController {
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == ButtonType.OK) {
-                if (txtCod.getText().trim().isEmpty() || txtNomeBase.getText().trim().isEmpty()) {
-                    mostrarAlerta(Alert.AlertType.WARNING, "Campos Obrigatórios", "Código e Nome da base são obrigatórios.");
+                if (txtTamanho.getText().trim().isEmpty() || txtNomeBase.getText().trim().isEmpty()) {
+                    mostrarAlerta(Alert.AlertType.WARNING, "Campos Obrigatórios", "Tamanho e Nome da base são obrigatórios.");
                     return null;
                 }
                 int qtd = 0;
@@ -326,7 +397,7 @@ public class BasesController {
                 try { preco = Double.parseDouble(txtPreco.getText().trim().replace(",", ".")); } catch (NumberFormatException ignored) {}
 
                 return new Base(
-                        txtCod.getText().trim().toUpperCase(),
+                        txtTamanho.getText().trim().toUpperCase(),
                         txtNomeBase.getText().trim(),
                         cbTipo.getValue(),
                         txtFab.getText().trim(),
@@ -371,16 +442,26 @@ public class BasesController {
         grid.setVgap(12);
         grid.setPadding(new Insets(20, 20, 10, 10));
 
-        TextField txtCod = new TextField(base.getCodigo());
+        TextField txtTamanho = new TextField(base.getTamanho());
+        txtTamanho.setPromptText("Ex: 3.6L, 900ml, 18L, 225ml...");
+        com.swstock.util.DeadKeyHelper.attach(txtTamanho);
+
         TextField txtNomeBase = new TextField(base.getNome());
+        com.swstock.util.DeadKeyHelper.attach(txtNomeBase);
+
         ComboBox<String> cbTipo = new ComboBox<>(FXCollections.observableArrayList("AUTOMOTIVA", "PREDIAL"));
         cbTipo.setValue(base.getTipo());
+
         TextField txtFab = new TextField(base.getFabricante());
+        com.swstock.util.DeadKeyHelper.attach(txtFab);
+
         TextField txtQtd = new TextField(String.valueOf(base.getQuantidade()));
+        VBox boxQtd = criarStepperEstoque(txtQtd, base.getQuantidade());
+
         TextField txtPreco = new TextField(String.format("%.2f", base.getValorCompra()).replace(",", "."));
 
-        grid.add(new Label("Código da Base:"), 0, 0);
-        grid.add(txtCod, 1, 0);
+        grid.add(new Label("Tamanho da Base:"), 0, 0);
+        grid.add(txtTamanho, 1, 0);
         grid.add(new Label("Nome da Base:"), 0, 1);
         grid.add(txtNomeBase, 1, 1);
         grid.add(new Label("Linha / Tipo:"), 0, 2);
@@ -388,7 +469,7 @@ public class BasesController {
         grid.add(new Label("Fabricante / Marca:"), 0, 3);
         grid.add(txtFab, 1, 3);
         grid.add(new Label("Quantidade em Estoque:"), 0, 4);
-        grid.add(txtQtd, 1, 4);
+        grid.add(boxQtd, 1, 4);
         grid.add(new Label("Valor de Compra (R$):"), 0, 5);
         grid.add(txtPreco, 1, 5);
 
@@ -396,8 +477,8 @@ public class BasesController {
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == ButtonType.OK) {
-                if (txtCod.getText().trim().isEmpty() || txtNomeBase.getText().trim().isEmpty()) {
-                    mostrarAlerta(Alert.AlertType.WARNING, "Campos Obrigatórios", "Código e Nome da base são obrigatórios.");
+                if (txtTamanho.getText().trim().isEmpty() || txtNomeBase.getText().trim().isEmpty()) {
+                    mostrarAlerta(Alert.AlertType.WARNING, "Campos Obrigatórios", "Tamanho e Nome da base são obrigatórios.");
                     return null;
                 }
                 int qtd = 0;
@@ -405,7 +486,7 @@ public class BasesController {
                 double preco = 0.0;
                 try { preco = Double.parseDouble(txtPreco.getText().trim().replace(",", ".")); } catch (NumberFormatException ignored) {}
 
-                base.setCodigo(txtCod.getText().trim().toUpperCase());
+                base.setTamanho(txtTamanho.getText().trim().toUpperCase());
                 base.setNome(txtNomeBase.getText().trim());
                 base.setTipo(cbTipo.getValue());
                 base.setFabricante(txtFab.getText().trim());

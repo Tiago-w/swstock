@@ -26,6 +26,8 @@
                 </VBox>
                 <Label fx:id="lblTotalCoresContador" text="0 Cores cadastradas"
                        style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #2563EB;" />
+                <Button fx:id="btnResponsavelSessao" onAction="#handleTrocarResponsavel"
+                        styleClass="badge-responsavel-dark" text="👤 Responsável: Administrador" />
             </children>
         </HBox>
 
@@ -62,7 +64,7 @@
                         <TableColumn fx:id="colAcoesCor" prefWidth="160.0" text="AÇÕES" style="-fx-alignment: CENTER;" />
                     </columns>
                     <columnResizePolicy>
-                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <placeholder>
                         <VBox alignment="CENTER" spacing="6.0" style="-fx-padding: 24px;">

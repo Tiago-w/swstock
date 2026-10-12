@@ -51,6 +51,7 @@ public class ProductDetailController {
     @FXML private Label lblModalNome;
     @FXML private Label lblModalCodigo;
     @FXML private Label lblAutoSaveStatus;
+    @FXML private Button btnResponsavelSessao;
 
     @FXML private TabPane tabPanePrincipal;
     @FXML private TextField txtQuantidade;
@@ -65,6 +66,7 @@ public class ProductDetailController {
 
     @FXML private HBox boxLoadingWeb;
     @FXML private Label lblLoadingWebText;
+    @FXML private Label lblDeltaEstoque;
 
     @FXML private TextField txtNome;
     @FXML private TextField txtCodigoLoja;
@@ -109,6 +111,8 @@ public class ProductDetailController {
     private java.util.function.Consumer<String> onOpenMapCallback;
     private Stage stage;
     private int estoqueInicial = 0;
+    private int estoqueInicialProduto = 0;
+    private int estoqueInicialCor = 0;
 
     private final ProductEnrichmentService enrichmentService = new ProductEnrichmentService();
     private List<String> imagensEncontradas = new ArrayList<>();
@@ -117,13 +121,35 @@ public class ProductDetailController {
 
     @FXML
     public void initialize() {
+        com.swstock.util.DeadKeyHelper.attach(txtNome);
+        com.swstock.util.DeadKeyHelper.attach(txtGrupo);
+        com.swstock.util.DeadKeyHelper.attach(txtLocalizacao);
+        com.swstock.util.DeadKeyHelper.attach(txtDescricaoBreve);
+
         txtUrlImagem.textProperty().addListener((obs, oldVal, newVal) -> {
             carregarImagem(newVal);
         });
 
+        configurarBadgeResponsavel();
         configurarCampoQuantidade();
         configurarTabelaHistorico();
         configurarSeletorCores();
+    }
+
+    private void configurarBadgeResponsavel() {
+        if (btnResponsavelSessao != null) {
+            btnResponsavelSessao.setText("👤 Responsável: " + com.swstock.util.SessionManager.getInstance().getResponsavelAtual());
+            com.swstock.util.SessionManager.getInstance().responsavelAtualProperty().addListener((obs, oldVal, newVal) -> {
+                btnResponsavelSessao.setText("👤 Responsável: " + (newVal != null ? newVal : "Administrador"));
+            });
+            btnResponsavelSessao.setTooltip(new Tooltip("Responsável ativo na sessão. Clique para alternar."));
+        }
+    }
+
+    @FXML
+    private void handleTrocarResponsavel() {
+        javafx.stage.Window owner = stage != null ? stage : (btnResponsavelSessao != null && btnResponsavelSessao.getScene() != null ? btnResponsavelSessao.getScene().getWindow() : null);
+        com.swstock.util.SessionManager.getInstance().trocarResponsavel(owner);
     }
 
     private long lastKeyCorTime = 0;
@@ -375,6 +401,21 @@ public class ProductDetailController {
         tblHistorico.setItems(historicoList);
     }
 
+    private void atualizarFeedbackDelta(int qtdAtual) {
+        if (lblDeltaEstoque == null) return;
+        int inicial = (corAtiva != null) ? estoqueInicialCor : estoqueInicialProduto;
+        int diff = qtdAtual - inicial;
+        if (diff > 0) {
+            lblDeltaEstoque.setText("Está sendo adicionado " + diff + (diff == 1 ? " item" : " itens"));
+            lblDeltaEstoque.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 12px;");
+        } else if (diff < 0) {
+            lblDeltaEstoque.setText("Está sendo retirado " + Math.abs(diff) + (Math.abs(diff) == 1 ? " item" : " itens"));
+            lblDeltaEstoque.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 12px;");
+        } else {
+            lblDeltaEstoque.setText("");
+        }
+    }
+
     private void configurarCampoQuantidade() {
         txtQuantidade.textProperty().addListener((observable, oldValue, newValue) -> {
             if (isUpdatingProgrammatically) return;
@@ -387,20 +428,17 @@ public class ProductDetailController {
             if (!newValue.isEmpty()) {
                 try {
                     int novaQtd = Integer.parseInt(newValue);
-                    if (corAtiva != null) {
-                        corAtiva.setQuantidade(novaQtd);
-                        lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
+                    atualizarFeedbackDelta(novaQtd);
+                    int inicial = (corAtiva != null) ? estoqueInicialCor : estoqueInicialProduto;
+                    if (novaQtd != inicial) {
+                        lblAutoSaveStatus.setText("Alteração pendente de salvamento" + (corAtiva != null ? " (" + corAtiva.getNomeCor() + ")" : ""));
                         lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
-                    } else if (coresDoProduto.isEmpty()) {
-                        produto.setQuantidade(novaQtd);
-                        if (novaQtd != estoqueInicial) {
-                            lblAutoSaveStatus.setText("Alteração pendente de salvamento");
-                            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
-                        } else {
-                            atualizarStatusSincronizado();
-                        }
+                    } else {
+                        atualizarStatusSincronizado();
                     }
                 } catch (NumberFormatException ignored) {}
+            } else {
+                atualizarFeedbackDelta(0);
             }
         });
 
@@ -408,11 +446,7 @@ public class ProductDetailController {
             if (!hasFocus) {
                 if (txtQuantidade.getText() == null || txtQuantidade.getText().trim().isEmpty()) {
                     setQuantidadeDisplay(0);
-                    if (corAtiva != null) {
-                        corAtiva.setQuantidade(0);
-                    } else {
-                        produto.setQuantidade(0);
-                    }
+                    atualizarFeedbackDelta(0);
                 }
             }
         });
@@ -420,6 +454,12 @@ public class ProductDetailController {
 
     public void setDialogStage(Stage stage) {
         this.stage = stage;
+        if (this.stage != null) {
+            this.stage.setOnCloseRequest(event -> {
+                event.consume();
+                handleFechar();
+            });
+        }
     }
 
     public void setProdutoDAO(ProdutoDAO produtoDAO) {
@@ -454,6 +494,8 @@ public class ProductDetailController {
         if (produto == null) {
             this.produto = new Produto();
             this.estoqueInicial = 0;
+            this.estoqueInicialProduto = 0;
+            this.estoqueInicialCor = 0;
             lblModalNome.setText("Novo Produto");
             lblModalCodigo.setText("CÓDIGO: [Pendente de Cadastro]");
             setQuantidadeDisplay(0);
@@ -468,8 +510,11 @@ public class ProductDetailController {
             if (txtGrupo != null) txtGrupo.setText("GERAL");
             carregarHistorico();
             carregarCoresProduto();
+            atualizarFeedbackDelta(0);
         } else {
             this.estoqueInicial = produto.getQuantidade() != null ? produto.getQuantidade() : 0;
+            this.estoqueInicialProduto = this.estoqueInicial;
+            this.estoqueInicialCor = 0;
             lblModalNome.setText(produto.getNome() != null ? produto.getNome() : "Sem Nome");
             lblModalCodigo.setText("CÓDIGO: #" + (produto.getCodigoLoja() != null ? produto.getCodigoLoja() : "N/A"));
             setQuantidadeDisplay(this.estoqueInicial);
@@ -492,6 +537,7 @@ public class ProductDetailController {
             atualizarStatusSincronizado();
             carregarHistorico();
             carregarCoresProduto();
+            atualizarFeedbackDelta(this.estoqueInicialProduto);
         }
     }
 
@@ -527,21 +573,25 @@ public class ProductDetailController {
             }
             if (idx > 0) {
                 cbCorAtual.getSelectionModel().select(idx);
+                this.estoqueInicialCor = corAtiva.getQuantidade();
                 if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("ESTOQUE COR: " + corAtiva.getNomeCor());
                 setQuantidadeDisplay(corAtiva.getQuantidade());
                 if (lblEstoqueInicial != null) lblEstoqueInicial.setText(corAtiva.getQuantidade() + " un.");
+                atualizarFeedbackDelta(corAtiva.getQuantidade());
             } else {
                 corAtiva = null;
                 cbCorAtual.getSelectionModel().select(0);
                 if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
-                setQuantidadeDisplay(produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0);
-                if (lblEstoqueInicial != null) lblEstoqueInicial.setText((produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0) + " un.");
+                setQuantidadeDisplay(this.estoqueInicialProduto);
+                if (lblEstoqueInicial != null) lblEstoqueInicial.setText(this.estoqueInicialProduto + " un.");
+                atualizarFeedbackDelta(this.estoqueInicialProduto);
             }
         } else {
             cbCorAtual.getSelectionModel().select(0);
             if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
-            setQuantidadeDisplay(produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0);
-            if (lblEstoqueInicial != null) lblEstoqueInicial.setText((produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0) + " un.");
+            setQuantidadeDisplay(this.estoqueInicialProduto);
+            if (lblEstoqueInicial != null) lblEstoqueInicial.setText(this.estoqueInicialProduto + " un.");
+            atualizarFeedbackDelta(this.estoqueInicialProduto);
         }
         isUpdatingProgrammatically = false;
         atualizarEstadoTravaQuantidade();
@@ -550,14 +600,17 @@ public class ProductDetailController {
     public void selecionarCorAtiva(ProdutoCor cor) {
         this.corAtiva = cor;
         if (cor != null) {
+            this.estoqueInicialCor = cor.getQuantidade();
             if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("ESTOQUE COR: " + cor.getNomeCor());
             setQuantidadeDisplay(cor.getQuantidade());
             if (lblEstoqueInicial != null) lblEstoqueInicial.setText(cor.getQuantidade() + " un.");
+            atualizarFeedbackDelta(cor.getQuantidade());
         } else {
             if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
-            int q = produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : 0;
+            int q = produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : this.estoqueInicialProduto;
             setQuantidadeDisplay(q);
             if (lblEstoqueInicial != null) lblEstoqueInicial.setText(q + " un.");
+            atualizarFeedbackDelta(this.estoqueInicialProduto);
         }
         atualizarEstadoTravaQuantidade();
     }
@@ -893,12 +946,11 @@ public class ProductDetailController {
         int atual = parseQuantidadeAtual();
         int novo = atual + 1;
         setQuantidadeDisplay(novo);
+        atualizarFeedbackDelta(novo);
         if (corAtiva != null) {
-            corAtiva.setQuantidade(novo);
             lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
             lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
         } else if (coresDoProduto.isEmpty()) {
-            produto.setQuantidade(novo);
             lblAutoSaveStatus.setText("Alteração pendente de salvamento");
             lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
         }
@@ -915,12 +967,11 @@ public class ProductDetailController {
         if (atual > 0) {
             int novo = atual - 1;
             setQuantidadeDisplay(novo);
+            atualizarFeedbackDelta(novo);
             if (corAtiva != null) {
-                corAtiva.setQuantidade(novo);
                 lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
                 lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
             } else if (coresDoProduto.isEmpty()) {
-                produto.setQuantidade(novo);
                 lblAutoSaveStatus.setText("Alteração pendente de salvamento");
                 lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
             }
@@ -965,10 +1016,13 @@ public class ProductDetailController {
             try {
                 produtoCorDAO.updateQuantidade(corAtiva.getId(), qtdFinal, "Modificação de estoque [" + corAtiva.getNomeCor() + "]", responsavel);
                 corAtiva.setQuantidade(qtdFinal);
+                this.estoqueInicialCor = qtdFinal;
 
                 // Recalcula total do produto
                 int totalQtd = produtoCorDAO.getTotalQuantidadeCores(produto.getId());
                 produto.setQuantidade(totalQtd);
+                this.estoqueInicialProduto = totalQtd;
+                this.estoqueInicial = totalQtd;
 
                 produto.setNome(txtNome.getText().trim());
                 produto.setCodigoLoja(txtCodigoLoja.getText().trim());
@@ -1041,6 +1095,8 @@ public class ProductDetailController {
                     produtoDAO.update(produto, responsavel, "Modificação de estoque");
                 }
                 this.estoqueInicial = qtdFinal;
+                this.estoqueInicialProduto = qtdFinal;
+                atualizarFeedbackDelta(qtdFinal);
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Alterações salvas no SQLite!");
             }
             atualizarStatusSincronizado();
@@ -1091,6 +1147,12 @@ public class ProductDetailController {
 
     @FXML
     private void handleFechar() {
+        if (produto != null) {
+            produto.setQuantidade(this.estoqueInicialProduto);
+        }
+        if (corAtiva != null) {
+            corAtiva.setQuantidade(this.estoqueInicialCor);
+        }
         fecharModal();
     }
 

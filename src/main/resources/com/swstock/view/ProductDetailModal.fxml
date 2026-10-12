@@ -25,6 +25,8 @@
                 </VBox>
                 <Label fx:id="lblAutoSaveStatus" text="Sincronizado com SQLite"
                        style="-fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 11px;" />
+                <Button fx:id="btnResponsavelSessao" onAction="#handleTrocarResponsavel"
+                        styleClass="badge-responsavel-dark" text="👤 Responsável: Administrador" />
             </children>
         </HBox>
 
@@ -102,6 +104,9 @@
                                                             </children>
                                                         </VBox>
                                                     </children>
+                                                </HBox>
+                                                <HBox alignment="CENTER_LEFT" style="-fx-padding: 2px 0 0 8px;">
+                                                    <Label fx:id="lblDeltaEstoque" text="" style="-fx-font-size: 12px; -fx-font-weight: bold;" />
                                                 </HBox>
                                             </children>
                                         </VBox>
@@ -308,7 +313,7 @@
                                         <TableColumn fx:id="colMotivo" text="Motivo / Origem" prefWidth="180.0" />
                                     </columns>
                                     <columnResizePolicy>
-                                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />
                                     </columnResizePolicy>
                                     <placeholder>
                                         <Label text="Nenhuma movimentação registrada para os critérios selecionados."

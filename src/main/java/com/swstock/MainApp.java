@@ -49,6 +49,11 @@ public class MainApp extends Application {
 
             primaryStage.show();
             LOGGER.info("SWStock iniciado com sucesso.");
+
+            // Exibe o diálogo de login inicial para selecionar o responsável pelas operações
+            javafx.application.Platform.runLater(() -> {
+                com.swstock.util.SessionManager.getInstance().exibirLoginInicial(primaryStage);
+            });
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Falha crítica ao iniciar SWStock.", e);
         }

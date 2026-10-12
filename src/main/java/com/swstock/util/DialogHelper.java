@@ -16,16 +16,37 @@ import java.util.Optional;
 public class DialogHelper {
 
     /**
-     * Exibe um modal solicitando a identificação do funcionário responsável pela alteração.
-     * Retorna Optional vazio se o usuário cancelar, impedindo o salvamento.
+     * Retorna diretamente o responsável logado na sessão ativa, eliminando a burocracia de
+     * confirmações repetitivas a cada alteração. Caso a sessão ainda não esteja inicializada,
+     * abre o diálogo de seleção.
      */
     public static Optional<String> solicitarResponsavel(Window owner, String titulo, String header) {
+        String resp = SessionManager.getInstance().getResponsavelAtual();
+        if (resp != null && !resp.trim().isEmpty()) {
+            return Optional.of(resp.trim());
+        }
+        return abrirDialogSelecao(owner, titulo, header);
+    }
+
+    public static Optional<String> solicitarResponsavel() {
+        return solicitarResponsavel(null, null, null);
+    }
+
+    public static Optional<String> solicitarResponsavel(String motivo) {
+        return solicitarResponsavel(null, "Identificação do Responsável", motivo);
+    }
+
+    /**
+     * Exibe um modal solicitando a identificação do funcionário responsável pela alteração.
+     * Retorna Optional vazio se o usuário cancelar.
+     */
+    public static Optional<String> abrirDialogSelecao(Window owner, String titulo, String header) {
         Dialog<String> dialog = new Dialog<>();
         if (owner != null) {
             dialog.initOwner(owner);
         }
         dialog.setTitle(titulo != null ? titulo : "Identificação do Responsável");
-        dialog.setHeaderText(header != null ? header : "Informe o funcionário responsável por esta alteração:");
+        dialog.setHeaderText(header != null ? header : "Informe o funcionário responsável:");
 
         ButtonType btnConfirmar = new ButtonType("Confirmar", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(btnConfirmar, ButtonType.CANCEL);
