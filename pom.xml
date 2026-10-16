@@ -185,6 +185,7 @@
                         </goals>
                         <configuration>
                             <headerType>gui</headerType>
+                            <manifest>${project.basedir}/src/main/resources/app.manifest</manifest>
                             <outfile>${project.build.directory}/SWStock.exe</outfile>
                             <jar>${project.build.directory}/${project.build.finalName}.jar</jar>
                             <errTitle>SWStock - Erro ao Iniciar</errTitle>

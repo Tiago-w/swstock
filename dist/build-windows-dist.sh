@@ -81,9 +81,13 @@ ARQUIVOS DO PACOTE:
 - SWStock.bat   : Script de inicializacao alternativa (caso necessario depuracao).
 - LEIA-ME.txt   : Este arquivo de instrucoes.
 
-BANCO DE DADOS:
-- O banco de dados SQLite ("swstock.db") sera criado e mantido
-  automaticamente na mesma pasta do executavel.
+BANCO DE DADOS E PERMISSOES:
+- O SWStock abre com duplo clique em qualquer usuario padrao,
+  NAO necessitando de "Executar como Administrador".
+- O banco de dados SQLite ("swstock.db") e mantido com seguranca na pasta
+  de dados do seu usuario (%APPDATA%\SWStock\swstock.db).
+- Caso prefira o modo portatil (banco salvo diretamente na mesma pasta do executavel),
+  basta criar um arquivo vazio com o nome ".portable" nesta pasta.
 
 DISTRIBUICAO:
 - Para levar a aplicacao para outro computador Windows, basta copiar

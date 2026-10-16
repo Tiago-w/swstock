@@ -1,5 +1,9 @@
 package com.swstock.database;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -32,9 +36,147 @@ public class DatabaseManager {
 
     public static synchronized DatabaseManager getInstance() {
         if (instance == null) {
-            instance = new DatabaseManager(DEFAULT_DB_FILE);
+            instance = new DatabaseManager(resolveDefaultDatabasePath());
         }
         return instance;
+    }
+
+    /**
+     * Resolve de forma inteligente e segura o caminho do banco de dados SQLite.
+     * Prioridades:
+     * 1. Propriedade de sistema 'swstock.db.path' (-Dswstock.db.path=...)
+     * 2. Modo portátil explícito (se existir .portable ou portable.txt na pasta da aplicação e a pasta for gravável)
+     * 3. Diretório de dados do usuário:
+     *    - No Windows: %APPDATA%/SWStock/swstock.db (garante 100% de permissão de escrita sem necessidade de Administrador)
+     *    - No Linux/Mac: ~/.swstock/swstock.db (ou diretório local em ambiente de desenvolvimento)
+     * 4. Migração transparente de swstock.db legado caso exista na pasta da aplicação.
+     */
+    public static String resolveDefaultDatabasePath() {
+        // 1. Propriedade de sistema tem prioridade absoluta (-Dswstock.db.path=...)
+        String customProp = System.getProperty("swstock.db.path");
+        if (customProp != null && !customProp.isBlank()) {
+            return customProp.trim();
+        }
+
+        Path appDir = getApplicationDirectory();
+        Path localDbInAppDir = appDir.resolve(DEFAULT_DB_FILE);
+        Path localDbInCurrentDir = Path.of(DEFAULT_DB_FILE).toAbsolutePath().normalize();
+
+        // 2. Prioridade direta para o arquivo swstock.db na pasta da aplicação ou diretório atual:
+        //    Permite o fluxo tradicional do usuário ("baixar o executável e colocar o .db antigo junto")
+        if (Files.exists(localDbInAppDir) && isDirectoryWritable(appDir)) {
+            garantirPermissaoEscrita(localDbInAppDir);
+            LOGGER.info("Base de dados local encontrada na pasta da aplicação: " + localDbInAppDir.toAbsolutePath());
+            return localDbInAppDir.toAbsolutePath().toString();
+        }
+
+        if (Files.exists(localDbInCurrentDir) && isDirectoryWritable(localDbInCurrentDir.getParent())) {
+            garantirPermissaoEscrita(localDbInCurrentDir);
+            LOGGER.info("Base de dados local encontrada no diretório atual: " + localDbInCurrentDir);
+            return localDbInCurrentDir.toString();
+        }
+
+        // 3. Se a pasta da aplicação for gravável (Desktop, Downloads, C:\swstock, pendrive, etc.):
+        //    Cria/mantém o banco diretamente na mesma pasta do executável (modo portátil e transparente)
+        if (isDirectoryWritable(appDir)) {
+            LOGGER.info("Pasta da aplicação é gravável. Utilizando banco local: " + localDbInAppDir.toAbsolutePath());
+            return localDbInAppDir.toAbsolutePath().toString();
+        }
+
+        // 4. Caso a pasta da aplicação NÃO seja gravável (ex: C:\Program Files restrito sem admin):
+        //    Redireciona com segurança para a pasta do usuário (%APPDATA% no Windows ou ~/.swstock no Linux/Mac)
+        boolean isWindows = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
+        Path userDbDir;
+        if (isWindows) {
+            String appData = System.getenv("APPDATA");
+            if (appData != null && !appData.isBlank()) {
+                userDbDir = Path.of(appData, "SWStock");
+            } else {
+                userDbDir = Path.of(System.getProperty("user.home"), "AppData", "Roaming", "SWStock");
+            }
+        } else {
+            userDbDir = Path.of(System.getProperty("user.home"), ".swstock");
+        }
+
+        try {
+            if (!Files.exists(userDbDir)) {
+                Files.createDirectories(userDbDir);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Não foi possível criar o diretório de dados do usuário: " + userDbDir + ". Tentando diretório local.", e);
+            return localDbInAppDir.toAbsolutePath().toString();
+        }
+
+        Path targetDb = userDbDir.resolve(DEFAULT_DB_FILE);
+
+        // Se havia um swstock.db legado na pasta protegida mas não conseguimos escrever lá, copia para %APPDATA%
+        if (!Files.exists(targetDb) && Files.exists(localDbInAppDir)) {
+            try {
+                LOGGER.info("Copiando base de dados da pasta restrita para a pasta do usuário: " + targetDb);
+                Files.copy(localDbInAppDir, targetDb, StandardCopyOption.COPY_ATTRIBUTES);
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Falha ao copiar base legada para " + targetDb, e);
+            }
+        }
+
+        return targetDb.toAbsolutePath().toString();
+    }
+
+    private static void garantirPermissaoEscrita(Path dbFile) {
+        try {
+            File f = dbFile.toFile();
+            if (!f.canWrite()) {
+                f.setWritable(true, false);
+            }
+            if (!f.canRead()) {
+                f.setReadable(true, false);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static Path getApplicationDirectory() {
+        try {
+            var codeSource = DatabaseManager.class.getProtectionDomain().getCodeSource();
+            if (codeSource != null && codeSource.getLocation() != null) {
+                Path path = Path.of(codeSource.getLocation().toURI());
+                if (Files.isRegularFile(path)) {
+                    return path.getParent();
+                }
+                return path;
+            }
+        } catch (Exception e) {
+            // Fallback para diretório de execução atual
+        }
+        return Path.of(".").toAbsolutePath().normalize();
+    }
+
+    private static boolean isPortableMode(Path appDir) {
+        if (appDir == null) return false;
+        return Files.exists(appDir.resolve(".portable")) || Files.exists(appDir.resolve("portable.txt"));
+    }
+
+    private static boolean isDirectoryWritable(Path dir) {
+        if (dir == null || !Files.exists(dir)) return false;
+        try {
+            Path testFile = dir.resolve(".swstock_perm_test_" + System.currentTimeMillis());
+            Files.createFile(testFile);
+            Files.deleteIfExists(testFile);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String getDbUrl() {
+        return dbUrl;
+    }
+
+    public String getDbPath() {
+        if (dbUrl != null && dbUrl.startsWith("jdbc:sqlite:")) {
+            return dbUrl.substring("jdbc:sqlite:".length());
+        }
+        return dbUrl;
     }
 
     public static synchronized DatabaseManager getInstance(String customDbPath) {
