@@ -100,6 +100,7 @@ public class DatabaseManager {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nome TEXT NOT NULL,
                 grupo TEXT DEFAULT 'GERAL',
+                subcategoria TEXT DEFAULT '',
                 precoVista REAL NOT NULL DEFAULT 0.0,
                 precoPrazo REAL NOT NULL DEFAULT 0.0,
                 codigoLoja TEXT NOT NULL UNIQUE,
@@ -114,6 +115,7 @@ public class DatabaseManager {
 
         String createIndexCodigoLoja = "CREATE INDEX IF NOT EXISTS idx_produtos_codigo_loja ON produtos(codigoLoja);";
         String createIndexGrupo = "CREATE INDEX IF NOT EXISTS idx_produtos_grupo ON produtos(grupo);";
+        String createIndexSubcategoria = "CREATE INDEX IF NOT EXISTS idx_produtos_subcategoria ON produtos(subcategoria);";
         String createIndexLocalizacao = "CREATE INDEX IF NOT EXISTS idx_produtos_localizacao ON produtos(localizacao);";
         String createIndexNome = "CREATE INDEX IF NOT EXISTS idx_produtos_nome ON produtos(nome);";
 
@@ -166,6 +168,22 @@ public class DatabaseManager {
         String createIndexCoresProd = "CREATE INDEX IF NOT EXISTS idx_produto_cores_prod ON produto_cores(produto_id);";
         String createIndexCoresNome = "CREATE INDEX IF NOT EXISTS idx_produto_cores_nome ON produto_cores(nome_cor);";
 
+        String createTableProdutoSubcategorias = """
+            CREATE TABLE IF NOT EXISTS produto_subcategorias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                produto_id INTEGER NOT NULL,
+                nome_subcategoria TEXT NOT NULL,
+                quantidade INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(produto_id) REFERENCES produtos(id) ON DELETE CASCADE,
+                UNIQUE(produto_id, nome_subcategoria)
+            );
+            """;
+
+        String createIndexSubcategoriasProd = "CREATE INDEX IF NOT EXISTS idx_produto_subcategorias_prod ON produto_subcategorias(produto_id);";
+        String createIndexSubcategoriasNome = "CREATE INDEX IF NOT EXISTS idx_produto_subcategorias_nome ON produto_subcategorias(nome_subcategoria);";
+
         try (Statement stmt = getConnection().createStatement()) {
             stmt.execute(createTableSql);
 
@@ -176,8 +194,16 @@ public class DatabaseManager {
                 // Coluna já existe
             }
 
+            // Migração automática caso a tabela já existisse sem a coluna subcategoria
+            try {
+                stmt.execute("ALTER TABLE produtos ADD COLUMN subcategoria TEXT DEFAULT '';");
+            } catch (SQLException ignored) {
+                // Coluna já existe
+            }
+
             stmt.execute(createIndexCodigoLoja);
             stmt.execute(createIndexGrupo);
+            stmt.execute(createIndexSubcategoria);
             stmt.execute(createIndexLocalizacao);
             stmt.execute(createIndexNome);
             stmt.execute(createTableHistorico);
@@ -203,6 +229,10 @@ public class DatabaseManager {
             stmt.execute(createTableProdutoCores);
             stmt.execute(createIndexCoresProd);
             stmt.execute(createIndexCoresNome);
+
+            stmt.execute(createTableProdutoSubcategorias);
+            stmt.execute(createIndexSubcategoriasProd);
+            stmt.execute(createIndexSubcategoriasNome);
 
             // Migração da tabela bases: de 'codigo' (UNIQUE) para 'tamanho' (sem restrição UNIQUE)
             try {

@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -55,6 +56,7 @@ public class XmlService {
     private final FuncionarioDAO funcionarioDAO;
     private final BaseDAO baseDAO;
     private final HistoricoBaseDAO historicoBaseDAO;
+    private final com.swstock.database.ProdutoSubcategoriaDAO produtoSubcategoriaDAO;
 
     public XmlService() {
         this(DatabaseManager.getInstance());
@@ -68,6 +70,7 @@ public class XmlService {
         this.funcionarioDAO = new FuncionarioDAO(databaseManager);
         this.baseDAO = new BaseDAO(databaseManager);
         this.historicoBaseDAO = new HistoricoBaseDAO(databaseManager);
+        this.produtoSubcategoriaDAO = new com.swstock.database.ProdutoSubcategoriaDAO(databaseManager);
     }
 
     public XmlService(ProdutoDAO produtoDAO) {
@@ -78,6 +81,7 @@ public class XmlService {
         this.funcionarioDAO = new FuncionarioDAO(databaseManager);
         this.baseDAO = new BaseDAO(databaseManager);
         this.historicoBaseDAO = new HistoricoBaseDAO(databaseManager);
+        this.produtoSubcategoriaDAO = new com.swstock.database.ProdutoSubcategoriaDAO(databaseManager);
     }
 
     public XmlService(ProdutoDAO produtoDAO, HistoricoEstoqueDAO historicoDAO, ProdutoCorDAO produtoCorDAO, FuncionarioDAO funcionarioDAO) {
@@ -88,9 +92,14 @@ public class XmlService {
         this.databaseManager = DatabaseManager.getInstance();
         this.baseDAO = new BaseDAO(this.databaseManager);
         this.historicoBaseDAO = new HistoricoBaseDAO(this.databaseManager);
+        this.produtoSubcategoriaDAO = new com.swstock.database.ProdutoSubcategoriaDAO(databaseManager);
     }
 
     public XmlService(ProdutoDAO produtoDAO, HistoricoEstoqueDAO historicoDAO, ProdutoCorDAO produtoCorDAO, FuncionarioDAO funcionarioDAO, BaseDAO baseDAO, HistoricoBaseDAO historicoBaseDAO) {
+        this(produtoDAO, historicoDAO, produtoCorDAO, funcionarioDAO, baseDAO, historicoBaseDAO, new com.swstock.database.ProdutoSubcategoriaDAO(DatabaseManager.getInstance()));
+    }
+
+    public XmlService(ProdutoDAO produtoDAO, HistoricoEstoqueDAO historicoDAO, ProdutoCorDAO produtoCorDAO, FuncionarioDAO funcionarioDAO, BaseDAO baseDAO, HistoricoBaseDAO historicoBaseDAO, com.swstock.database.ProdutoSubcategoriaDAO produtoSubcategoriaDAO) {
         this.produtoDAO = produtoDAO;
         this.historicoDAO = historicoDAO;
         this.produtoCorDAO = produtoCorDAO;
@@ -98,6 +107,7 @@ public class XmlService {
         this.baseDAO = baseDAO;
         this.historicoBaseDAO = historicoBaseDAO;
         this.databaseManager = DatabaseManager.getInstance();
+        this.produtoSubcategoriaDAO = produtoSubcategoriaDAO != null ? produtoSubcategoriaDAO : new com.swstock.database.ProdutoSubcategoriaDAO(this.databaseManager);
     }
 
     /**
@@ -112,6 +122,7 @@ public class XmlService {
             int nomesAlterados,
             int itensMantidosNoBancoNaoPresentesNoXml,
             int coresProcessadas,
+            int subcategoriasProcessadas,
             int movimentacoesHistoricoRestauradas,
             int funcionariosProcessados,
             int basesProcessadas,
@@ -129,11 +140,32 @@ public class XmlService {
                 int coresProcessadas,
                 int movimentacoesHistoricoRestauradas,
                 int funcionariosProcessados,
+                int basesProcessadas,
+                int movimentacoesBasesRestauradas,
                 List<String> erros
         ) {
             this(totalLidos, totalProcessados, novosInseridos, atualizadosPreservados,
                     precosAlterados, nomesAlterados, itensMantidosNoBancoNaoPresentesNoXml,
-                    coresProcessadas, movimentacoesHistoricoRestauradas, funcionariosProcessados,
+                    coresProcessadas, 0, movimentacoesHistoricoRestauradas, funcionariosProcessados,
+                    basesProcessadas, movimentacoesBasesRestauradas, erros);
+        }
+
+        public ImportResult(
+                int totalLidos,
+                int totalProcessados,
+                int novosInseridos,
+                int atualizadosPreservados,
+                int precosAlterados,
+                int nomesAlterados,
+                int itensMantidosNoBancoNaoPresentesNoXml,
+                int coresProcessadas,
+                int movimentacoesHistoricoRestauradas,
+                int funcionariosProcessados,
+                List<String> erros
+        ) {
+            this(totalLidos, totalProcessados, novosInseridos, atualizadosPreservados,
+                    precosAlterados, nomesAlterados, itensMantidosNoBancoNaoPresentesNoXml,
+                    coresProcessadas, 0, movimentacoesHistoricoRestauradas, funcionariosProcessados,
                     0, 0, erros);
         }
 
@@ -149,11 +181,11 @@ public class XmlService {
         ) {
             this(totalLidos, totalProcessados, novosInseridos, atualizadosPreservados,
                     precosAlterados, nomesAlterados, itensMantidosNoBancoNaoPresentesNoXml,
-                    0, 0, 0, 0, 0, erros);
+                    0, 0, 0, 0, 0, 0, erros);
         }
 
         public boolean isSucesso() {
-            return erros.isEmpty() && (totalProcessados > 0 || coresProcessadas > 0 || movimentacoesHistoricoRestauradas > 0 || funcionariosProcessados > 0 || basesProcessadas > 0 || movimentacoesBasesRestauradas > 0);
+            return erros.isEmpty() && (totalProcessados > 0 || coresProcessadas > 0 || subcategoriasProcessadas > 0 || movimentacoesHistoricoRestauradas > 0 || funcionariosProcessados > 0 || basesProcessadas > 0 || movimentacoesBasesRestauradas > 0);
         }
     }
 
@@ -206,9 +238,13 @@ public class XmlService {
                     Integer quantidade = parseIntSafe(getTagValue("quantidade", elem), 0);
                     String urlImagem = getTagValue("urlImagem", elem);
                     String descricaoBreve = getTagValue("descricaoBreve", elem);
+                    String subcategoria = getTagValue("subcategoria", elem);
 
                     Produto p = new Produto(nome, grupo, precoVista, precoPrazo, codigoLoja,
                             localizacao, quantidade, urlImagem, descricaoBreve);
+                    if (!subcategoria.isEmpty()) {
+                        p.setSubcategoria(subcategoria);
+                    }
                     produtosParaInserirOuAtualizar.add(p);
                 } catch (Exception ex) {
                     erros.add("Erro na linha " + (i + 1) + ": " + ex.getMessage());
@@ -305,6 +341,51 @@ public class XmlService {
                     }
                 } catch (Exception ex) {
                     LOGGER.log(Level.WARNING, "Erro ao processar cor do XML: " + ex.getMessage());
+                }
+            }
+        }
+
+        // 1.1 Restauracao/Sincronizacao de Subcategorias/Variacoes
+        int subcategoriasProcessadas = 0;
+        NodeList subsList = doc.getElementsByTagName("produto_subcategoria");
+        if (subsList.getLength() == 0) {
+            subsList = doc.getElementsByTagName("subcategoria");
+        }
+        for (int i = 0; i < subsList.getLength(); i++) {
+            Node node = subsList.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                Element elem = (Element) node;
+                // Ignora se for a tag <subcategoria> dentro de um elemento <produto>
+                if (elem.getParentNode() != null && "produto".equalsIgnoreCase(elem.getParentNode().getNodeName())) {
+                    continue;
+                }
+                try {
+                    String codLoja = getTagValue("produto_codigo_loja", elem);
+                    Integer pIdXml = parseIntSafe(getTagValue("produto_id", elem), null);
+                    String nomeSub = getTagValue("nome_subcategoria", elem);
+                    if (nomeSub.isEmpty()) {
+                        nomeSub = getTagValue("nome", elem);
+                    }
+                    Integer qtdSub = parseIntSafe(getTagValue("quantidade", elem), 0);
+
+                    if (nomeSub.isEmpty()) continue;
+
+                    Produto targetProd = null;
+                    if (!codLoja.isEmpty()) {
+                        targetProd = produtosPorCodigo.get(codLoja.trim().toUpperCase());
+                    }
+                    if (targetProd == null && pIdXml != null) {
+                        targetProd = produtosPorId.get(pIdXml);
+                    }
+
+                    if (targetProd != null && targetProd.getId() != null) {
+                        int pIdReal = targetProd.getId();
+                        if (inserirSubcategoriaSeNaoExistir(pIdReal, nomeSub, qtdSub)) {
+                            subcategoriasProcessadas++;
+                        }
+                    }
+                } catch (Exception ex) {
+                    LOGGER.log(Level.WARNING, "Erro ao processar subcategoria do XML: " + ex.getMessage());
                 }
             }
         }
@@ -471,8 +552,8 @@ public class XmlService {
             }
         }
 
-        LOGGER.info(String.format("Importacao/Backup concluida: %d produtos lidos, %d novos, %d atualizados, %d cores, %d movimentacoes, %d funcionarios, %d bases, %d mov_bases.",
-                nList.getLength(), novosInseridos, atualizadosPreservados, coresProcessadas, historicoRestaurado, funcionariosProcessados, basesProcessadas, movimentacoesBasesRestauradas));
+        LOGGER.info(String.format("Importacao/Backup concluida: %d produtos lidos, %d novos, %d atualizados, %d cores, %d subcategorias, %d movimentacoes, %d funcionarios, %d bases, %d mov_bases.",
+                nList.getLength(), novosInseridos, atualizadosPreservados, coresProcessadas, subcategoriasProcessadas, historicoRestaurado, funcionariosProcessados, basesProcessadas, movimentacoesBasesRestauradas));
 
         return new ImportResult(
                 nList.getLength(),
@@ -483,6 +564,7 @@ public class XmlService {
                 nomesAlterados,
                 itensMantidos,
                 coresProcessadas,
+                subcategoriasProcessadas,
                 historicoRestaurado,
                 funcionariosProcessados,
                 basesProcessadas,
@@ -533,6 +615,7 @@ public class XmlService {
             appendElement(doc, prodElem, "quantidade", String.valueOf(p.getQuantidade() != null ? p.getQuantidade() : 0));
             appendElement(doc, prodElem, "urlImagem", p.getUrlImagem() != null ? p.getUrlImagem() : "");
             appendElement(doc, prodElem, "descricaoBreve", p.getDescricaoBreve() != null ? p.getDescricaoBreve() : "");
+            appendElement(doc, prodElem, "subcategoria", p.getSubcategoria() != null ? p.getSubcategoria() : "");
 
             produtosElem.appendChild(prodElem);
         }
@@ -558,6 +641,29 @@ public class XmlService {
             }
         } catch (Exception ex) {
             LOGGER.log(Level.WARNING, "Aviso ao exportar cores para XML: " + ex.getMessage(), ex);
+        }
+
+        // 2.1 Secao de Subcategorias/Variacoes dos Produtos
+        Element subsElem = doc.createElement("produto_subcategorias");
+        rootElement.appendChild(subsElem);
+
+        try {
+            Map<Integer, List<com.swstock.model.ProdutoSubcategoria>> mapaSubs = produtoSubcategoriaDAO.getAllSubcategoriasAgrupadas();
+            for (Map.Entry<Integer, List<com.swstock.model.ProdutoSubcategoria>> entry : mapaSubs.entrySet()) {
+                int pId = entry.getKey();
+                String pCod = mapaIdParaCodigo.getOrDefault(pId, "");
+                for (com.swstock.model.ProdutoSubcategoria sub : entry.getValue()) {
+                    Element subElem = doc.createElement("produto_subcategoria");
+                    appendElement(doc, subElem, "id", String.valueOf(sub.getId() != null ? sub.getId() : ""));
+                    appendElement(doc, subElem, "produto_id", String.valueOf(pId));
+                    appendElement(doc, subElem, "produto_codigo_loja", pCod);
+                    appendElement(doc, subElem, "nome_subcategoria", sub.getNomeSubcategoria() != null ? sub.getNomeSubcategoria() : "");
+                    appendElement(doc, subElem, "quantidade", String.valueOf(sub.getQuantidade()));
+                    subsElem.appendChild(subElem);
+                }
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.WARNING, "Aviso ao exportar subcategorias para XML: " + ex.getMessage(), ex);
         }
 
         // 3. Secao de Historico Completo de Movimentacoes
@@ -688,6 +794,33 @@ public class XmlService {
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Erro ao inserir cor do backup: " + nomeCor, e);
+            return false;
+        }
+    }
+
+    private boolean inserirSubcategoriaSeNaoExistir(int produtoId, String nomeSub, int quantidade) {
+        String nomeLimpo = nomeSub.trim().toUpperCase();
+        String sqlCheck = "SELECT id FROM produto_subcategorias WHERE produto_id = ? AND UPPER(nome_subcategoria) = ?";
+        String sqlInsert = "INSERT INTO produto_subcategorias (produto_id, nome_subcategoria, quantidade) VALUES (?, ?, ?)";
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(sqlCheck)) {
+            checkStmt.setInt(1, produtoId);
+            checkStmt.setString(2, nomeLimpo);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) {
+                    return false; // Ja existe, mantem
+                }
+            }
+
+            try (PreparedStatement insertStmt = conn.prepareStatement(sqlInsert)) {
+                insertStmt.setInt(1, produtoId);
+                insertStmt.setString(2, nomeLimpo);
+                insertStmt.setInt(3, Math.max(0, quantidade));
+                return insertStmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Erro ao inserir subcategoria via XML: " + nomeSub, e);
             return false;
         }
     }

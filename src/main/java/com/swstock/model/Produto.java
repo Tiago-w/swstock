@@ -12,6 +12,7 @@ public class Produto {
     private Integer id;
     private String nome;
     private String grupo;
+    private String subcategoria = "";
     private Double precoVista;
     private Double precoPrazo;
     private String codigoLoja;
@@ -87,6 +88,14 @@ public class Produto {
 
     public void setGrupo(String grupo) {
         this.grupo = grupo != null && !grupo.trim().isEmpty() ? grupo : "GERAL";
+    }
+
+    public String getSubcategoria() {
+        return subcategoria != null ? subcategoria : "";
+    }
+
+    public void setSubcategoria(String subcategoria) {
+        this.subcategoria = subcategoria != null ? subcategoria.trim() : "";
     }
 
     public Double getPrecoVista() {

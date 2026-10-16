@@ -35,8 +35,8 @@ public class ProdutoDAO {
      */
     public Produto insert(Produto produto) throws SQLException {
         String sql = """
-            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -68,14 +68,14 @@ public class ProdutoDAO {
         String sql = """
             UPDATE produtos
             SET nome = ?, grupo = ?, precoVista = ?, precoPrazo = ?, codigoLoja = ?,
-                localizacao = ?, quantidade = ?, urlImagem = ?, descricaoBreve = ?,
+                localizacao = ?, quantidade = ?, urlImagem = ?, descricaoBreve = ?, subcategoria = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?;
             """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             setStatementParameters(stmt, produto);
-            stmt.setInt(10, produto.getId());
+            stmt.setInt(11, produto.getId());
             boolean ok = stmt.executeUpdate() > 0;
 
             if (ok && diferenca != 0 && !"SEM_HISTORICO".equals(motivo)) {
@@ -110,13 +110,17 @@ public class ProdutoDAO {
      */
     public Produto upsert(Produto produto) throws SQLException {
         String sql = """
-            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(codigoLoja) DO UPDATE SET
                 nome = excluded.nome,
                 grupo = excluded.grupo,
                 precoVista = excluded.precoVista,
                 precoPrazo = excluded.precoPrazo,
+                subcategoria = CASE 
+                    WHEN excluded.subcategoria IS NOT NULL AND TRIM(excluded.subcategoria) != '' THEN excluded.subcategoria 
+                    ELSE produtos.subcategoria 
+                END,
                 localizacao = CASE 
                     WHEN produtos.localizacao IS NOT NULL AND TRIM(produtos.localizacao) != '' THEN produtos.localizacao 
                     ELSE excluded.localizacao 
@@ -156,13 +160,17 @@ public class ProdutoDAO {
      */
     public int batchUpsert(List<Produto> produtos) throws SQLException {
         String sql = """
-            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(codigoLoja) DO UPDATE SET
                 nome = excluded.nome,
                 grupo = excluded.grupo,
                 precoVista = excluded.precoVista,
                 precoPrazo = excluded.precoPrazo,
+                subcategoria = CASE 
+                    WHEN excluded.subcategoria IS NOT NULL AND TRIM(excluded.subcategoria) != '' THEN excluded.subcategoria 
+                    ELSE produtos.subcategoria 
+                END,
                 localizacao = CASE 
                     WHEN produtos.localizacao IS NOT NULL AND TRIM(produtos.localizacao) != '' THEN produtos.localizacao 
                     ELSE excluded.localizacao 
@@ -450,6 +458,100 @@ public class ProdutoDAO {
         return lista;
     }
 
+    /**
+     * Retorna produtos filtrados por grupo e opcionalmente por subcategoria.
+     * Caso subcategoria seja nula ou "TODAS", não bloqueia o levantamento.
+     */
+    public List<Produto> findByGrupoAndSubcategoria(String grupo, String subcategoria, String termoBusca) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT * FROM produtos WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (grupo != null && !grupo.trim().isEmpty() && !grupo.toUpperCase().contains("TODOS") && !grupo.toUpperCase().contains("TODAS")) {
+            sql.append("AND UPPER(TRIM(grupo)) = ? ");
+            params.add(grupo.trim().toUpperCase());
+        }
+
+        if (subcategoria != null && !subcategoria.trim().isEmpty() && !subcategoria.toUpperCase().contains("TODAS") && !subcategoria.toUpperCase().contains("TODOS")) {
+            String subUpper = subcategoria.trim().toUpperCase();
+            sql.append("AND (UPPER(TRIM(subcategoria)) = ? OR id IN (SELECT produto_id FROM produto_subcategorias WHERE UPPER(TRIM(nome_subcategoria)) = ?)) ");
+            params.add(subUpper);
+            params.add(subUpper);
+        }
+
+        if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+            sql.append("AND (UNACCENT(nome) LIKE ? OR UNACCENT(codigoLoja) LIKE ? OR UNACCENT(localizacao) LIKE ? OR UNACCENT(descricaoBreve) LIKE ?) ");
+            String wild = "%" + DatabaseManager.unaccent(termoBusca.trim()) + "%";
+            params.add(wild);
+            params.add(wild);
+            params.add(wild);
+            params.add(wild);
+        }
+
+        sql.append("ORDER BY UPPER(TRIM(grupo)) ASC, nome ASC;");
+
+        List<Produto> lista = new ArrayList<>();
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapRow(rs));
+                }
+            }
+        }
+        return lista;
+    }
+
+    /**
+     * Retorna todas as subcategorias existentes (de produtos e variações de subcategorias),
+     * filtradas opcionalmente pelo fabricante/grupo.
+     */
+    public List<String> getSubcategoriasByGrupo(String grupo) throws SQLException {
+        Set<String> subcategorias = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        boolean filtrarGrupo = grupo != null && !grupo.trim().isEmpty() && !grupo.toUpperCase().contains("TODOS") && !grupo.toUpperCase().contains("TODAS");
+
+        // 1. Da tabela produtos
+        String sqlProdutos = "SELECT DISTINCT UPPER(TRIM(subcategoria)) as sub FROM produtos WHERE subcategoria IS NOT NULL AND TRIM(subcategoria) != ''";
+        if (filtrarGrupo) {
+            sqlProdutos += " AND UPPER(TRIM(grupo)) = ?";
+        }
+        try (PreparedStatement stmt = getConnection().prepareStatement(sqlProdutos)) {
+            if (filtrarGrupo) {
+                stmt.setString(1, grupo.trim().toUpperCase());
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String s = rs.getString("sub");
+                    if (s != null && !s.trim().isEmpty()) {
+                        subcategorias.add(s.trim());
+                    }
+                }
+            }
+        }
+
+        // 2. Da tabela produto_subcategorias
+        String sqlVariacoes = "SELECT DISTINCT UPPER(TRIM(ps.nome_subcategoria)) as sub FROM produto_subcategorias ps JOIN produtos p ON p.id = ps.produto_id WHERE ps.nome_subcategoria IS NOT NULL AND TRIM(ps.nome_subcategoria) != ''";
+        if (filtrarGrupo) {
+            sqlVariacoes += " AND UPPER(TRIM(p.grupo)) = ?";
+        }
+        try (PreparedStatement stmt = getConnection().prepareStatement(sqlVariacoes)) {
+            if (filtrarGrupo) {
+                stmt.setString(1, grupo.trim().toUpperCase());
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String s = rs.getString("sub");
+                    if (s != null && !s.trim().isEmpty()) {
+                        subcategorias.add(s.trim());
+                    }
+                }
+            }
+        }
+
+        return new ArrayList<>(subcategorias);
+    }
+
     private void setStatementParameters(PreparedStatement stmt, Produto p) throws SQLException {
         stmt.setString(1, p.getNome());
         stmt.setString(2, p.getGrupo() != null ? p.getGrupo() : "GERAL");
@@ -460,6 +562,7 @@ public class ProdutoDAO {
         stmt.setInt(7, p.getQuantidade() != null ? p.getQuantidade() : 0);
         stmt.setString(8, p.getUrlImagem());
         stmt.setString(9, p.getDescricaoBreve());
+        stmt.setString(10, p.getSubcategoria() != null ? p.getSubcategoria() : "");
     }
 
     private Produto mapRow(ResultSet rs) throws SQLException {
@@ -471,7 +574,7 @@ public class ProdutoDAO {
             }
         } catch (SQLException ignored) {}
 
-        return new Produto(
+        Produto p = new Produto(
             rs.getInt("id"),
             rs.getString("nome"),
             grupo,
@@ -483,5 +586,9 @@ public class ProdutoDAO {
             rs.getString("urlImagem"),
             rs.getString("descricaoBreve")
         );
+        try {
+            p.setSubcategoria(rs.getString("subcategoria"));
+        } catch (SQLException ignored) {}
+        return p;
     }
 }

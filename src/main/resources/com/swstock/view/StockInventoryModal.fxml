@@ -42,10 +42,13 @@
                         <HBox alignment="CENTER_LEFT" spacing="12.0">
                             <children>
                                 <Label text="Fabricante / Grupo:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
-                                <ComboBox fx:id="cbGrupo" prefWidth="250.0" styleClass="search-field" />
+                                <ComboBox fx:id="cbGrupo" prefWidth="210.0" styleClass="search-field" />
+
+                                <Label text="Subcategoria:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
+                                <ComboBox fx:id="cbSubcategoria" prefWidth="180.0" styleClass="search-field" />
 
                                 <Label text="Filtro de Estoque:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
-                                <ComboBox fx:id="cbFiltroEstoque" prefWidth="190.0" styleClass="search-field" />
+                                <ComboBox fx:id="cbFiltroEstoque" prefWidth="160.0" styleClass="search-field" />
 
                                 <Label text="Buscar:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
                                 <TextField fx:id="txtBusca" promptText="Filtrar por nome, código SKU ou localização..."
@@ -88,12 +91,13 @@
                 <TableView fx:id="tblProdutos" VBox.vgrow="ALWAYS" styleClass="data-table">
                     <columns>
                         <TableColumn fx:id="colCodigo" text="Código (SKU)" prefWidth="105.0" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colNome" text="Nome do Produto" prefWidth="260.0" />
+                        <TableColumn fx:id="colNome" text="Nome do Produto" prefWidth="240.0" />
                         <TableColumn fx:id="colGrupo" text="Fabricante / Grupo" prefWidth="130.0" />
-                        <TableColumn fx:id="colCores" text="Cor" prefWidth="140.0" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colEstoque" text="Estoque Atual" prefWidth="110.0" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colPrecoVista" text="Preço à Vista" prefWidth="115.0" style="-fx-alignment: CENTER_RIGHT;" />
-                        <TableColumn fx:id="colPrecoPrazo" text="Preço a Prazo" prefWidth="115.0" style="-fx-alignment: CENTER_RIGHT;" />
+                        <TableColumn fx:id="colSubcategoria" text="Subcategoria" prefWidth="125.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colCores" text="Cor" prefWidth="130.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colEstoque" text="Estoque Atual" prefWidth="105.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colPrecoVista" text="Preço à Vista" prefWidth="110.0" style="-fx-alignment: CENTER_RIGHT;" />
+                        <TableColumn fx:id="colPrecoPrazo" text="Preço a Prazo" prefWidth="110.0" style="-fx-alignment: CENTER_RIGHT;" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

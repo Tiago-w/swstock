@@ -3,9 +3,11 @@ package com.swstock.controller;
 import com.swstock.database.HistoricoEstoqueDAO;
 import com.swstock.database.ProdutoCorDAO;
 import com.swstock.database.ProdutoDAO;
+import com.swstock.database.ProdutoSubcategoriaDAO;
 import com.swstock.model.HistoricoEstoque;
 import com.swstock.model.Produto;
 import com.swstock.model.ProdutoCor;
+import com.swstock.model.ProdutoSubcategoria;
 import com.swstock.service.ProductEnrichmentService;
 import com.swstock.util.DialogHelper;
 import javafx.application.Platform;
@@ -64,6 +66,10 @@ public class ProductDetailController {
     @FXML private Button btnAdicionarCor;
     @FXML private Button btnVerCores;
 
+    @FXML private ComboBox<String> cbSubcategoriaAtual;
+    @FXML private Button btnAdicionarSubcategoria;
+    @FXML private Button btnVerSubcategorias;
+
     @FXML private HBox boxLoadingWeb;
     @FXML private Label lblLoadingWebText;
     @FXML private Label lblDeltaEstoque;
@@ -71,6 +77,7 @@ public class ProductDetailController {
     @FXML private TextField txtNome;
     @FXML private TextField txtCodigoLoja;
     @FXML private TextField txtGrupo;
+    @FXML private TextField txtSubcategoria;
     @FXML private TextField txtPrecoVista;
     @FXML private TextField txtPrecoPrazo;
     @FXML private TextField txtLocalizacao;
@@ -103,9 +110,12 @@ public class ProductDetailController {
     private ProdutoDAO produtoDAO;
     private HistoricoEstoqueDAO historicoEstoqueDAO;
     private ProdutoCorDAO produtoCorDAO = new ProdutoCorDAO();
+    private ProdutoSubcategoriaDAO produtoSubcategoriaDAO = new ProdutoSubcategoriaDAO();
     private final ObservableList<HistoricoEstoque> historicoList = FXCollections.observableArrayList();
     private final ObservableList<ProdutoCor> coresDoProduto = FXCollections.observableArrayList();
+    private final ObservableList<ProdutoSubcategoria> subcategoriasDoProduto = FXCollections.observableArrayList();
     private ProdutoCor corAtiva = null;
+    private ProdutoSubcategoria subcategoriaAtiva = null;
 
     private Runnable onUpdateCallback;
     private java.util.function.Consumer<String> onOpenMapCallback;
@@ -113,6 +123,7 @@ public class ProductDetailController {
     private int estoqueInicial = 0;
     private int estoqueInicialProduto = 0;
     private int estoqueInicialCor = 0;
+    private int estoqueInicialSubcategoria = 0;
 
     private final ProductEnrichmentService enrichmentService = new ProductEnrichmentService();
     private List<String> imagensEncontradas = new ArrayList<>();
@@ -123,6 +134,7 @@ public class ProductDetailController {
     public void initialize() {
         com.swstock.util.DeadKeyHelper.attach(txtNome);
         com.swstock.util.DeadKeyHelper.attach(txtGrupo);
+        if (txtSubcategoria != null) com.swstock.util.DeadKeyHelper.attach(txtSubcategoria);
         com.swstock.util.DeadKeyHelper.attach(txtLocalizacao);
         com.swstock.util.DeadKeyHelper.attach(txtDescricaoBreve);
 
@@ -134,6 +146,7 @@ public class ProductDetailController {
         configurarCampoQuantidade();
         configurarTabelaHistorico();
         configurarSeletorCores();
+        configurarSeletorSubcategorias();
     }
 
     private void configurarBadgeResponsavel() {
@@ -201,6 +214,22 @@ public class ProductDetailController {
                     if (event.getCode().isLetterKey() || (event.getText() != null && !event.getText().isEmpty() && Character.isLetter(event.getText().charAt(0)))) {
                         handleKeyNavigationCor(event);
                     }
+                }
+            });
+        }
+    }
+
+    private void configurarSeletorSubcategorias() {
+        if (cbSubcategoriaAtual != null) {
+            cbSubcategoriaAtual.setTooltip(new Tooltip("Selecione a subcategoria do produto para alterar seu estoque"));
+
+            cbSubcategoriaAtual.getSelectionModel().selectedIndexProperty().addListener((obs, oldVal, newVal) -> {
+                if (isUpdatingProgrammatically || newVal == null) return;
+                int idx = newVal.intValue();
+                if (idx <= 0 || idx > subcategoriasDoProduto.size()) {
+                    selecionarSubcategoriaAtiva(null);
+                } else {
+                    selecionarSubcategoriaAtiva(subcategoriasDoProduto.get(idx - 1));
                 }
             });
         }
@@ -403,7 +432,7 @@ public class ProductDetailController {
 
     private void atualizarFeedbackDelta(int qtdAtual) {
         if (lblDeltaEstoque == null) return;
-        int inicial = (corAtiva != null) ? estoqueInicialCor : estoqueInicialProduto;
+        int inicial = (subcategoriaAtiva != null) ? estoqueInicialSubcategoria : ((corAtiva != null) ? estoqueInicialCor : estoqueInicialProduto);
         int diff = qtdAtual - inicial;
         if (diff > 0) {
             lblDeltaEstoque.setText("Está sendo adicionado " + diff + (diff == 1 ? " item" : " itens"));
@@ -490,12 +519,16 @@ public class ProductDetailController {
         if (this.produtoCorDAO == null) {
             this.produtoCorDAO = new ProdutoCorDAO();
         }
+        if (this.produtoSubcategoriaDAO == null) {
+            this.produtoSubcategoriaDAO = new ProdutoSubcategoriaDAO();
+        }
 
         if (produto == null) {
             this.produto = new Produto();
             this.estoqueInicial = 0;
             this.estoqueInicialProduto = 0;
             this.estoqueInicialCor = 0;
+            this.estoqueInicialSubcategoria = 0;
             lblModalNome.setText("Novo Produto");
             lblModalCodigo.setText("CÓDIGO: [Pendente de Cadastro]");
             setQuantidadeDisplay(0);
@@ -508,13 +541,16 @@ public class ProductDetailController {
             txtPrecoPrazo.setText("0.00");
             txtCodigoLoja.setText("SKU-" + (int)(Math.random() * 900000 + 100000));
             if (txtGrupo != null) txtGrupo.setText("GERAL");
+            if (txtSubcategoria != null) txtSubcategoria.setText("");
             carregarHistorico();
             carregarCoresProduto();
+            carregarSubcategoriasProduto();
             atualizarFeedbackDelta(0);
         } else {
             this.estoqueInicial = produto.getQuantidade() != null ? produto.getQuantidade() : 0;
             this.estoqueInicialProduto = this.estoqueInicial;
             this.estoqueInicialCor = 0;
+            this.estoqueInicialSubcategoria = 0;
             lblModalNome.setText(produto.getNome() != null ? produto.getNome() : "Sem Nome");
             lblModalCodigo.setText("CÓDIGO: #" + (produto.getCodigoLoja() != null ? produto.getCodigoLoja() : "N/A"));
             setQuantidadeDisplay(this.estoqueInicial);
@@ -527,6 +563,9 @@ public class ProductDetailController {
             if (txtGrupo != null) {
                 txtGrupo.setText(produto.getGrupo() != null ? produto.getGrupo() : "GERAL");
             }
+            if (txtSubcategoria != null) {
+                txtSubcategoria.setText(produto.getSubcategoria() != null ? produto.getSubcategoria() : "");
+            }
             txtPrecoVista.setText(produto.getPrecoVista() != null ? String.format("%.2f", produto.getPrecoVista()) : "0.00");
             txtPrecoPrazo.setText(produto.getPrecoPrazo() != null ? String.format("%.2f", produto.getPrecoPrazo()) : "0.00");
             txtLocalizacao.setText(produto.getLocalizacao());
@@ -537,6 +576,7 @@ public class ProductDetailController {
             atualizarStatusSincronizado();
             carregarHistorico();
             carregarCoresProduto();
+            carregarSubcategoriasProduto();
             atualizarFeedbackDelta(this.estoqueInicialProduto);
         }
     }
@@ -600,6 +640,12 @@ public class ProductDetailController {
     public void selecionarCorAtiva(ProdutoCor cor) {
         this.corAtiva = cor;
         if (cor != null) {
+            this.subcategoriaAtiva = null;
+            if (cbSubcategoriaAtual != null) {
+                isUpdatingProgrammatically = true;
+                cbSubcategoriaAtual.getSelectionModel().select(0);
+                isUpdatingProgrammatically = false;
+            }
             this.estoqueInicialCor = cor.getQuantidade();
             if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("ESTOQUE COR: " + cor.getNomeCor());
             setQuantidadeDisplay(cor.getQuantidade());
@@ -615,16 +661,98 @@ public class ProductDetailController {
         atualizarEstadoTravaQuantidade();
     }
 
+    public void selecionarSubcategoriaAtiva(ProdutoSubcategoria sub) {
+        this.subcategoriaAtiva = sub;
+        if (sub != null) {
+            this.corAtiva = null;
+            if (cbCorAtual != null) {
+                isUpdatingProgrammatically = true;
+                cbCorAtual.getSelectionModel().select(0);
+                isUpdatingProgrammatically = false;
+            }
+            this.estoqueInicialSubcategoria = sub.getQuantidade();
+            if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("ESTOQUE SUBCATEGORIA: " + sub.getNomeSubcategoria());
+            setQuantidadeDisplay(sub.getQuantidade());
+            if (lblEstoqueInicial != null) lblEstoqueInicial.setText(sub.getQuantidade() + " un.");
+            atualizarFeedbackDelta(sub.getQuantidade());
+        } else {
+            if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
+            int q = produto != null && produto.getQuantidade() != null ? produto.getQuantidade() : this.estoqueInicialProduto;
+            setQuantidadeDisplay(q);
+            if (lblEstoqueInicial != null) lblEstoqueInicial.setText(q + " un.");
+            atualizarFeedbackDelta(this.estoqueInicialProduto);
+        }
+        atualizarEstadoTravaQuantidade();
+    }
+
+    public void carregarSubcategoriasProduto() {
+        if (cbSubcategoriaAtual == null) return;
+        isUpdatingProgrammatically = true;
+        subcategoriasDoProduto.clear();
+        List<String> items = new ArrayList<>();
+        items.add("Nenhuma Subcategoria (Estoque Geral)");
+
+        if (produto != null && produto.getId() != null) {
+            try {
+                List<ProdutoSubcategoria> subs = produtoSubcategoriaDAO.findByProdutoId(produto.getId());
+                subcategoriasDoProduto.addAll(subs);
+                for (ProdutoSubcategoria sub : subs) {
+                    items.add(sub.getNomeSubcategoria() + " (" + sub.getQuantidade() + " un.)");
+                }
+            } catch (SQLException e) {
+                LOGGER.log(Level.SEVERE, "Erro ao buscar subcategorias do produto.", e);
+            }
+        }
+
+        cbSubcategoriaAtual.setItems(FXCollections.observableArrayList(items));
+
+        if (subcategoriaAtiva != null) {
+            int idx = -1;
+            for (int i = 0; i < subcategoriasDoProduto.size(); i++) {
+                if (subcategoriasDoProduto.get(i).getId().equals(subcategoriaAtiva.getId())) {
+                    idx = i + 1;
+                    subcategoriaAtiva = subcategoriasDoProduto.get(i);
+                    break;
+                }
+            }
+            if (idx > 0) {
+                cbSubcategoriaAtual.getSelectionModel().select(idx);
+                this.estoqueInicialSubcategoria = subcategoriaAtiva.getQuantidade();
+                if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("ESTOQUE SUBCATEGORIA: " + subcategoriaAtiva.getNomeSubcategoria());
+                setQuantidadeDisplay(subcategoriaAtiva.getQuantidade());
+                if (lblEstoqueInicial != null) lblEstoqueInicial.setText(subcategoriaAtiva.getQuantidade() + " un.");
+                atualizarFeedbackDelta(subcategoriaAtiva.getQuantidade());
+            } else {
+                subcategoriaAtiva = null;
+                cbSubcategoriaAtual.getSelectionModel().select(0);
+                if (lblQuantidadeDesc != null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
+                setQuantidadeDisplay(this.estoqueInicialProduto);
+                if (lblEstoqueInicial != null) lblEstoqueInicial.setText(this.estoqueInicialProduto + " un.");
+                atualizarFeedbackDelta(this.estoqueInicialProduto);
+            }
+        } else {
+            cbSubcategoriaAtual.getSelectionModel().select(0);
+            if (lblQuantidadeDesc != null && corAtiva == null) lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
+            setQuantidadeDisplay(this.estoqueInicialProduto);
+            if (lblEstoqueInicial != null && corAtiva == null) lblEstoqueInicial.setText(this.estoqueInicialProduto + " un.");
+            if (corAtiva == null) atualizarFeedbackDelta(this.estoqueInicialProduto);
+        }
+        isUpdatingProgrammatically = false;
+        atualizarEstadoTravaQuantidade();
+    }
+
     /**
      * Trava para modificação de estoque:
-     * Se o produto possui variações de cores cadastradas e nenhuma cor específica foi selecionada,
+     * Se o produto possui variações de cores ou subcategorias cadastradas e nenhuma variação específica foi selecionada,
      * o campo de quantidade e os botões de ajuste (+ / -) ficam travados.
-     * Produtos que não possuem cores podem ter o estoque alterado livremente.
+     * Produtos que não possuem cores/subcategorias podem ter o estoque alterado livremente.
      */
     private void atualizarEstadoTravaQuantidade() {
         boolean temCores = !coresDoProduto.isEmpty();
-        if (temCores && corAtiva == null) {
-            // TRAVADO: Produto tem cores, mas nenhuma cor específica está selecionada
+        boolean temSubcategorias = !subcategoriasDoProduto.isEmpty();
+
+        if (temCores && corAtiva == null && subcategoriaAtiva == null) {
+            // TRAVADO: Produto tem cores, mas nenhuma cor ou subcategoria específica está selecionada
             if (txtQuantidade != null) {
                 txtQuantidade.setDisable(true);
                 txtQuantidade.setTooltip(new Tooltip("Este produto possui variações de cor cadastradas. Selecione uma cor específica no menu acima para alterar seu estoque."));
@@ -635,8 +763,20 @@ public class ProductDetailController {
                 lblQuantidadeDesc.setText("ESTOQUE TOTAL (TRAVADO - SELECIONE UMA COR)");
                 lblQuantidadeDesc.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
             }
+        } else if (temSubcategorias && subcategoriaAtiva == null && corAtiva == null) {
+            // TRAVADO: Produto tem subcategorias, mas nenhuma subcategoria específica está selecionada
+            if (txtQuantidade != null) {
+                txtQuantidade.setDisable(true);
+                txtQuantidade.setTooltip(new Tooltip("Este produto possui subcategorias cadastradas. Selecione uma subcategoria específica no menu acima para alterar seu estoque."));
+            }
+            if (btnIncrement != null) btnIncrement.setDisable(true);
+            if (btnDecrement != null) btnDecrement.setDisable(true);
+            if (lblQuantidadeDesc != null) {
+                lblQuantidadeDesc.setText("ESTOQUE TOTAL (TRAVADO - SELECIONE UMA SUBCATEGORIA)");
+                lblQuantidadeDesc.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
+            }
         } else {
-            // LIBERADO: Produto sem cores OU com cor específica selecionada
+            // LIBERADO: Produto sem cores/subcategorias OU com variação específica selecionada
             if (txtQuantidade != null) {
                 txtQuantidade.setDisable(false);
                 txtQuantidade.setTooltip(null);
@@ -646,6 +786,8 @@ public class ProductDetailController {
             if (lblQuantidadeDesc != null) {
                 if (corAtiva != null) {
                     lblQuantidadeDesc.setText("ESTOQUE DA COR: " + corAtiva.getNomeCor());
+                } else if (subcategoriaAtiva != null) {
+                    lblQuantidadeDesc.setText("ESTOQUE DA SUBCATEGORIA: " + subcategoriaAtiva.getNomeSubcategoria());
                 } else {
                     lblQuantidadeDesc.setText("UNIDADES EM ESTOQUE");
                 }
@@ -749,6 +891,104 @@ public class ProductDetailController {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Erro ao abrir modal de cores.", e);
             mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível abrir o gerenciamento de cores: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleAbrirAdicionarSubcategoria() {
+        if (produto == null || produto.getId() == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Salvar Primeiro", "Salve o cadastro básico do produto antes de adicionar subcategorias.");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Adicionar Subcategoria");
+        dialog.setHeaderText("Cadastrar nova subcategoria para o produto:\n" + produto.getNome());
+        dialog.setContentText("Nome da subcategoria (ex: 900ml, 3.6L, Linha Premium):");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isPresent() && !result.get().trim().isEmpty()) {
+            String nomeSub = result.get().trim().toUpperCase();
+
+            // Pede o responsável pela alteração
+            Optional<String> optResp = DialogHelper.solicitarResponsavel(
+                    tabPanePrincipal.getScene().getWindow(),
+                    "Responsável pelo Cadastro da Subcategoria",
+                    "Informe quem está cadastrando a subcategoria '" + nomeSub + "':"
+            );
+            if (optResp.isEmpty()) {
+                return;
+            }
+            String responsavel = optResp.get();
+
+            try {
+                boolean ok = produtoSubcategoriaDAO.addSubcategoria(produto.getId(), nomeSub, 0, responsavel);
+                if (ok) {
+                    List<ProdutoSubcategoria> subs = produtoSubcategoriaDAO.findByProdutoId(produto.getId());
+                    for (ProdutoSubcategoria s : subs) {
+                        if (s.getNomeSubcategoria().equalsIgnoreCase(nomeSub)) {
+                            this.subcategoriaAtiva = s;
+                            break;
+                        }
+                    }
+                    carregarSubcategoriasProduto();
+                    carregarHistorico();
+                    notificarAtualizacao();
+                    mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Subcategoria '" + nomeSub + "' cadastrada com sucesso!");
+                }
+            } catch (SQLException e) {
+                if (e.getMessage() != null && e.getMessage().contains("UNIQUE")) {
+                    mostrarAlerta(Alert.AlertType.WARNING, "Subcategoria Duplicada", "Esta subcategoria já está cadastrada para este produto.");
+                } else {
+                    LOGGER.log(Level.SEVERE, "Erro ao adicionar subcategoria.", e);
+                    mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao cadastrar subcategoria: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    @FXML
+    private void handleAbrirGerenciarSubcategorias() {
+        if (produto == null || produto.getId() == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Salvar Primeiro", "Salve o cadastro básico do produto antes de gerenciar subcategorias.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/ProductSubcategoriesModal.fxml"));
+            Parent root = loader.load();
+
+            ProductSubcategoriesController controller = loader.getController();
+            Stage subStage = new Stage();
+            subStage.setTitle("Gerenciar Subcategorias - " + produto.getNome());
+            subStage.initModality(Modality.WINDOW_MODAL);
+            subStage.initOwner(tabPanePrincipal.getScene().getWindow());
+            subStage.setScene(new Scene(root));
+            subStage.setResizable(false);
+
+            controller.setDialogStage(subStage);
+            controller.setProdutoSubcategoriaDAO(produtoSubcategoriaDAO);
+            controller.setProdutoDAO(produtoDAO);
+            controller.setProduto(produto);
+
+            controller.setOnSubcategoriaSelecionadaCallback(sub -> {
+                this.subcategoriaAtiva = sub;
+                selecionarSubcategoriaAtiva(sub);
+            });
+
+            controller.setOnModificacaoCallback(() -> {
+                carregarSubcategoriasProduto();
+                carregarHistorico();
+                notificarAtualizacao();
+            });
+
+            subStage.showAndWait();
+            carregarSubcategoriasProduto();
+            carregarHistorico();
+            notificarAtualizacao();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir modal de subcategorias.", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível abrir o gerenciamento de subcategorias: " + e.getMessage());
         }
     }
 
@@ -938,9 +1178,14 @@ public class ProductDetailController {
 
     @FXML
     private void handleIncrement() {
-        if (!coresDoProduto.isEmpty() && corAtiva == null) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Seleção de Cor Necessária",
+        if (!coresDoProduto.isEmpty() && corAtiva == null && subcategoriaAtiva == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Seleção Necessária",
                     "Este produto possui controle por cores.\nSelecione uma cor no menu para alterar a quantidade.");
+            return;
+        }
+        if (!subcategoriasDoProduto.isEmpty() && subcategoriaAtiva == null && corAtiva == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Seleção Necessária",
+                    "Este produto possui controle por subcategorias.\nSelecione uma subcategoria no menu para alterar a quantidade.");
             return;
         }
         int atual = parseQuantidadeAtual();
@@ -950,7 +1195,10 @@ public class ProductDetailController {
         if (corAtiva != null) {
             lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
             lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
-        } else if (coresDoProduto.isEmpty()) {
+        } else if (subcategoriaAtiva != null) {
+            lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + subcategoriaAtiva.getNomeSubcategoria() + ")");
+            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+        } else if (coresDoProduto.isEmpty() && subcategoriasDoProduto.isEmpty()) {
             lblAutoSaveStatus.setText("Alteração pendente de salvamento");
             lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
         }
@@ -958,9 +1206,14 @@ public class ProductDetailController {
 
     @FXML
     private void handleDecrement() {
-        if (!coresDoProduto.isEmpty() && corAtiva == null) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Seleção de Cor Necessária",
+        if (!coresDoProduto.isEmpty() && corAtiva == null && subcategoriaAtiva == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Seleção Necessária",
                     "Este produto possui controle por cores.\nSelecione uma cor no menu para alterar a quantidade.");
+            return;
+        }
+        if (!subcategoriasDoProduto.isEmpty() && subcategoriaAtiva == null && corAtiva == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "Seleção Necessária",
+                    "Este produto possui controle por subcategorias.\nSelecione uma subcategoria no menu para alterar a quantidade.");
             return;
         }
         int atual = parseQuantidadeAtual();
@@ -971,7 +1224,10 @@ public class ProductDetailController {
             if (corAtiva != null) {
                 lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
                 lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
-            } else if (coresDoProduto.isEmpty()) {
+            } else if (subcategoriaAtiva != null) {
+                lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + subcategoriaAtiva.getNomeSubcategoria() + ")");
+                lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            } else if (coresDoProduto.isEmpty() && subcategoriasDoProduto.isEmpty()) {
                 lblAutoSaveStatus.setText("Alteração pendente de salvamento");
                 lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
             }
@@ -1029,6 +1285,9 @@ public class ProductDetailController {
                 if (txtGrupo != null) {
                     produto.setGrupo(txtGrupo.getText() != null && !txtGrupo.getText().trim().isEmpty() ? txtGrupo.getText().trim() : "GERAL");
                 }
+                if (txtSubcategoria != null) {
+                    produto.setSubcategoria(txtSubcategoria.getText().trim());
+                }
                 produto.setPrecoVista(Double.parseDouble(txtPrecoVista.getText().trim().replace(",", ".")));
                 produto.setPrecoPrazo(Double.parseDouble(txtPrecoPrazo.getText().trim().replace(",", ".")));
                 produto.setLocalizacao(txtLocalizacao.getText().trim());
@@ -1040,6 +1299,7 @@ public class ProductDetailController {
 
                 atualizarStatusSincronizado();
                 carregarCoresProduto();
+                carregarSubcategoriasProduto();
                 carregarHistorico();
                 notificarAtualizacao();
                 fecharModal();
@@ -1050,21 +1310,74 @@ public class ProductDetailController {
             return;
         }
 
+        // Se estiver editando uma subcategoria específica
+        if (subcategoriaAtiva != null) {
+            try {
+                produtoSubcategoriaDAO.updateQuantidade(subcategoriaAtiva.getId(), qtdFinal, "Modificação de estoque [" + subcategoriaAtiva.getNomeSubcategoria() + "]", responsavel);
+                subcategoriaAtiva.setQuantidade(qtdFinal);
+                this.estoqueInicialSubcategoria = qtdFinal;
+
+                // Recalcula total do produto
+                int totalQtd = produtoSubcategoriaDAO.getTotalQuantidadeSubcategorias(produto.getId());
+                produto.setQuantidade(totalQtd);
+                this.estoqueInicialProduto = totalQtd;
+                this.estoqueInicial = totalQtd;
+
+                produto.setNome(txtNome.getText().trim());
+                produto.setCodigoLoja(txtCodigoLoja.getText().trim());
+                if (txtGrupo != null) {
+                    produto.setGrupo(txtGrupo.getText() != null && !txtGrupo.getText().trim().isEmpty() ? txtGrupo.getText().trim() : "GERAL");
+                }
+                if (txtSubcategoria != null) {
+                    produto.setSubcategoria(txtSubcategoria.getText().trim());
+                }
+                produto.setPrecoVista(Double.parseDouble(txtPrecoVista.getText().trim().replace(",", ".")));
+                produto.setPrecoPrazo(Double.parseDouble(txtPrecoPrazo.getText().trim().replace(",", ".")));
+                produto.setLocalizacao(txtLocalizacao.getText().trim());
+                produto.setUrlImagem(txtUrlImagem.getText().trim());
+                produto.setDescricaoBreve(txtDescricaoBreve.getText().trim());
+
+                produtoDAO.updateSemHistorico(produto);
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Estoque da subcategoria '" + subcategoriaAtiva.getNomeSubcategoria() + "' e dados salvos no SQLite!");
+
+                atualizarStatusSincronizado();
+                carregarCoresProduto();
+                carregarSubcategoriasProduto();
+                carregarHistorico();
+                notificarAtualizacao();
+                fecharModal();
+            } catch (SQLException e) {
+                LOGGER.log(Level.SEVERE, "Erro ao salvar alteração da subcategoria.", e);
+                mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao salvar subcategoria: " + e.getMessage());
+            }
+            return;
+        }
+
         // Caso padrão (Estoque Geral)
         produto.setNome(txtNome.getText().trim());
         produto.setCodigoLoja(txtCodigoLoja.getText().trim());
         if (txtGrupo != null) {
             produto.setGrupo(txtGrupo.getText() != null && !txtGrupo.getText().trim().isEmpty() ? txtGrupo.getText().trim() : "GERAL");
         }
+        if (txtSubcategoria != null) {
+            produto.setSubcategoria(txtSubcategoria.getText().trim());
+        }
         produto.setPrecoVista(Double.parseDouble(txtPrecoVista.getText().trim().replace(",", ".")));
         produto.setPrecoPrazo(Double.parseDouble(txtPrecoPrazo.getText().trim().replace(",", ".")));
         produto.setLocalizacao(txtLocalizacao.getText().trim());
+
         // Se o produto possui cores mas nenhuma cor está selecionada, preserva o estoque real calculado das cores
         if (produto.getId() != null && !coresDoProduto.isEmpty() && corAtiva == null) {
             try {
                 int totalCores = produtoCorDAO.getTotalQuantidadeCores(produto.getId());
                 produto.setQuantidade(totalCores);
                 qtdFinal = totalCores;
+            } catch (SQLException ignored) {}
+        } else if (produto.getId() != null && !subcategoriasDoProduto.isEmpty() && subcategoriaAtiva == null) {
+            try {
+                int totalSubs = produtoSubcategoriaDAO.getTotalQuantidadeSubcategorias(produto.getId());
+                produto.setQuantidade(totalSubs);
+                qtdFinal = totalSubs;
             } catch (SQLException ignored) {}
         } else {
             produto.setQuantidade(qtdFinal);
@@ -1089,7 +1402,7 @@ public class ProductDetailController {
                 }
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Produto cadastrado com sucesso!");
             } else {
-                if (!coresDoProduto.isEmpty() && corAtiva == null) {
+                if ((!coresDoProduto.isEmpty() && corAtiva == null) || (!subcategoriasDoProduto.isEmpty() && subcategoriaAtiva == null)) {
                     produtoDAO.updateSemHistorico(produto);
                 } else {
                     produtoDAO.update(produto, responsavel, "Modificação de estoque");
@@ -1101,6 +1414,7 @@ public class ProductDetailController {
             }
             atualizarStatusSincronizado();
             carregarCoresProduto();
+            carregarSubcategoriasProduto();
             carregarHistorico();
             notificarAtualizacao();
             fecharModal();

@@ -684,12 +684,12 @@
 
 /* Badge de Responsável Ativo da Sessão */
 .badge-responsavel {
-    -fx-background-color: rgba(255, 255, 255, 0.15);
-    -fx-border-color: rgba(255, 255, 255, 0.35);
+    -fx-background-color: rgba(2, 2, 2, 0.194);
+    -fx-border-color: rgba(0, 0, 0, 0);
     -fx-border-radius: 20px;
     -fx-background-radius: 20px;
     -fx-padding: 6px 14px;
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: #000000;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
     -fx-cursor: hand;

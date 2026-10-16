@@ -103,6 +103,31 @@
                                                                 </HBox>
                                                             </children>
                                                         </VBox>
+
+                                                        <Separator orientation="VERTICAL" style="-fx-opacity: 0.4;" />
+
+                                                        <!-- Seção de Subcategorias & Variações -->
+                                                        <VBox alignment="CENTER_LEFT" spacing="4.0"
+                                                              style="-fx-padding: 6px 12px; -fx-background-color: #F8FAFC; -fx-background-radius: 6px; -fx-border-color: #E2E8F0; -fx-border-radius: 6px;">
+                                                            <children>
+                                                                <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                                                    <children>
+                                                                        <Label style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #334155;" text="Subcategoria:" />
+                                                                        <ComboBox fx:id="cbSubcategoriaAtual" prefWidth="175.0" style="-fx-font-size: 11px;" />
+                                                                    </children>
+                                                                </HBox>
+                                                                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                                                    <children>
+                                                                        <Button fx:id="btnAdicionarSubcategoria" onAction="#handleAbrirAdicionarSubcategoria"
+                                                                                style="-fx-background-color: #F3E8FF; -fx-text-fill: #6B21A8; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4px; -fx-cursor: hand; -fx-padding: 4px 10px;"
+                                                                                text="+ Subcategoria" />
+                                                                        <Button fx:id="btnVerSubcategorias" onAction="#handleAbrirGerenciarSubcategorias"
+                                                                                style="-fx-background-color: #E2E8F0; -fx-text-fill: #334155; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4px; -fx-cursor: hand; -fx-padding: 4px 10px;"
+                                                                                text="Ver Subcategorias" />
+                                                                    </children>
+                                                                </HBox>
+                                                            </children>
+                                                        </VBox>
                                                     </children>
                                                 </HBox>
                                                 <HBox alignment="CENTER_LEFT" style="-fx-padding: 2px 0 0 8px;">
@@ -143,7 +168,7 @@
                                                     </children>
                                                 </VBox>
 
-                                                <!-- Linha 1: Grupo / Fabricante e Localização -->
+                                                <!-- Linha 1: Grupo / Fabricante e Subcategoria -->
                                                 <VBox spacing="4.0" GridPane.columnIndex="0" GridPane.rowIndex="1">
                                                     <children>
                                                         <Label style="-fx-font-weight: 600; -fx-font-size: 12px;" text="Grupo / Fabricante:" />
@@ -153,6 +178,15 @@
                                                 </VBox>
 
                                                 <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                    <children>
+                                                        <Label style="-fx-font-weight: 600; -fx-font-size: 12px;" text="Subcategoria / Subfabricante:" />
+                                                        <TextField fx:id="txtSubcategoria" promptText="Ex: 900ml, 3.6L, Linha Premium, etc."
+                                                                   styleClass="search-field" prefWidth="Infinity" />
+                                                    </children>
+                                                </VBox>
+
+                                                <!-- Linha 2: Localização no Depósito e Valor à Vista -->
+                                                <VBox spacing="4.0" GridPane.columnIndex="0" GridPane.rowIndex="2">
                                                     <children>
                                                         <HBox alignment="CENTER_LEFT" spacing="6.0">
                                                             <children>
@@ -168,23 +202,23 @@
                                                     </children>
                                                 </VBox>
 
-                                                <!-- Linha 2: Valor à Vista e Valor a Prazo -->
-                                                <VBox spacing="4.0" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                                                <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
                                                     <children>
                                                         <Label style="-fx-font-weight: 600; -fx-font-size: 12px;" text="Valor à Vista (R$):" />
                                                         <TextField fx:id="txtPrecoVista" styleClass="search-field" prefWidth="Infinity" />
                                                     </children>
                                                 </VBox>
 
-                                                <VBox spacing="4.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                                <!-- Linha 3: Valor a Prazo -->
+                                                <VBox spacing="4.0" GridPane.columnIndex="0" GridPane.rowIndex="3">
                                                     <children>
                                                         <Label style="-fx-font-weight: 600; -fx-font-size: 12px;" text="Valor a Prazo (R$):" />
                                                         <TextField fx:id="txtPrecoPrazo" styleClass="search-field" prefWidth="Infinity" />
                                                     </children>
                                                 </VBox>
 
-                                                <!-- Linha 3: URL / Caminho da Imagem -->
-                                                <VBox spacing="4.0" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3">
+                                                <!-- Linha 4: URL / Caminho da Imagem -->
+                                                <VBox spacing="4.0" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="4">
                                                     <children>
                                                         <Label style="-fx-font-weight: 600; -fx-font-size: 12px;" text="URL / Caminho da Imagem:" />
                                                         <TextField fx:id="txtUrlImagem" promptText="https://... ou file:///..."

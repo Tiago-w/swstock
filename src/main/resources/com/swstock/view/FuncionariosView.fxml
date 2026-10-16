@@ -17,7 +17,7 @@
             <children>
                 <VBox spacing="2.0">
                     <children>
-                        <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #FFFFFF;" text="Gestão de Funcionários" />
+                        <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #FFFFFF;" text="Gestão de Vendedores" />
                         <Label style="-fx-font-size: 12px; -fx-text-fill: #94A3B8;" text="Cadastre ou remova os responsáveis pelas alterações e saídas de estoque" />
                     </children>
                 </VBox>
@@ -31,10 +31,10 @@
         <!-- Formulário de Cadastro Rápido -->
         <VBox spacing="10.0" style="-fx-background-color: #FFFFFF; -fx-padding: 16px 20px; -fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;">
             <children>
-                <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" text="Cadastrar Novo Funcionário / Responsável:" />
+                <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" text="Cadastrar Novo Vendedor / Responsável:" />
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                     <children>
-                        <TextField fx:id="txtNovoNome" promptText="Digite o nome do funcionário (ex: Roberto)" style="-fx-padding: 8px 12px; -fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-font-size: 13px;" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="txtNovoNome" promptText="Digite o nome do vendedor (ex: Roberto)" style="-fx-padding: 8px 12px; -fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-font-size: 13px;" HBox.hgrow="ALWAYS" />
                         <TextField fx:id="txtNovoNumero" promptText="Número / Matrícula" prefWidth="160.0" style="-fx-padding: 8px 12px; -fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-font-size: 13px;" />
                         <Button fx:id="btnAdicionar" defaultButton="true" onAction="#handleAdicionar" style="-fx-background-color: #1565C0; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-padding: 8px 18px; -fx-background-radius: 6px; -fx-cursor: hand;" text="Adicionar" />
                     </children>
@@ -48,7 +48,7 @@
             <children>
                 <HBox alignment="CENTER_LEFT">
                     <children>
-                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1E293B;" text="Funcionários Ativos no Sistema" />
+                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1E293B;" text="Vendedores Ativos no Sistema" />
                         <Region HBox.hgrow="ALWAYS" />
                         <Label fx:id="lblTotalFuncionarios" style="-fx-font-size: 12px; -fx-text-fill: #64748B; -fx-font-weight: bold;" text="0 cadastrados" />
                     </children>
@@ -58,7 +58,7 @@
                     <columns>
                         <TableColumn fx:id="colId" prefWidth="50.0" style="-fx-alignment: CENTER;" text="#" />
                         <TableColumn fx:id="colNumero" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Número" />
-                        <TableColumn fx:id="colNome" prefWidth="250.0" text="Nome do Funcionário" />
+                        <TableColumn fx:id="colNome" prefWidth="250.0" text="Nome do Vendedor" />
                         <TableColumn fx:id="colDataCriacao" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Cadastrado em" />
                         <TableColumn fx:id="colAcoes" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Ações" />
                     </columns>

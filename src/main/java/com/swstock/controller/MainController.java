@@ -660,6 +660,9 @@ public class MainController {
                 if (result.coresProcessadas() > 0) {
                     msg.append(String.format("• Variações de cores restauradas/sincronizadas: %d\n", result.coresProcessadas()));
                 }
+                if (result.subcategoriasProcessadas() > 0) {
+                    msg.append(String.format("• Subcategorias restauradas/sincronizadas: %d\n", result.subcategoriasProcessadas()));
+                }
                 if (result.movimentacoesHistoricoRestauradas() > 0) {
                     msg.append(String.format("• Movimentações do histórico restauradas: %d\n", result.movimentacoesHistoricoRestauradas()));
                 }

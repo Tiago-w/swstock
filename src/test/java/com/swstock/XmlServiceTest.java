@@ -125,6 +125,7 @@ class XmlServiceTest {
         assertTrue(exportedXml.contains("<codigoLoja>TEST-002</codigoLoja>"));
         assertTrue(exportedXml.contains("<produtos>"));
         assertTrue(exportedXml.contains("<produto_cores"));
+        assertTrue(exportedXml.contains("<produto_subcategorias"));
         assertTrue(exportedXml.contains("<historico_estoque"));
         assertTrue(exportedXml.contains("<funcionarios"));
 
