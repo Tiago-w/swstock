@@ -143,4 +143,49 @@ public class TablePreferencesHelperTest {
         // Valida que a largura personalizada também foi restaurada
         assertEquals(140.0, novaTable.getColumns().get(1).getPrefWidth());
     }
+
+    @Test
+    void testMultiplasTabelasPersistenciaIndependente() {
+        // Tabela 1: Levantamento de Estoque
+        TableView<String> tblInventory = new TableView<>();
+        TableColumn<String, String> colInv1 = new TableColumn<>("Código");
+        colInv1.setId("colCodigo");
+        TableColumn<String, String> colInv2 = new TableColumn<>("Estoque");
+        colInv2.setId("colEstoque");
+        colInv2.setPrefWidth(160);
+        tblInventory.getColumns().addAll(colInv1, colInv2);
+        TablePreferencesHelper.salvar(tblInventory, "inventory_produtos", configDAO, tempFile);
+
+        // Tabela 2: Bases de Tintas
+        TableView<String> tblBases = new TableView<>();
+        TableColumn<String, String> colBase1 = new TableColumn<>("Tamanho");
+        colBase1.setId("colTamanho");
+        TableColumn<String, String> colBase2 = new TableColumn<>("Quantidade");
+        colBase2.setId("colQuantidade");
+        colBase2.setPrefWidth(210);
+        tblBases.getColumns().addAll(colBase2, colBase1); // Ordem invertida
+        TablePreferencesHelper.salvar(tblBases, "bases_tintas", configDAO, tempFile);
+
+        // Restaura Tabela 1 em nova instância
+        TableView<String> novaInv = new TableView<>();
+        TableColumn<String, String> nInv1 = new TableColumn<>("Código"); nInv1.setId("colCodigo");
+        TableColumn<String, String> nInv2 = new TableColumn<>("Estoque"); nInv2.setId("colEstoque");
+        novaInv.getColumns().addAll(nInv2, nInv1); // ordem invertida inicial
+        TablePreferencesHelper.restaurar(novaInv, "inventory_produtos", configDAO, tempFile, new AtomicBoolean(false));
+
+        assertEquals("colCodigo", novaInv.getColumns().get(0).getId());
+        assertEquals("colEstoque", novaInv.getColumns().get(1).getId());
+        assertEquals(160.0, novaInv.getColumns().get(1).getPrefWidth());
+
+        // Restaura Tabela 2 em nova instância
+        TableView<String> novaBases = new TableView<>();
+        TableColumn<String, String> nB1 = new TableColumn<>("Tamanho"); nB1.setId("colTamanho");
+        TableColumn<String, String> nB2 = new TableColumn<>("Quantidade"); nB2.setId("colQuantidade");
+        novaBases.getColumns().addAll(nB1, nB2); // ordem padrão
+        TablePreferencesHelper.restaurar(novaBases, "bases_tintas", configDAO, tempFile, new AtomicBoolean(false));
+
+        assertEquals("colQuantidade", novaBases.getColumns().get(0).getId());
+        assertEquals("colTamanho", novaBases.getColumns().get(1).getId());
+        assertEquals(210.0, novaBases.getColumns().get(0).getPrefWidth());
+    }
 }

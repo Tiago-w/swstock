@@ -236,6 +236,11 @@ public class ConfiguracoesController {
         });
 
         tblValorEstoque.setItems(itensList);
+
+        com.swstock.database.DatabaseManager dbManager = (produtoDAO != null && produtoDAO.getDatabaseManager() != null)
+                ? produtoDAO.getDatabaseManager()
+                : com.swstock.database.DatabaseManager.getInstance();
+        com.swstock.util.TablePreferencesHelper.vincular(tblValorEstoque, "config_valor_estoque", dbManager);
     }
 
     private void configurarListeners() {

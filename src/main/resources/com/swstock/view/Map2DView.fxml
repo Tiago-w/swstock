@@ -168,9 +168,9 @@
                         <!-- Tabela de Produtos da Estante -->
                         <TableView fx:id="tblProdutosEstante" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="colEstanteNome" prefWidth="170.0" text="PRODUTO" />
-                                <TableColumn fx:id="colEstanteQtd" prefWidth="70.0" text="QTD" />
-                                <TableColumn fx:id="colEstantePreco" prefWidth="80.0" text="VALOR" />
+                                <TableColumn fx:id="colEstanteNome" id="colEstanteNome" prefWidth="170.0" text="PRODUTO" />
+                                <TableColumn fx:id="colEstanteQtd" id="colEstanteQtd" prefWidth="70.0" text="QTD" />
+                                <TableColumn fx:id="colEstantePreco" id="colEstantePreco" prefWidth="80.0" text="VALOR" />
                             </columns>
                             <columnResizePolicy>
                                 <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

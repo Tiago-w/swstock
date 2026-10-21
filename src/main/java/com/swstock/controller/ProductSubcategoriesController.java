@@ -185,6 +185,11 @@ public class ProductSubcategoriesController {
         });
 
         tblSubcategorias.setItems(subcategoriasList);
+
+        com.swstock.database.DatabaseManager dbManager = (produtoSubcategoriaDAO != null && produtoSubcategoriaDAO.getDatabaseManager() != null)
+                ? produtoSubcategoriaDAO.getDatabaseManager()
+                : (produtoDAO != null && produtoDAO.getDatabaseManager() != null ? produtoDAO.getDatabaseManager() : com.swstock.database.DatabaseManager.getInstance());
+        com.swstock.util.TablePreferencesHelper.vincular(tblSubcategorias, "produto_subcategorias", dbManager);
     }
 
     public void setDialogStage(Stage stage) {

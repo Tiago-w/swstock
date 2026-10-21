@@ -319,6 +319,11 @@ public class StockInventoryController {
         });
 
         tblProdutos.setItems(itensList);
+
+        com.swstock.database.DatabaseManager dbManager = (produtoDAO != null && produtoDAO.getDatabaseManager() != null)
+                ? produtoDAO.getDatabaseManager()
+                : com.swstock.database.DatabaseManager.getInstance();
+        com.swstock.util.TablePreferencesHelper.vincular(tblProdutos, "inventory_produtos", dbManager);
     }
 
     private boolean isUpdatingFiltros = false;

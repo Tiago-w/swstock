@@ -138,17 +138,17 @@
                 <!-- Tabela de Movimentações Globais de Todos os Produtos com Coluna de Fabricante / Grupo -->
                 <TableView fx:id="tblHistoricoGlobal" VBox.vgrow="ALWAYS" styleClass="data-table">
                     <columns>
-                        <TableColumn fx:id="colDataHora" text="Data e Hora (Dia/Mês/Ano)" prefWidth="145.0" />
-                        <TableColumn fx:id="colCodigo" text="Código (SKU)" prefWidth="95.0" />
-                        <TableColumn fx:id="colProduto" text="Nome do Produto" prefWidth="200.0" />
-                        <TableColumn fx:id="colGrupo" text="Fabricante / Grupo" prefWidth="130.0" />
-                        <TableColumn fx:id="colLocalizacao" text="Estante / Local" prefWidth="110.0" />
-                        <TableColumn fx:id="colTipo" text="Operação" prefWidth="95.0" />
-                        <TableColumn fx:id="colQtd" text="Movimento" prefWidth="90.0" />
-                        <TableColumn fx:id="colSaldo" text="Saldo (De -> Para)" prefWidth="115.0" />
-                        <TableColumn fx:id="colResponsavel" text="Responsável" prefWidth="110.0" />
-                        <TableColumn fx:id="colMotivo" text="Motivo / Origem" prefWidth="150.0" />
-                        <TableColumn fx:id="colAcoes" text="Ações" prefWidth="85.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colDataHora" id="colDataHora" text="Data e Hora (Dia/Mês/Ano)" prefWidth="145.0" />
+                        <TableColumn fx:id="colCodigo" id="colCodigo" text="Código (SKU)" prefWidth="95.0" />
+                        <TableColumn fx:id="colProduto" id="colProduto" text="Nome do Produto" prefWidth="200.0" />
+                        <TableColumn fx:id="colGrupo" id="colGrupo" text="Fabricante / Grupo" prefWidth="130.0" />
+                        <TableColumn fx:id="colLocalizacao" id="colLocalizacao" text="Estante / Local" prefWidth="110.0" />
+                        <TableColumn fx:id="colTipo" id="colTipo" text="Operação" prefWidth="95.0" />
+                        <TableColumn fx:id="colQtd" id="colQtd" text="Movimento" prefWidth="90.0" />
+                        <TableColumn fx:id="colSaldo" id="colSaldo" text="Saldo (De -> Para)" prefWidth="115.0" />
+                        <TableColumn fx:id="colResponsavel" id="colResponsavel" text="Responsável" prefWidth="110.0" />
+                        <TableColumn fx:id="colMotivo" id="colMotivo" text="Motivo / Origem" prefWidth="150.0" />
+                        <TableColumn fx:id="colAcoes" id="colAcoes" text="Ações" prefWidth="85.0" style="-fx-alignment: CENTER;" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

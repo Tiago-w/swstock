@@ -170,4 +170,35 @@ class BaseDAOTest {
         assertEquals("900ml", ins1.getTamanho());
         assertEquals("900ml", ins2.getTamanho());
     }
+
+    @Test
+    @Order(7)
+    void testGetAllTamanhos() throws SQLException {
+        List<String> tamanhosAuto = baseDAO.getAllTamanhos("AUTOMOTIVA");
+        assertNotNull(tamanhosAuto);
+        assertTrue(tamanhosAuto.contains("900ml"));
+
+        List<String> todosTamanhos = baseDAO.getAllTamanhos(null);
+        assertNotNull(todosTamanhos);
+        assertFalse(todosTamanhos.isEmpty());
+    }
+
+    @Test
+    @Order(8)
+    void testSearchLevantamento() throws SQLException {
+        // Busca com filtros combinados
+        List<Base> resultado1 = baseDAO.searchLevantamento("AUTOMOTIVA", "Lazzuril", "900ml", "APENAS_ESTOQUE", "Azul");
+        assertNotNull(resultado1);
+        assertEquals(1, resultado1.size());
+        assertEquals("Base Poliéster Azul", resultado1.get(0).getNome());
+
+        // Busca com filtro de zerados
+        Base zerada = new Base("1L", "Base Zerada Teste", "AUTOMOTIVA", "Lazzuril", 0, 50.0);
+        baseDAO.insert(zerada, "Admin");
+
+        List<Base> zerados = baseDAO.searchLevantamento("AUTOMOTIVA", "Lazzuril", null, "APENAS_ZERADOS", null);
+        assertNotNull(zerados);
+        assertTrue(zerados.stream().anyMatch(b -> "Base Zerada Teste".equals(b.getNome())));
+    }
 }
+

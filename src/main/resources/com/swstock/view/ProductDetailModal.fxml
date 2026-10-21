@@ -5,7 +5,8 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 
-<VBox prefHeight="700.0" prefWidth="820.0"
+<VBox prefHeight="790.0" prefWidth="1080.0"
+      minWidth="920.0" minHeight="680.0"
       stylesheets="@../css/styles.css"
       style="-fx-background-color: #F8FAFC;"
       xmlns="http://javafx.com/javafx/23"
@@ -341,12 +342,12 @@
                                 <!-- Tabela de Extrato de Movimentações -->
                                 <TableView fx:id="tblHistorico" VBox.vgrow="ALWAYS" styleClass="data-table">
                                     <columns>
-                                        <TableColumn fx:id="colDataHora" text="Data e Hora (Dia/Mês/Ano)" prefWidth="150.0" />
-                                        <TableColumn fx:id="colTipo" text="Operação" prefWidth="90.0" />
-                                        <TableColumn fx:id="colQtdAlterada" text="Movimento" prefWidth="90.0" />
-                                        <TableColumn fx:id="colSaldo" text="Saldo (De -> Para)" prefWidth="120.0" />
-                                        <TableColumn fx:id="colResponsavel" text="Responsável" prefWidth="120.0" />
-                                        <TableColumn fx:id="colMotivo" text="Motivo / Origem" prefWidth="180.0" />
+                                        <TableColumn fx:id="colDataHora" id="colDataHora" text="Data e Hora (Dia/Mês/Ano)" prefWidth="150.0" />
+                                        <TableColumn fx:id="colTipo" id="colTipo" text="Operação" prefWidth="90.0" />
+                                        <TableColumn fx:id="colQtdAlterada" id="colQtdAlterada" text="Movimento" prefWidth="90.0" />
+                                        <TableColumn fx:id="colSaldo" id="colSaldo" text="Saldo (De -> Para)" prefWidth="120.0" />
+                                        <TableColumn fx:id="colResponsavel" id="colResponsavel" text="Responsável" prefWidth="120.0" />
+                                        <TableColumn fx:id="colMotivo" id="colMotivo" text="Motivo / Origem" prefWidth="180.0" />
                                     </columns>
                                     <columnResizePolicy>
                                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

@@ -25,6 +25,10 @@ public class BaseDAO {
         this.databaseManager = databaseManager;
     }
 
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
     private Connection getConnection() {
         return databaseManager.getConnection();
     }
@@ -282,6 +286,74 @@ public class BaseDAO {
             }
         }
         return fabs;
+    }
+
+    public List<String> getAllTamanhos(String tipo) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT tamanho FROM bases WHERE tamanho IS NOT NULL AND TRIM(tamanho) != '' ");
+        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS") && !tipo.equalsIgnoreCase("TODOS")) {
+            sql.append(" AND UPPER(tipo) = '").append(tipo.trim().toUpperCase()).append("' ");
+        }
+        sql.append(" ORDER BY tamanho ASC;");
+
+        List<String> tamanhos = new ArrayList<>();
+        try (Statement stmt = getConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(sql.toString())) {
+            while (rs.next()) {
+                tamanhos.add(rs.getString("tamanho"));
+            }
+        }
+        return tamanhos;
+    }
+
+    public List<Base> searchLevantamento(String tipo, String fabricante, String tamanho, String filtroEstoque, String termo) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS") && !tipo.equalsIgnoreCase("TODOS") && !tipo.equalsIgnoreCase("TODOS OS TIPOS")) {
+            sql.append(" AND UPPER(tipo) = ? ");
+            params.add(tipo.trim().toUpperCase());
+        }
+
+        if (fabricante != null && !fabricante.trim().isEmpty() && !fabricante.equalsIgnoreCase("TODOS") && !fabricante.equalsIgnoreCase("TODOS OS FABRICANTES")) {
+            sql.append(" AND UPPER(fabricante) = ? ");
+            params.add(fabricante.trim().toUpperCase());
+        }
+
+        if (tamanho != null && !tamanho.trim().isEmpty() && !tamanho.equalsIgnoreCase("TODOS") && !tamanho.equalsIgnoreCase("TODOS OS TAMANHOS")) {
+            sql.append(" AND UPPER(tamanho) = ? ");
+            params.add(tamanho.trim().toUpperCase());
+        }
+
+        if (filtroEstoque != null) {
+            if (filtroEstoque.contains("> 0") || filtroEstoque.toLowerCase().contains("com estoque")) {
+                sql.append(" AND quantidade > 0 ");
+            } else if (filtroEstoque.contains("= 0") || filtroEstoque.toLowerCase().contains("zerad")) {
+                sql.append(" AND quantidade = 0 ");
+            }
+        }
+
+        if (termo != null && !termo.trim().isEmpty()) {
+            sql.append(" AND (UNACCENT(tamanho) LIKE ? OR UNACCENT(nome) LIKE ? OR UNACCENT(fabricante) LIKE ?) ");
+            String wild = "%" + DatabaseManager.unaccent(termo.trim()) + "%";
+            params.add(wild);
+            params.add(wild);
+            params.add(wild);
+        }
+
+        sql.append(" ORDER BY tipo ASC, fabricante ASC, nome ASC;");
+
+        List<Base> lista = new ArrayList<>();
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapResultSet(rs));
+                }
+            }
+        }
+        return lista;
     }
 
     public boolean ajustarEstoque(int id, int diferenca, String tipo, String motivo, String responsavel) throws SQLException {

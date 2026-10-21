@@ -211,6 +211,11 @@ public class ProductColorsController {
 
         tblCores.setItems(coresList);
 
+        com.swstock.database.DatabaseManager dbManager = (produtoCorDAO != null && produtoCorDAO.getDatabaseManager() != null)
+                ? produtoCorDAO.getDatabaseManager()
+                : (produtoDAO != null && produtoDAO.getDatabaseManager() != null ? produtoDAO.getDatabaseManager() : com.swstock.database.DatabaseManager.getInstance());
+        com.swstock.util.TablePreferencesHelper.vincular(tblCores, "produto_cores", dbManager);
+
         // Captura de teclas para busca rápida/ciclagem de cores
         tblCores.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyNavigationCor);
 

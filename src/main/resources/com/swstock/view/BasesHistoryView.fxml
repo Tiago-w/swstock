@@ -134,15 +134,15 @@
                 <!-- Tabela de Movimentações das Bases -->
                 <TableView fx:id="tblHistoricoBases" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colDataHora" text="Data e Hora" prefWidth="145.0" styleClass="col-left" />
-                        <TableColumn fx:id="colCodigo" text="Tamanho da Base" prefWidth="120.0" styleClass="col-left" />
-                        <TableColumn fx:id="colNome" text="Nome da Base" prefWidth="220.0" styleClass="col-left" />
-                        <TableColumn fx:id="colTipoBase" text="Tipo de Base" prefWidth="120.0" styleClass="col-center" />
-                        <TableColumn fx:id="colTipoOperacao" text="Operação" prefWidth="100.0" styleClass="col-center" />
-                        <TableColumn fx:id="colMovimento" text="Movimento" prefWidth="95.0" styleClass="col-center" />
-                        <TableColumn fx:id="colSaldo" text="Saldo (De -> Para)" prefWidth="125.0" styleClass="col-center" />
-                        <TableColumn fx:id="colResponsavel" text="Responsável" prefWidth="120.0" styleClass="col-left" />
-                        <TableColumn fx:id="colMotivo" text="Motivo / Origem" prefWidth="180.0" styleClass="col-left" />
+                        <TableColumn fx:id="colDataHora" id="colDataHora" text="Data e Hora" prefWidth="145.0" styleClass="col-left" />
+                        <TableColumn fx:id="colCodigo" id="colCodigo" text="Tamanho da Base" prefWidth="120.0" styleClass="col-left" />
+                        <TableColumn fx:id="colNome" id="colNome" text="Nome da Base" prefWidth="220.0" styleClass="col-left" />
+                        <TableColumn fx:id="colTipoBase" id="colTipoBase" text="Tipo de Base" prefWidth="120.0" styleClass="col-center" />
+                        <TableColumn fx:id="colTipoOperacao" id="colTipoOperacao" text="Operação" prefWidth="100.0" styleClass="col-center" />
+                        <TableColumn fx:id="colMovimento" id="colMovimento" text="Movimento" prefWidth="95.0" styleClass="col-center" />
+                        <TableColumn fx:id="colSaldo" id="colSaldo" text="Saldo (De -> Para)" prefWidth="125.0" styleClass="col-center" />
+                        <TableColumn fx:id="colResponsavel" id="colResponsavel" text="Responsável" prefWidth="120.0" styleClass="col-left" />
+                        <TableColumn fx:id="colMotivo" id="colMotivo" text="Motivo / Origem" prefWidth="180.0" styleClass="col-left" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

@@ -114,7 +114,7 @@ public class BasesHistoryController {
                 "Saídas (-)",
                 "Ajustes"
         ));
-        cbTipoOperacao.setValue("Todas as Operações");
+        cbTipoOperacao.setValue("Saídas (-)");
         cbTipoOperacao.valueProperty().addListener((obs, oldVal, newVal) -> recarregarDados());
 
         txtBusca.textProperty().addListener((obs, oldVal, newVal) -> recarregarDados());
@@ -232,6 +232,11 @@ public class BasesHistoryController {
         colMotivo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMotivo()));
 
         tblHistoricoBases.setItems(historicoList);
+
+        com.swstock.database.DatabaseManager dbManager = (historicoBaseDAO != null && historicoBaseDAO.getDatabaseManager() != null)
+                ? historicoBaseDAO.getDatabaseManager()
+                : com.swstock.database.DatabaseManager.getInstance();
+        com.swstock.util.TablePreferencesHelper.vincular(tblHistoricoBases, "bases_historico", dbManager);
     }
 
     @FXML

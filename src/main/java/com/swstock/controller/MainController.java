@@ -48,6 +48,7 @@ public class MainController {
     @FXML private VBox boxSubmenuBases;
     @FXML private Button btnBasesAutomotivas;
     @FXML private Button btnBasesPrediais;
+    @FXML private Button btnLevantamentoBases;
     @FXML private Button btnConfiguracoes;
     @FXML private Button btnResponsavelSessao;
 
@@ -537,6 +538,31 @@ public class MainController {
     }
 
     @FXML
+    private void handleAbrirLevantamentoBases() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/BasesInventoryModal.fxml"));
+            Parent root = loader.load();
+
+            BasesInventoryController controller = loader.getController();
+            Stage stage = new Stage();
+            stage.setTitle("SWStock - Levantamento de Bases & Ficha de Pedido");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initOwner(rootPane.getScene().getWindow());
+            stage.setScene(new Scene(root));
+
+            controller.setDialogStage(stage);
+            controller.setBaseDAO(new com.swstock.database.BaseDAO(produtoDAO.getDatabaseManager()));
+            controller.carregarDadosIniciais();
+
+            stage.setMaximized(true);
+            stage.show();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir tela de levantamento de bases.", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Não foi possível abrir o módulo de levantamento de bases: " + e.getMessage());
+        }
+    }
+
+    @FXML
     private void handleAbrirConfiguracoes() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/ConfiguracoesView.fxml"));
@@ -624,7 +650,13 @@ public class MainController {
             stage.setTitle(produto == null ? "SWStock - Novo Produto" : "SWStock - Detalhes do Produto: " + produto.getNome());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
-            stage.setScene(new Scene(root));
+            Scene scene = new Scene(root, 1080, 800);
+            stage.setScene(scene);
+            stage.setWidth(1920);
+            stage.setHeight(1030);
+            stage.setMinWidth(920);
+            stage.setMinHeight(680);
+            stage.centerOnScreen();
 
             controller.setDialogStage(stage);
             controller.setProdutoDAO(produtoDAO);

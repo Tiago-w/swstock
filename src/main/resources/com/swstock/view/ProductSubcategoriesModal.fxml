@@ -60,10 +60,10 @@
                 <!-- Tabela de Subcategorias Cadastradas -->
                 <TableView fx:id="tblSubcategorias" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colNomeSubcategoria" prefWidth="220.0" text="NOME DA SUBCATEGORIA" />
-                        <TableColumn fx:id="colQtdSubcategoria" prefWidth="110.0" text="ESTOQUE" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colStatusSubcategoria" prefWidth="120.0" text="STATUS" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colAcoesSubcategoria" prefWidth="160.0" text="AÇÕES" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colNomeSubcategoria" id="colNomeSubcategoria" prefWidth="220.0" text="NOME DA SUBCATEGORIA" />
+                        <TableColumn fx:id="colQtdSubcategoria" id="colQtdSubcategoria" prefWidth="110.0" text="ESTOQUE" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colStatusSubcategoria" id="colStatusSubcategoria" prefWidth="120.0" text="STATUS" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colAcoesSubcategoria" id="colAcoesSubcategoria" prefWidth="160.0" text="AÇÕES" style="-fx-alignment: CENTER;" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

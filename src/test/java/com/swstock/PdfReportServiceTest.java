@@ -149,4 +149,22 @@ class PdfReportServiceTest {
         assertTrue(tempPdf.exists(), "O arquivo PDF de valor de estoque deve ser gerado.");
         assertTrue(tempPdf.length() > 500, "O arquivo PDF de valor de estoque deve conter dados válidos.");
     }
+
+    @Test
+    void testGerarRelatorioLevantamentoBases() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File tempPdf = File.createTempFile("teste_levantamento_bases_", ".pdf");
+        tempPdf.deleteOnExit();
+
+        List<com.swstock.model.Base> bases = new ArrayList<>();
+        bases.add(new com.swstock.model.Base("900ml", "Base Poliéster Azul Royal", "AUTOMOTIVA", "Lazzuril", 10, 85.0));
+        bases.add(new com.swstock.model.Base("3.6L", "Base Acrílica Fosca Branco", "PREDIAL", "Suvinil", 5, 120.0));
+        bases.add(new com.swstock.model.Base("900ml", "Base Vermelho Wanda", "AUTOMOTIVA", "Wanda", 0, 90.0));
+
+        service.gerarRelatorioLevantamentoBases(tempPdf, bases, "AUTOMOTIVA", "Todas", "Todos", null);
+
+        assertTrue(tempPdf.exists(), "O arquivo PDF de levantamento de bases deve ser gerado.");
+        assertTrue(tempPdf.length() > 500, "O arquivo PDF de levantamento de bases deve conter dados válidos.");
+    }
 }
+

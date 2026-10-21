@@ -478,17 +478,17 @@ public class PdfReportService {
                     document.add(pGrupo);
 
                     // Tabela com 7 colunas:
-                    // 1. Código (SKU) | 2. Nome do Produto | 3. Subcategoria | 4. Cores | 5. Estoque | 6. Preço à Vista | 7. Pedido (Caneta)
+                    // 1. Código (SKU) | 2. Nome do Produto | 3. Quantidade (Estoque) | 4. Subcategoria | 5. Cores | 6. Preço à Vista | 7. Pedido (Caneta)
                     PdfPTable table = new PdfPTable(7);
                     table.setWidthPercentage(100);
-                    table.setWidths(new float[]{10f, 30f, 14f, 14f, 10f, 10f, 12f});
+                    table.setWidths(new float[]{10f, 30f, 10f, 14f, 14f, 10f, 12f});
                     table.setSpacingAfter(8);
 
                     adicionarCabecalhoColuna(table, "CÓDIGO", Element.ALIGN_CENTER);
                     adicionarCabecalhoColuna(table, "NOME DO PRODUTO", Element.ALIGN_LEFT);
+                    adicionarCabecalhoColuna(table, "QUANTIDADE", Element.ALIGN_CENTER);
                     adicionarCabecalhoColuna(table, "SUBCATEGORIA", Element.ALIGN_CENTER);
                     adicionarCabecalhoColuna(table, "COR", Element.ALIGN_CENTER);
-                    adicionarCabecalhoColuna(table, "ESTOQUE", Element.ALIGN_CENTER);
                     adicionarCabecalhoColuna(table, "PREÇO À VISTA", Element.ALIGN_RIGHT);
                     adicionarCabecalhoColuna(table, "PEDIDO", Element.ALIGN_CENTER);
 
@@ -533,23 +533,7 @@ public class PdfReportService {
                                 cellNome.setBorderColor(new Color(226, 232, 240));
                                 table.addCell(cellNome);
 
-                                // 3. Subcategoria
-                                PdfPCell cellSubcat = new PdfPCell(new Phrase(nomeSub, FONT_CELL_BOLD));
-                                cellSubcat.setHorizontalAlignment(Element.ALIGN_CENTER);
-                                cellSubcat.setBackgroundColor(bg);
-                                cellSubcat.setPadding(4);
-                                cellSubcat.setBorderColor(new Color(226, 232, 240));
-                                table.addCell(cellSubcat);
-
-                                // 4. Cor
-                                PdfPCell cellCor = new PdfPCell(new Phrase("PADRÃO", FONT_CELL));
-                                cellCor.setHorizontalAlignment(Element.ALIGN_CENTER);
-                                cellCor.setBackgroundColor(bg);
-                                cellCor.setPadding(4);
-                                cellCor.setBorderColor(new Color(226, 232, 240));
-                                table.addCell(cellCor);
-
-                                // 5. Estoque
+                                // 3. Quantidade (Estoque)
                                 Font fontEstoque = qtdSub > 0 ? FONT_CELL_GREEN : FONT_CELL_RED;
                                 PdfPCell cellEstoque = new PdfPCell(new Phrase(qtdSub + " un.", fontEstoque));
                                 cellEstoque.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -557,6 +541,22 @@ public class PdfReportService {
                                 cellEstoque.setPadding(4);
                                 cellEstoque.setBorderColor(new Color(226, 232, 240));
                                 table.addCell(cellEstoque);
+
+                                // 4. Subcategoria
+                                PdfPCell cellSubcat = new PdfPCell(new Phrase(nomeSub, FONT_CELL_BOLD));
+                                cellSubcat.setHorizontalAlignment(Element.ALIGN_CENTER);
+                                cellSubcat.setBackgroundColor(bg);
+                                cellSubcat.setPadding(4);
+                                cellSubcat.setBorderColor(new Color(226, 232, 240));
+                                table.addCell(cellSubcat);
+
+                                // 5. Cor
+                                PdfPCell cellCor = new PdfPCell(new Phrase("PADRÃO", FONT_CELL));
+                                cellCor.setHorizontalAlignment(Element.ALIGN_CENTER);
+                                cellCor.setBackgroundColor(bg);
+                                cellCor.setPadding(4);
+                                cellCor.setBorderColor(new Color(226, 232, 240));
+                                table.addCell(cellCor);
 
                                 // 6. Preço à Vista
                                 PdfPCell cellPreco = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", precoV), FONT_CELL_BOLD));
@@ -605,23 +605,7 @@ public class PdfReportService {
                                 cellNome.setBorderColor(new Color(226, 232, 240));
                                 table.addCell(cellNome);
 
-                                // 3. Subcategoria
-                                PdfPCell cellSubcat = new PdfPCell(new Phrase(subProd, FONT_CELL));
-                                cellSubcat.setHorizontalAlignment(Element.ALIGN_CENTER);
-                                cellSubcat.setBackgroundColor(bg);
-                                cellSubcat.setPadding(4);
-                                cellSubcat.setBorderColor(new Color(226, 232, 240));
-                                table.addCell(cellSubcat);
-
-                                // 4. Cor
-                                PdfPCell cellCor = new PdfPCell(new Phrase(cor.getNomeCor(), FONT_CELL_BOLD));
-                                cellCor.setHorizontalAlignment(Element.ALIGN_CENTER);
-                                cellCor.setBackgroundColor(bg);
-                                cellCor.setPadding(4);
-                                cellCor.setBorderColor(new Color(226, 232, 240));
-                                table.addCell(cellCor);
-
-                                // 5. Estoque
+                                // 3. Quantidade (Estoque)
                                 Font fontEstoque = qtdCor > 0 ? FONT_CELL_GREEN : FONT_CELL_RED;
                                 PdfPCell cellEstoque = new PdfPCell(new Phrase(qtdCor + " un.", fontEstoque));
                                 cellEstoque.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -629,6 +613,22 @@ public class PdfReportService {
                                 cellEstoque.setPadding(4);
                                 cellEstoque.setBorderColor(new Color(226, 232, 240));
                                 table.addCell(cellEstoque);
+
+                                // 4. Subcategoria
+                                PdfPCell cellSubcat = new PdfPCell(new Phrase(subProd, FONT_CELL));
+                                cellSubcat.setHorizontalAlignment(Element.ALIGN_CENTER);
+                                cellSubcat.setBackgroundColor(bg);
+                                cellSubcat.setPadding(4);
+                                cellSubcat.setBorderColor(new Color(226, 232, 240));
+                                table.addCell(cellSubcat);
+
+                                // 5. Cor
+                                PdfPCell cellCor = new PdfPCell(new Phrase(cor.getNomeCor(), FONT_CELL_BOLD));
+                                cellCor.setHorizontalAlignment(Element.ALIGN_CENTER);
+                                cellCor.setBackgroundColor(bg);
+                                cellCor.setPadding(4);
+                                cellCor.setBorderColor(new Color(226, 232, 240));
+                                table.addCell(cellCor);
 
                                 // 6. Preço à Vista
                                 PdfPCell cellPreco = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", precoV), FONT_CELL_BOLD));
@@ -676,23 +676,7 @@ public class PdfReportService {
                             cellNome.setBorderColor(new Color(226, 232, 240));
                             table.addCell(cellNome);
 
-                            // 3. Subcategoria
-                            PdfPCell cellSubcat = new PdfPCell(new Phrase(subProd, FONT_CELL));
-                            cellSubcat.setHorizontalAlignment(Element.ALIGN_CENTER);
-                            cellSubcat.setBackgroundColor(bg);
-                            cellSubcat.setPadding(4);
-                            cellSubcat.setBorderColor(new Color(226, 232, 240));
-                            table.addCell(cellSubcat);
-
-                            // 4. Cor
-                            PdfPCell cellCor = new PdfPCell(new Phrase("ÚNICA", FONT_CELL));
-                            cellCor.setHorizontalAlignment(Element.ALIGN_CENTER);
-                            cellCor.setBackgroundColor(bg);
-                            cellCor.setPadding(4);
-                            cellCor.setBorderColor(new Color(226, 232, 240));
-                            table.addCell(cellCor);
-
-                            // 5. Estoque
+                            // 3. Quantidade (Estoque)
                             Font fontEstoque = qtd > 0 ? FONT_CELL_GREEN : FONT_CELL_RED;
                             PdfPCell cellEstoque = new PdfPCell(new Phrase(qtd + " un.", fontEstoque));
                             cellEstoque.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -700,6 +684,22 @@ public class PdfReportService {
                             cellEstoque.setPadding(4);
                             cellEstoque.setBorderColor(new Color(226, 232, 240));
                             table.addCell(cellEstoque);
+
+                            // 4. Subcategoria
+                            PdfPCell cellSubcat = new PdfPCell(new Phrase(subProd, FONT_CELL));
+                            cellSubcat.setHorizontalAlignment(Element.ALIGN_CENTER);
+                            cellSubcat.setBackgroundColor(bg);
+                            cellSubcat.setPadding(4);
+                            cellSubcat.setBorderColor(new Color(226, 232, 240));
+                            table.addCell(cellSubcat);
+
+                            // 5. Cor
+                            PdfPCell cellCor = new PdfPCell(new Phrase("ÚNICA", FONT_CELL));
+                            cellCor.setHorizontalAlignment(Element.ALIGN_CENTER);
+                            cellCor.setBackgroundColor(bg);
+                            cellCor.setPadding(4);
+                            cellCor.setBorderColor(new Color(226, 232, 240));
+                            table.addCell(cellCor);
 
                             // 6. Preço à Vista
                             PdfPCell cellPreco = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", precoV), FONT_CELL_BOLD));
@@ -760,6 +760,223 @@ public class PdfReportService {
 
             document.close();
             LOGGER.info("Relatório PDF de Levantamento de Estoque gerado com sucesso: " + arquivoDestino.getAbsolutePath());
+        }
+    }
+
+    /**
+     * Gera o relatório PDF de Levantamento de Bases e Ficha de Pedido.
+     * Colunas: TAMANHO, NOME DA BASE, QUANTIDADE, TIPO, FABRICANTE, VALOR DE COMPRA, PEDIDO.
+     */
+    public void gerarRelatorioLevantamentoBases(File arquivoDestino, List<com.swstock.model.Base> bases,
+                                               String tipoFiltro, String fabricanteFiltro,
+                                               String tamanhoFiltro, String termoBusca) throws Exception {
+        Document document = new Document(PageSize.A4, 24, 24, 28, 28);
+
+        try (FileOutputStream out = new FileOutputStream(arquivoDestino)) {
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+
+            // Rodapé com numeração de páginas
+            writer.setPageEvent(new PdfPageEventHelper() {
+                @Override
+                public void onEndPage(PdfWriter writer, Document doc) {
+                    PdfContentByte cb = writer.getDirectContent();
+                    ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
+                            new Phrase(String.format("SWStock - Levantamento de Bases & Ficha de Pedido | Página %d", writer.getPageNumber()), FONT_FOOTER),
+                            (doc.right() - doc.left()) / 2 + doc.leftMargin(), doc.bottom() - 14, 0);
+                }
+            });
+
+            document.open();
+
+            // 1. Cabeçalho
+            Paragraph pTitulo = new Paragraph("SWStock - Levantamento de Bases & Ficha de Pedido", FONT_TITLE);
+            pTitulo.setSpacingAfter(3);
+            document.add(pTitulo);
+
+            String dataHora = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+            String tipoTxt = (tipoFiltro != null && !tipoFiltro.trim().isEmpty() && !tipoFiltro.toUpperCase().contains("TODOS") && !tipoFiltro.toUpperCase().contains("TODAS"))
+                    ? tipoFiltro.toUpperCase() : "TODOS OS TIPOS (PREDIAL E AUTOMOTIVA)";
+            String fabTxt = (fabricanteFiltro != null && !fabricanteFiltro.trim().isEmpty() && !fabricanteFiltro.toUpperCase().contains("TODOS") && !fabricanteFiltro.toUpperCase().contains("TODAS"))
+                    ? fabricanteFiltro.toUpperCase() : "TODOS OS FABRICANTES";
+            String tamTxt = (tamanhoFiltro != null && !tamanhoFiltro.trim().isEmpty() && !tamanhoFiltro.toUpperCase().contains("TODOS") && !tamanhoFiltro.toUpperCase().contains("TODAS"))
+                    ? tamanhoFiltro.toUpperCase() : "TODOS OS TAMANHOS";
+
+            int totalQtdGeral = bases.stream().mapToInt(b -> b.getQuantidade() != null ? b.getQuantidade() : 0).sum();
+            double totalValorCompra = bases.stream().mapToDouble(b -> (b.getQuantidade() != null ? b.getQuantidade() : 0) * (b.getValorCompra() != null ? b.getValorCompra() : 0.0)).sum();
+
+            StringBuilder sub = new StringBuilder();
+            sub.append("Emissão: ").append(dataHora).append("  |  Tipo: ").append(tipoTxt);
+            sub.append("  |  Fabricante: ").append(fabTxt);
+            sub.append("  |  Tamanho: ").append(tamTxt);
+            if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+                sub.append("  |  Busca: '").append(termoBusca.trim()).append("'");
+            }
+            sub.append("\nTotal de Itens: ").append(bases.size()).append(" bases  |  Estoque Total: ").append(totalQtdGeral)
+               .append(" un.  |  Valor Total de Compra: ").append(String.format(Locale.of("pt", "BR"), "R$ %.2f", totalValorCompra));
+
+            Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
+            pSub.setSpacingAfter(10);
+            document.add(pSub);
+
+            if (bases.isEmpty()) {
+                Paragraph pVazio = new Paragraph("\nNenhuma base encontrada para o levantamento com os filtros selecionados.", FONT_CELL);
+                pVazio.setAlignment(Element.ALIGN_CENTER);
+                document.add(pVazio);
+            } else {
+                // Agrupa bases por Fabricante / Marca para separação organizada
+                Map<String, List<com.swstock.model.Base>> agrupadoPorFabricante = new LinkedHashMap<>();
+                for (com.swstock.model.Base b : bases) {
+                    String f = b.getFabricante() != null && !b.getFabricante().trim().isEmpty() ? b.getFabricante().toUpperCase() : "GERAL";
+                    agrupadoPorFabricante.computeIfAbsent(f, k -> new ArrayList<>()).add(b);
+                }
+
+                for (Map.Entry<String, List<com.swstock.model.Base>> entry : agrupadoPorFabricante.entrySet()) {
+                    String nomeFab = entry.getKey();
+                    List<com.swstock.model.Base> listaFab = entry.getValue();
+
+                    Paragraph pFab = new Paragraph("Fabricante / Marca: " + nomeFab + " (" + listaFab.size() + " bases)", FONT_SECTION_DATE);
+                    pFab.setSpacingBefore(8);
+                    pFab.setSpacingAfter(4);
+                    document.add(pFab);
+
+                    // Tabela com 7 colunas:
+                    // 1. Tamanho | 2. Nome da Base | 3. Quantidade (Estoque) | 4. Tipo | 5. Fabricante | 6. Valor de Compra | 7. Pedido (Caneta)
+                    PdfPTable table = new PdfPTable(7);
+                    table.setWidthPercentage(100);
+                    table.setWidths(new float[]{12f, 32f, 10f, 13f, 15f, 12f, 14f});
+                    table.setSpacingAfter(8);
+
+                    adicionarCabecalhoColuna(table, "TAMANHO", Element.ALIGN_CENTER);
+                    adicionarCabecalhoColuna(table, "NOME DA BASE", Element.ALIGN_LEFT);
+                    adicionarCabecalhoColuna(table, "QUANTIDADE", Element.ALIGN_CENTER);
+                    adicionarCabecalhoColuna(table, "TIPO", Element.ALIGN_CENTER);
+                    adicionarCabecalhoColuna(table, "FABRICANTE", Element.ALIGN_LEFT);
+                    adicionarCabecalhoColuna(table, "VALOR COMPRA", Element.ALIGN_RIGHT);
+                    adicionarCabecalhoColuna(table, "PEDIDO", Element.ALIGN_CENTER);
+
+                    int subtotalQtdFab = 0;
+                    double subtotalValorFab = 0.0;
+                    int linhaIndex = 0;
+
+                    for (com.swstock.model.Base b : listaFab) {
+                        Color bg = (linhaIndex % 2 == 0) ? Color.WHITE : new Color(248, 250, 252);
+                        linhaIndex++;
+
+                        int qtd = b.getQuantidade() != null ? b.getQuantidade() : 0;
+                        double vlrCompra = b.getValorCompra() != null ? b.getValorCompra() : 0.0;
+                        subtotalQtdFab += qtd;
+                        subtotalValorFab += (qtd * vlrCompra);
+
+                        // 1. Tamanho
+                        PdfPCell cellTam = new PdfPCell(new Phrase(b.getTamanho() != null ? b.getTamanho() : "-", FONT_CELL_BOLD));
+                        cellTam.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cellTam.setBackgroundColor(bg);
+                        cellTam.setPadding(4);
+                        cellTam.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellTam);
+
+                        // 2. Nome da Base
+                        PdfPCell cellNome = new PdfPCell(new Phrase(b.getNome() != null ? b.getNome() : "-", FONT_CELL));
+                        cellNome.setHorizontalAlignment(Element.ALIGN_LEFT);
+                        cellNome.setBackgroundColor(bg);
+                        cellNome.setPadding(4);
+                        cellNome.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellNome);
+
+                        // 3. Quantidade (Estoque)
+                        Font fontEstoque = qtd > 0 ? FONT_CELL_GREEN : FONT_CELL_RED;
+                        PdfPCell cellEstoque = new PdfPCell(new Phrase(qtd + " un.", fontEstoque));
+                        cellEstoque.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cellEstoque.setBackgroundColor(bg);
+                        cellEstoque.setPadding(4);
+                        cellEstoque.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellEstoque);
+
+                        // 4. Tipo
+                        PdfPCell cellTipo = new PdfPCell(new Phrase(b.getTipoFormatado() != null ? b.getTipoFormatado() : "-", FONT_CELL));
+                        cellTipo.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cellTipo.setBackgroundColor(bg);
+                        cellTipo.setPadding(4);
+                        cellTipo.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellTipo);
+
+                        // 5. Fabricante
+                        PdfPCell cellFab = new PdfPCell(new Phrase(b.getFabricante() != null ? b.getFabricante() : "-", FONT_CELL));
+                        cellFab.setHorizontalAlignment(Element.ALIGN_LEFT);
+                        cellFab.setBackgroundColor(bg);
+                        cellFab.setPadding(4);
+                        cellFab.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellFab);
+
+                        // 6. Valor Compra
+                        PdfPCell cellPreco = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", vlrCompra), FONT_CELL));
+                        cellPreco.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                        cellPreco.setBackgroundColor(bg);
+                        cellPreco.setPadding(4);
+                        cellPreco.setBorderColor(new Color(226, 232, 240));
+                        table.addCell(cellPreco);
+
+                        // 7. Pedido (Espaço para caneta)
+                        PdfPCell cellPedido = new PdfPCell(new Phrase(" ", FONT_CELL));
+                        cellPedido.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        cellPedido.setBackgroundColor(Color.WHITE);
+                        cellPedido.setPadding(4);
+                        cellPedido.setMinimumHeight(18f);
+                        cellPedido.setBorderColor(new Color(148, 163, 184));
+                        cellPedido.setBorderWidth(1f);
+                        table.addCell(cellPedido);
+                    }
+
+                    // Linha de Subtotal do Fabricante
+                    PdfPCell cellSubLabel = new PdfPCell(new Phrase("Subtotal (" + nomeFab + "): " + listaFab.size() + " bases", FONT_CELL_BOLD));
+                    cellSubLabel.setColspan(2);
+                    cellSubLabel.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubLabel.setPadding(5);
+                    cellSubLabel.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubLabel);
+
+                    PdfPCell cellSubEstoque = new PdfPCell(new Phrase(subtotalQtdFab + " un.", FONT_CELL_BOLD));
+                    cellSubEstoque.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    cellSubEstoque.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubEstoque.setPadding(5);
+                    cellSubEstoque.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubEstoque);
+
+                    PdfPCell cellSubTipoFab = new PdfPCell(new Phrase("-", FONT_CELL));
+                    cellSubTipoFab.setColspan(2);
+                    cellSubTipoFab.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    cellSubTipoFab.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubTipoFab.setPadding(5);
+                    cellSubTipoFab.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubTipoFab);
+
+                    PdfPCell cellSubTotalVlr = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", subtotalValorFab), FONT_CELL_BOLD));
+                    cellSubTotalVlr.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                    cellSubTotalVlr.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubTotalVlr.setPadding(5);
+                    cellSubTotalVlr.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubTotalVlr);
+
+                    PdfPCell cellSubVazio = new PdfPCell(new Phrase(" ", FONT_CELL));
+                    cellSubVazio.setBackgroundColor(new Color(241, 245, 249));
+                    cellSubVazio.setPadding(5);
+                    cellSubVazio.setBorderColor(new Color(203, 213, 225));
+                    table.addCell(cellSubVazio);
+
+                    document.add(table);
+                }
+
+                // Bloco de Assinatura e Conferência
+                Paragraph pAssinatura = new Paragraph("\n\nConferido por: __________________________________________________   Data: ____/____/________   Visto: _____________", FONT_CELL_BOLD);
+                pAssinatura.setSpacingBefore(12);
+                document.add(pAssinatura);
+            }
+
+            document.close();
+            LOGGER.info("Relatório PDF de Levantamento de Bases gerado com sucesso: " + arquivoDestino.getAbsolutePath());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao gerar relatório PDF de levantamento de bases.", e);
+            throw e;
         }
     }
 
@@ -1087,17 +1304,17 @@ public class PdfReportService {
                 document.add(pVazio);
             } else {
                 // Tabela em modo paisagem:
-                // CÓDIGO (10%) | PRODUTO (30%) | GRUPO (12%) | COR (10%) | ESTOQUE (8%) | UNIT. VISTA (10%) | TOTAL VISTA (10%) | UNIT. PRAZO (10%)
+                // CÓDIGO (10%) | PRODUTO (28%) | QUANTIDADE (8%) | GRUPO (13%) | COR (11%) | UNIT. VISTA (10%) | TOTAL VISTA (10%) | UNIT. PRAZO (10%)
                 PdfPTable table = new PdfPTable(8);
                 table.setWidthPercentage(100);
-                table.setWidths(new float[]{10f, 28f, 13f, 11f, 8f, 10f, 10f, 10f});
+                table.setWidths(new float[]{10f, 28f, 8f, 13f, 11f, 10f, 10f, 10f});
                 table.setSpacingAfter(8);
 
                 adicionarCabecalhoColuna(table, "CÓDIGO", Element.ALIGN_CENTER);
                 adicionarCabecalhoColuna(table, "NOME DO PRODUTO", Element.ALIGN_LEFT);
+                adicionarCabecalhoColuna(table, "QUANTIDADE", Element.ALIGN_CENTER);
                 adicionarCabecalhoColuna(table, "GRUPO", Element.ALIGN_LEFT);
                 adicionarCabecalhoColuna(table, "COR", Element.ALIGN_CENTER);
-                adicionarCabecalhoColuna(table, "ESTOQUE", Element.ALIGN_CENTER);
                 adicionarCabecalhoColuna(table, "UNIT. VISTA", Element.ALIGN_RIGHT);
                 adicionarCabecalhoColuna(table, "SUBTOTAL VISTA", Element.ALIGN_RIGHT);
                 adicionarCabecalhoColuna(table, "SUBTOTAL PRAZO", Element.ALIGN_RIGHT);
@@ -1116,6 +1333,11 @@ public class PdfReportService {
                     c2.setBackgroundColor(bg); c2.setPadding(4); c2.setBorderColor(new Color(226, 232, 240));
                     table.addCell(c2);
 
+                    PdfPCell c5 = new PdfPCell(new Phrase(it.getEstoque() + " un.", it.getEstoque() > 0 ? FONT_CELL_GREEN : FONT_CELL_RED));
+                    c5.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    c5.setBackgroundColor(bg); c5.setPadding(4); c5.setBorderColor(new Color(226, 232, 240));
+                    table.addCell(c5);
+
                     PdfPCell c3 = new PdfPCell(new Phrase(it.getGrupo(), FONT_CELL_BOLD));
                     c3.setHorizontalAlignment(Element.ALIGN_LEFT);
                     c3.setBackgroundColor(bg); c3.setPadding(4); c3.setBorderColor(new Color(226, 232, 240));
@@ -1125,11 +1347,6 @@ public class PdfReportService {
                     c4.setHorizontalAlignment(Element.ALIGN_CENTER);
                     c4.setBackgroundColor(bg); c4.setPadding(4); c4.setBorderColor(new Color(226, 232, 240));
                     table.addCell(c4);
-
-                    PdfPCell c5 = new PdfPCell(new Phrase(it.getEstoque() + " un.", it.getEstoque() > 0 ? FONT_CELL_GREEN : FONT_CELL_RED));
-                    c5.setHorizontalAlignment(Element.ALIGN_CENTER);
-                    c5.setBackgroundColor(bg); c5.setPadding(4); c5.setBorderColor(new Color(226, 232, 240));
-                    table.addCell(c5);
 
                     PdfPCell c6 = new PdfPCell(new Phrase(String.format(Locale.of("pt", "BR"), "R$ %.2f", it.getPrecoVista()), FONT_CELL));
                     c6.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -1149,7 +1366,7 @@ public class PdfReportService {
 
                 // Linha de Total Geral
                 PdfPCell cTotLabel = new PdfPCell(new Phrase("TOTAL GERAL CONSOLIDADO (" + itens.size() + " itens):", FONT_CELL_BOLD));
-                cTotLabel.setColspan(4);
+                cTotLabel.setColspan(2);
                 cTotLabel.setBackgroundColor(new Color(241, 245, 249));
                 cTotLabel.setPadding(6);
                 cTotLabel.setBorderColor(new Color(203, 213, 225));
@@ -1163,6 +1380,7 @@ public class PdfReportService {
                 table.addCell(cTotQtd);
 
                 PdfPCell cTotVazio = new PdfPCell(new Phrase("-", FONT_CELL));
+                cTotVazio.setColspan(3);
                 cTotVazio.setHorizontalAlignment(Element.ALIGN_CENTER);
                 cTotVazio.setBackgroundColor(new Color(241, 245, 249));
                 cTotVazio.setPadding(6);

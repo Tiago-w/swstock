@@ -26,6 +26,10 @@ public class HistoricoBaseDAO {
         this.databaseManager = databaseManager;
     }
 
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
     private Connection getConnection() {
         return databaseManager.getConnection();
     }

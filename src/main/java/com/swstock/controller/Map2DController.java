@@ -123,6 +123,11 @@ public class Map2DController {
         });
 
         tblProdutosEstante.setItems(produtosEstanteList);
+
+        com.swstock.database.DatabaseManager dbManager = (produtoDAO != null && produtoDAO.getDatabaseManager() != null)
+                ? produtoDAO.getDatabaseManager()
+                : com.swstock.database.DatabaseManager.getInstance();
+        com.swstock.util.TablePreferencesHelper.vincular(tblProdutosEstante, "map2d_estante", dbManager);
     }
 
     public void setDialogStage(Stage stage) {

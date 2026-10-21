@@ -58,10 +58,10 @@
                 <!-- Tabela de Cores Cadastradas -->
                 <TableView fx:id="tblCores" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colNomeCor" prefWidth="220.0" text="NOME DA COR" />
-                        <TableColumn fx:id="colQtdCor" prefWidth="110.0" text="ESTOQUE" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colStatusCor" prefWidth="120.0" text="STATUS" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colAcoesCor" prefWidth="160.0" text="AÇÕES" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colNomeCor" id="colNomeCor" prefWidth="220.0" text="NOME DA COR" />
+                        <TableColumn fx:id="colQtdCor" id="colQtdCor" prefWidth="110.0" text="ESTOQUE" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colStatusCor" id="colStatusCor" prefWidth="120.0" text="STATUS" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colAcoesCor" id="colAcoesCor" prefWidth="160.0" text="AÇÕES" style="-fx-alignment: CENTER;" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

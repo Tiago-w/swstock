@@ -87,7 +87,7 @@ public class GlobalStockHistoryController {
                 "Apenas Saídas",
                 "Só Ajustes"
         ));
-        cbTipoOperacao.setValue("Todos os Tipos (Entradas, Saídas e Ajustes)");
+        cbTipoOperacao.setValue("Apenas Saídas");
 
         configurarBadgeResponsavel();
         carregarOpcoesGrupos();
@@ -261,6 +261,11 @@ public class GlobalStockHistoryController {
         });
 
         tblHistoricoGlobal.setItems(movimentosList);
+
+        com.swstock.database.DatabaseManager dbManager = (historicoDAO != null && historicoDAO.getDatabaseManager() != null)
+                ? historicoDAO.getDatabaseManager()
+                : (produtoDAO != null && produtoDAO.getDatabaseManager() != null ? produtoDAO.getDatabaseManager() : com.swstock.database.DatabaseManager.getInstance());
+        com.swstock.util.TablePreferencesHelper.vincular(tblHistoricoGlobal, "global_historico", dbManager);
     }
 
     private void configurarBuscaInstantanea() {

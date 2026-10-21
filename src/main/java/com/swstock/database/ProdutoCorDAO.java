@@ -24,6 +24,10 @@ public class ProdutoCorDAO {
         this.dbManager = dbManager;
     }
 
+    public DatabaseManager getDatabaseManager() {
+        return dbManager;
+    }
+
     /**
      * Retorna todas as cores cadastradas para um produto, ordenadas alfabeticamente.
      */

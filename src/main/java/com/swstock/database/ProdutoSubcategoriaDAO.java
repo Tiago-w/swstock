@@ -26,6 +26,10 @@ public class ProdutoSubcategoriaDAO {
         this.dbManager = dbManager;
     }
 
+    public DatabaseManager getDatabaseManager() {
+        return dbManager;
+    }
+
     /**
      * Retorna todas as subcategorias cadastradas para um produto, ordenadas alfabeticamente.
      */

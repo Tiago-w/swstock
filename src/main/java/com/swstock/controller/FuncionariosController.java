@@ -128,6 +128,11 @@ public class FuncionariosController {
         });
 
         tblFuncionarios.setItems(funcionariosList);
+
+        com.swstock.database.DatabaseManager dbManager = (funcionarioDAO != null && funcionarioDAO.getDatabaseManager() != null)
+                ? funcionarioDAO.getDatabaseManager()
+                : com.swstock.database.DatabaseManager.getInstance();
+        com.swstock.util.TablePreferencesHelper.vincular(tblFuncionarios, "funcionarios", dbManager);
     }
 
     public void carregarFuncionarios() {

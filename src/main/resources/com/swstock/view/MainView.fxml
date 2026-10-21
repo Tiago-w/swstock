@@ -46,6 +46,9 @@
                 <Button fx:id="btnLevantamentoEstoque" maxWidth="Infinity" onAction="#handleAbrirLevantamentoEstoque"
                         styleClass="nav-button" text="Levantamento de Estoque" />
 
+                <Button fx:id="btnLevantamentoBases" maxWidth="Infinity" onAction="#handleAbrirLevantamentoBases"
+                        styleClass="nav-button" text="Levantamento de Bases" />
+
                 <Button fx:id="btnFuncionarios" maxWidth="Infinity" onAction="#handleAbrirFuncionarios"
                         styleClass="nav-button" text="Vendedores" />
 

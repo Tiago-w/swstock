@@ -215,6 +215,11 @@ public class BasesController {
         });
 
         tblBases.setItems(basesList);
+
+        com.swstock.database.DatabaseManager dbManager = (baseDAO != null && baseDAO.getDatabaseManager() != null)
+                ? baseDAO.getDatabaseManager()
+                : com.swstock.database.DatabaseManager.getInstance();
+        com.swstock.util.TablePreferencesHelper.vincular(tblBases, "bases_tintas", dbManager);
     }
 
     private void configurarFiltros() {

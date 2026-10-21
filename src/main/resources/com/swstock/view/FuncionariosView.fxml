@@ -56,11 +56,11 @@
 
                 <TableView fx:id="tblFuncionarios" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colId" prefWidth="50.0" style="-fx-alignment: CENTER;" text="#" />
-                        <TableColumn fx:id="colNumero" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Número" />
-                        <TableColumn fx:id="colNome" prefWidth="250.0" text="Nome do Vendedor" />
-                        <TableColumn fx:id="colDataCriacao" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Cadastrado em" />
-                        <TableColumn fx:id="colAcoes" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Ações" />
+                        <TableColumn fx:id="colId" id="colId" prefWidth="50.0" style="-fx-alignment: CENTER;" text="#" />
+                        <TableColumn fx:id="colNumero" id="colNumero" prefWidth="90.0" style="-fx-alignment: CENTER;" text="Número" />
+                        <TableColumn fx:id="colNome" id="colNome" prefWidth="250.0" text="Nome do Vendedor" />
+                        <TableColumn fx:id="colDataCriacao" id="colDataCriacao" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Cadastrado em" />
+                        <TableColumn fx:id="colAcoes" id="colAcoes" prefWidth="150.0" style="-fx-alignment: CENTER;" text="Ações" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

@@ -121,15 +121,15 @@
                         <!-- Tabela Detalhada com Subtotais -->
                         <TableView fx:id="tblValorEstoque" VBox.vgrow="ALWAYS" styleClass="data-table">
                             <columns>
-                                <TableColumn fx:id="colCodigo" text="Cód. Loja" prefWidth="95.0" style="-fx-alignment: CENTER;" />
-                                <TableColumn fx:id="colNome" text="Nome do Produto" prefWidth="260.0" />
-                                <TableColumn fx:id="colGrupo" text="Fabricante / Grupo" prefWidth="130.0" />
-                                <TableColumn fx:id="colCor" text="Cor" prefWidth="110.0" style="-fx-alignment: CENTER;" />
-                                <TableColumn fx:id="colEstoque" text="Estoque" prefWidth="85.0" style="-fx-alignment: CENTER;" />
-                                <TableColumn fx:id="colPrecoVista" text="Unit. à Vista" prefWidth="105.0" style="-fx-alignment: CENTER_RIGHT;" />
-                                <TableColumn fx:id="colSubtotalVista" text="Subtotal à Vista" prefWidth="125.0" style="-fx-alignment: CENTER_RIGHT;" />
-                                <TableColumn fx:id="colPrecoPrazo" text="Unit. a Prazo" prefWidth="105.0" style="-fx-alignment: CENTER_RIGHT;" />
-                                <TableColumn fx:id="colSubtotalPrazo" text="Subtotal a Prazo" prefWidth="125.0" style="-fx-alignment: CENTER_RIGHT;" />
+                                <TableColumn fx:id="colCodigo" id="colCodigo" text="Cód. Loja" prefWidth="95.0" style="-fx-alignment: CENTER;" />
+                                <TableColumn fx:id="colNome" id="colNome" text="Nome do Produto" prefWidth="260.0" />
+                                <TableColumn fx:id="colGrupo" id="colGrupo" text="Fabricante / Grupo" prefWidth="130.0" />
+                                <TableColumn fx:id="colCor" id="colCor" text="Cor" prefWidth="110.0" style="-fx-alignment: CENTER;" />
+                                <TableColumn fx:id="colEstoque" id="colEstoque" text="Estoque" prefWidth="85.0" style="-fx-alignment: CENTER;" />
+                                <TableColumn fx:id="colPrecoVista" id="colPrecoVista" text="Unit. à Vista" prefWidth="105.0" style="-fx-alignment: CENTER_RIGHT;" />
+                                <TableColumn fx:id="colSubtotalVista" id="colSubtotalVista" text="Subtotal à Vista" prefWidth="125.0" style="-fx-alignment: CENTER_RIGHT;" />
+                                <TableColumn fx:id="colPrecoPrazo" id="colPrecoPrazo" text="Unit. a Prazo" prefWidth="105.0" style="-fx-alignment: CENTER_RIGHT;" />
+                                <TableColumn fx:id="colSubtotalPrazo" id="colSubtotalPrazo" text="Subtotal a Prazo" prefWidth="125.0" style="-fx-alignment: CENTER_RIGHT;" />
                             </columns>
                             <columnResizePolicy>
                                 <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

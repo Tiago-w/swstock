@@ -439,6 +439,11 @@ public class ProductDetailController {
         });
 
         tblHistorico.setItems(historicoList);
+
+        com.swstock.database.DatabaseManager dbManager = (produtoDAO != null && produtoDAO.getDatabaseManager() != null)
+                ? produtoDAO.getDatabaseManager()
+                : com.swstock.database.DatabaseManager.getInstance();
+        com.swstock.util.TablePreferencesHelper.vincular(tblHistorico, "produto_historico", dbManager);
     }
 
     private void atualizarFeedbackDelta(int qtdAtual) {

@@ -73,13 +73,13 @@
                 <!-- Tabela de Bases -->
                 <TableView fx:id="tblBases" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colTamanho" minWidth="90.0" prefWidth="110.0" text="TAMANHO" styleClass="col-left" />
-                        <TableColumn fx:id="colNome" minWidth="220.0" prefWidth="300.0" text="NOME DA BASE" styleClass="col-left" />
-                        <TableColumn fx:id="colTipo" minWidth="110.0" prefWidth="130.0" text="TIPO" styleClass="col-center" />
-                        <TableColumn fx:id="colFabricante" minWidth="110.0" prefWidth="140.0" text="FABRICANTE" styleClass="col-left" />
-                        <TableColumn fx:id="colValorCompra" minWidth="110.0" prefWidth="130.0" text="VALOR DE COMPRA" styleClass="col-right" />
-                        <TableColumn fx:id="colQuantidade" minWidth="100.0" prefWidth="120.0" text="QUANTIDADE" styleClass="col-center" />
-                        <TableColumn fx:id="colAcoes" minWidth="160.0" prefWidth="180.0" text="AÇÕES" sortable="false" styleClass="col-center" />
+                        <TableColumn fx:id="colTamanho" id="colTamanho" minWidth="90.0" prefWidth="110.0" text="TAMANHO" styleClass="col-left" />
+                        <TableColumn fx:id="colNome" id="colNome" minWidth="220.0" prefWidth="300.0" text="NOME DA BASE" styleClass="col-left" />
+                        <TableColumn fx:id="colTipo" id="colTipo" minWidth="110.0" prefWidth="130.0" text="TIPO" styleClass="col-center" />
+                        <TableColumn fx:id="colFabricante" id="colFabricante" minWidth="110.0" prefWidth="140.0" text="FABRICANTE" styleClass="col-left" />
+                        <TableColumn fx:id="colValorCompra" id="colValorCompra" minWidth="110.0" prefWidth="130.0" text="VALOR DE COMPRA" styleClass="col-right" />
+                        <TableColumn fx:id="colQuantidade" id="colQuantidade" minWidth="100.0" prefWidth="120.0" text="QUANTIDADE" styleClass="col-center" />
+                        <TableColumn fx:id="colAcoes" id="colAcoes" minWidth="160.0" prefWidth="180.0" text="AÇÕES" sortable="false" styleClass="col-center" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

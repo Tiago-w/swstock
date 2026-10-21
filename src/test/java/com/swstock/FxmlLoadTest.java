@@ -122,4 +122,12 @@ class FxmlLoadTest {
         Object root = loader.load();
         assertNotNull(root);
     }
+
+    @Test
+    void testLoadBasesInventoryModalFxml() throws Exception {
+        FXMLLoader loader = new FXMLLoader(FxmlLoadTest.class.getResource("/com/swstock/view/BasesInventoryModal.fxml"));
+        Object root = loader.load();
+        assertNotNull(root);
+    }
 }
+
