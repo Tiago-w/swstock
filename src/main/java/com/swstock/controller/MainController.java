@@ -329,6 +329,19 @@ public class MainController {
         });
 
         tblProdutos.setItems(produtosList);
+
+        // Garante identificadores estáveis para cada coluna da tabela
+        colCodigoLoja.setId("colCodigoLoja");
+        colNome.setId("colNome");
+        colGrupo.setId("colGrupo");
+        colPrecoVista.setId("colPrecoVista");
+        colPrecoPrazo.setId("colPrecoPrazo");
+        colLocalizacao.setId("colLocalizacao");
+        colQuantidade.setId("colQuantidade");
+        colAcoes.setId("colAcoes");
+
+        // Vincula a tabela à persistência automática no SQLite (ordem e larguras personalizadas)
+        com.swstock.util.TablePreferencesHelper.vincular(tblProdutos, "main_produtos", produtoDAO.getDatabaseManager());
     }
 
     private void configurarBuscaInstantanea() {
@@ -511,7 +524,8 @@ public class MainController {
 
             controller.setDialogStage(stage);
             controller.setProdutoDAO(produtoDAO);
-            controller.setProdutoCorDAO(new com.swstock.database.ProdutoCorDAO());
+            controller.setProdutoCorDAO(new com.swstock.database.ProdutoCorDAO(produtoDAO.getDatabaseManager()));
+            controller.setProdutoSubcategoriaDAO(new com.swstock.database.ProdutoSubcategoriaDAO(produtoDAO.getDatabaseManager()));
             controller.carregarDadosIniciais();
 
             stage.setMaximized(true);
@@ -537,7 +551,7 @@ public class MainController {
 
             controller.setStage(stage);
             controller.setProdutoDAO(produtoDAO);
-            controller.setProdutoCorDAO(new com.swstock.database.ProdutoCorDAO());
+            controller.setProdutoCorDAO(new com.swstock.database.ProdutoCorDAO(produtoDAO.getDatabaseManager()));
             controller.carregarDados();
 
             stage.setMaximized(true);

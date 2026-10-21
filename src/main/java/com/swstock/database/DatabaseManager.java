@@ -243,6 +243,7 @@ public class DatabaseManager {
                 nome TEXT NOT NULL,
                 grupo TEXT DEFAULT 'GERAL',
                 subcategoria TEXT DEFAULT '',
+                tem_subcategorias INTEGER NOT NULL DEFAULT 0,
                 precoVista REAL NOT NULL DEFAULT 0.0,
                 precoPrazo REAL NOT NULL DEFAULT 0.0,
                 codigoLoja TEXT NOT NULL UNIQUE,
@@ -343,6 +344,13 @@ public class DatabaseManager {
                 // Coluna já existe
             }
 
+            // Migração automática caso a tabela já existisse sem a coluna tem_subcategorias
+            try {
+                stmt.execute("ALTER TABLE produtos ADD COLUMN tem_subcategorias INTEGER NOT NULL DEFAULT 0;");
+            } catch (SQLException ignored) {
+                // Coluna já existe
+            }
+
             stmt.execute(createIndexCodigoLoja);
             stmt.execute(createIndexGrupo);
             stmt.execute(createIndexSubcategoria);
@@ -375,6 +383,35 @@ public class DatabaseManager {
             stmt.execute(createTableProdutoSubcategorias);
             stmt.execute(createIndexSubcategoriasProd);
             stmt.execute(createIndexSubcategoriasNome);
+
+            // Tabela de catálogo global de subcategorias (para evitar digitação repetitiva)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS catalogo_subcategorias (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL UNIQUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """);
+
+            // Popula automaticamente com subcategorias já cadastradas anteriormente
+            try {
+                stmt.execute("""
+                    INSERT OR IGNORE INTO catalogo_subcategorias (nome)
+                    SELECT DISTINCT UPPER(TRIM(nome_subcategoria)) FROM produto_subcategorias WHERE nome_subcategoria IS NOT NULL AND TRIM(nome_subcategoria) != ''
+                    UNION
+                    SELECT DISTINCT UPPER(TRIM(subcategoria)) FROM produtos WHERE subcategoria IS NOT NULL AND TRIM(subcategoria) != '';
+                """);
+            } catch (SQLException ignored) {
+            }
+
+            // Tabela de configurações gerais e preferências do usuário (ex: ordem e largura de colunas das tabelas)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS configuracoes (
+                    chave TEXT PRIMARY KEY,
+                    valor TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """);
 
             // Migração da tabela bases: de 'codigo' (UNIQUE) para 'tamanho' (sem restrição UNIQUE)
             try {

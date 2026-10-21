@@ -40,8 +40,9 @@
                                style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1E293B;" />
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
                             <children>
-                                <TextField fx:id="txtNomeSubcategoria" promptText="Nome da subcategoria (ex: 900ml, 3.6L, Premium, Linha Pro...)"
-                                           styleClass="search-field" HBox.hgrow="ALWAYS" />
+                                <ComboBox fx:id="cbNomeSubcategoria" editable="true"
+                                          promptText="Selecione do catálogo ou digite nova (ex: 900ml, 3.6L...)"
+                                          prefWidth="350.0" HBox.hgrow="ALWAYS" />
                                 <VBox alignment="CENTER_LEFT" spacing="2.0">
                                     <children>
                                         <TextField fx:id="txtQtdInicial" promptText="Qtd" text="0"

@@ -349,10 +349,10 @@ public class StockInventoryController {
             produtoDAO = new ProdutoDAO();
         }
         if (produtoCorDAO == null) {
-            produtoCorDAO = new ProdutoCorDAO();
+            produtoCorDAO = new ProdutoCorDAO(produtoDAO.getDatabaseManager());
         }
         if (produtoSubcategoriaDAO == null) {
-            produtoSubcategoriaDAO = new ProdutoSubcategoriaDAO();
+            produtoSubcategoriaDAO = new ProdutoSubcategoriaDAO(produtoDAO.getDatabaseManager());
         }
 
         String grupo = cbGrupo.getValue();
@@ -383,7 +383,37 @@ public class StockInventoryController {
                 List<ProdutoSubcategoria> subcategorias = (mapaSubcategorias != null && p.getId() != null) ? mapaSubcategorias.get(p.getId()) : null;
                 List<ProdutoCor> cores = (mapaCores != null && p.getId() != null) ? mapaCores.get(p.getId()) : null;
 
-                if (subcategorias != null && !subcategorias.isEmpty()) {
+                if (cores != null && !cores.isEmpty()) {
+                    // Produto possui variações por cor
+                    String subNome = (subProd != null && !subProd.equals("-")) ? subProd
+                            : ((subcategorias != null && !subcategorias.isEmpty() && subcategorias.get(0).getNomeSubcategoria() != null)
+                            ? subcategorias.get(0).getNomeSubcategoria() : "-");
+
+                    boolean matchesSub = !filtrarSub || subNome.equalsIgnoreCase(subUpper)
+                            || (subcategorias != null && subcategorias.stream().anyMatch(s -> s.getNomeSubcategoria() != null && s.getNomeSubcategoria().equalsIgnoreCase(subUpper)));
+
+                    if (!matchesSub) {
+                        continue;
+                    }
+
+                    for (ProdutoCor cor : cores) {
+                        int qtdCor = cor.getQuantidade();
+                        if ("Apenas com Estoque (> 0)".equals(filtroEstoque) && qtdCor <= 0) continue;
+                        if ("Apenas Zerados (= 0)".equals(filtroEstoque) && qtdCor != 0) continue;
+
+                        linhas.add(new ItemLevantamento(
+                                p.getId(),
+                                cod,
+                                p.getNome(),
+                                grp,
+                                subNome,
+                                cor.getNomeCor(),
+                                qtdCor,
+                                pv,
+                                pp
+                        ));
+                    }
+                } else if (subcategorias != null && !subcategorias.isEmpty()) {
                     // Produto possui variações por subcategoria
                     for (ProdutoSubcategoria sub : subcategorias) {
                         String nomeSub = sub.getNomeSubcategoria() != null ? sub.getNomeSubcategoria() : "-";
@@ -402,28 +432,6 @@ public class StockInventoryController {
                                 nomeSub,
                                 "PADRÃO",
                                 qtdSub,
-                                pv,
-                                pp
-                        ));
-                    }
-                } else if (cores != null && !cores.isEmpty()) {
-                    // Produto possui variações por cor
-                    if (filtrarSub && !subProd.equalsIgnoreCase(subUpper)) {
-                        continue;
-                    }
-                    for (ProdutoCor cor : cores) {
-                        int qtdCor = cor.getQuantidade();
-                        if ("Apenas com Estoque (> 0)".equals(filtroEstoque) && qtdCor <= 0) continue;
-                        if ("Apenas Zerados (= 0)".equals(filtroEstoque) && qtdCor != 0) continue;
-
-                        linhas.add(new ItemLevantamento(
-                                p.getId(),
-                                cod,
-                                p.getNome(),
-                                grp,
-                                subProd,
-                                cor.getNomeCor(),
-                                qtdCor,
                                 pv,
                                 pp
                         ));

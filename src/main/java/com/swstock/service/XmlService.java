@@ -239,11 +239,15 @@ public class XmlService {
                     String urlImagem = getTagValue("urlImagem", elem);
                     String descricaoBreve = getTagValue("descricaoBreve", elem);
                     String subcategoria = getTagValue("subcategoria", elem);
+                    String temSubStr = getTagValue("tem_subcategorias", elem);
 
                     Produto p = new Produto(nome, grupo, precoVista, precoPrazo, codigoLoja,
                             localizacao, quantidade, urlImagem, descricaoBreve);
                     if (!subcategoria.isEmpty()) {
                         p.setSubcategoria(subcategoria);
+                    }
+                    if (!temSubStr.isEmpty()) {
+                        p.setTemSubcategorias("1".equals(temSubStr) || "true".equalsIgnoreCase(temSubStr));
                     }
                     produtosParaInserirOuAtualizar.add(p);
                 } catch (Exception ex) {
@@ -386,6 +390,18 @@ public class XmlService {
                     }
                 } catch (Exception ex) {
                     LOGGER.log(Level.WARNING, "Erro ao processar subcategoria do XML: " + ex.getMessage());
+                }
+            }
+        }
+
+        // 1.2 Restauracao de Catalogo Global de Subcategorias
+        NodeList catList = doc.getElementsByTagName("item_catalogo");
+        for (int i = 0; i < catList.getLength(); i++) {
+            Node node = catList.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                String nomeCat = node.getTextContent();
+                if (nomeCat != null && !nomeCat.trim().isEmpty()) {
+                    produtoSubcategoriaDAO.salvarNoCatalogo(nomeCat.trim().toUpperCase());
                 }
             }
         }
@@ -616,6 +632,7 @@ public class XmlService {
             appendElement(doc, prodElem, "urlImagem", p.getUrlImagem() != null ? p.getUrlImagem() : "");
             appendElement(doc, prodElem, "descricaoBreve", p.getDescricaoBreve() != null ? p.getDescricaoBreve() : "");
             appendElement(doc, prodElem, "subcategoria", p.getSubcategoria() != null ? p.getSubcategoria() : "");
+            appendElement(doc, prodElem, "tem_subcategorias", Boolean.TRUE.equals(p.isTemSubcategorias()) ? "1" : "0");
 
             produtosElem.appendChild(prodElem);
         }
@@ -664,6 +681,21 @@ public class XmlService {
             }
         } catch (Exception ex) {
             LOGGER.log(Level.WARNING, "Aviso ao exportar subcategorias para XML: " + ex.getMessage(), ex);
+        }
+
+        // 2.2 Secao do Catalogo Global de Subcategorias
+        Element catSubsElem = doc.createElement("catalogo_subcategorias");
+        rootElement.appendChild(catSubsElem);
+
+        try {
+            List<String> catalogo = produtoSubcategoriaDAO.getCatalogoSubcategorias();
+            for (String itemCat : catalogo) {
+                Element itemElem = doc.createElement("item_catalogo");
+                itemElem.setTextContent(itemCat);
+                catSubsElem.appendChild(itemElem);
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.WARNING, "Aviso ao exportar catalogo de subcategorias para XML: " + ex.getMessage(), ex);
         }
 
         // 3. Secao de Historico Completo de Movimentacoes
@@ -817,7 +849,14 @@ public class XmlService {
                 insertStmt.setInt(1, produtoId);
                 insertStmt.setString(2, nomeLimpo);
                 insertStmt.setInt(3, Math.max(0, quantidade));
-                return insertStmt.executeUpdate() > 0;
+                boolean inserido = insertStmt.executeUpdate() > 0;
+                if (inserido) {
+                    produtoSubcategoriaDAO.salvarNoCatalogo(nomeLimpo);
+                    try (Statement stmtUpdate = conn.createStatement()) {
+                        stmtUpdate.executeUpdate("UPDATE produtos SET tem_subcategorias = 1 WHERE id = " + produtoId);
+                    } catch (SQLException ignored) {}
+                }
+                return inserido;
             }
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Erro ao inserir subcategoria via XML: " + nomeSub, e);

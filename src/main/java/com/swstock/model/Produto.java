@@ -13,6 +13,7 @@ public class Produto {
     private String nome;
     private String grupo;
     private String subcategoria = "";
+    private Boolean temSubcategorias = false;
     private Double precoVista;
     private Double precoPrazo;
     private String codigoLoja;
@@ -96,6 +97,14 @@ public class Produto {
 
     public void setSubcategoria(String subcategoria) {
         this.subcategoria = subcategoria != null ? subcategoria.trim() : "";
+    }
+
+    public Boolean isTemSubcategorias() {
+        return temSubcategorias != null && temSubcategorias;
+    }
+
+    public void setTemSubcategorias(Boolean temSubcategorias) {
+        this.temSubcategorias = temSubcategorias != null ? temSubcategorias : false;
     }
 
     public Double getPrecoVista() {

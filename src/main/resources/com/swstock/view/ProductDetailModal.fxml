@@ -110,6 +110,8 @@
                                                         <VBox alignment="CENTER_LEFT" spacing="4.0"
                                                               style="-fx-padding: 6px 12px; -fx-background-color: #F8FAFC; -fx-background-radius: 6px; -fx-border-color: #E2E8F0; -fx-border-radius: 6px;">
                                                             <children>
+                                                                <CheckBox fx:id="chkPossuiSubcategorias" text="Produto possui subcategorias"
+                                                                          style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #6B21A8; -fx-cursor: hand;" />
                                                                 <HBox alignment="CENTER_LEFT" spacing="6.0">
                                                                     <children>
                                                                         <Label style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #334155;" text="Subcategoria:" />

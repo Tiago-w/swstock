@@ -90,6 +90,7 @@ public class ProdutoSubcategoriaDAO {
 
             String resp = (responsavel != null && !responsavel.trim().isEmpty()) ? responsavel : "Não informado";
             if (affected > 0) {
+                salvarNoCatalogo(nomeLimpo);
                 if (quantidadeInicial > 0) {
                     registrarHistoricoSubcategoria(produtoId, nomeLimpo, 0, quantidadeInicial,
                             "Cadastro de subcategoria [" + nomeLimpo + "] / Modificação de estoque", resp);
@@ -235,5 +236,51 @@ public class ProdutoSubcategoriaDAO {
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Falha ao registrar histórico para a subcategoria " + nomeSub, e);
         }
+    }
+
+    /**
+     * Salva um nome de subcategoria no catálogo global (para sugestões e seleção sem digitação).
+     */
+    public boolean salvarNoCatalogo(String nomeSubcategoria) {
+        if (nomeSubcategoria == null || nomeSubcategoria.trim().isEmpty()) {
+            return false;
+        }
+        String sql = "INSERT OR IGNORE INTO catalogo_subcategorias (nome) VALUES (?)";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, nomeSubcategoria.trim().toUpperCase());
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Erro ao salvar subcategoria no catálogo: " + nomeSubcategoria, e);
+            return false;
+        }
+    }
+
+    /**
+     * Retorna todas as subcategorias únicas já cadastradas no sistema (catálogo global + produtos).
+     */
+    public List<String> getCatalogoSubcategorias() {
+        List<String> catalogo = new ArrayList<>();
+        String sql = """
+            SELECT DISTINCT UPPER(TRIM(nome)) AS sub FROM catalogo_subcategorias WHERE nome IS NOT NULL AND TRIM(nome) != ''
+            UNION
+            SELECT DISTINCT UPPER(TRIM(nome_subcategoria)) AS sub FROM produto_subcategorias WHERE nome_subcategoria IS NOT NULL AND TRIM(nome_subcategoria) != ''
+            UNION
+            SELECT DISTINCT UPPER(TRIM(subcategoria)) AS sub FROM produtos WHERE subcategoria IS NOT NULL AND TRIM(subcategoria) != ''
+            ORDER BY 1 ASC;
+        """;
+        try (Connection conn = dbManager.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String sub = rs.getString("sub");
+                if (sub != null && !sub.trim().isEmpty()) {
+                    catalogo.add(sub.trim());
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Erro ao buscar catálogo de subcategorias.", e);
+        }
+        return catalogo;
     }
 }

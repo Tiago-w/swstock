@@ -33,7 +33,7 @@ public class ProductSubcategoriesController {
     @FXML private Label lblTotalSubcategoriasContador;
     @FXML private Button btnResponsavelSessao;
 
-    @FXML private TextField txtNomeSubcategoria;
+    @FXML private ComboBox<String> cbNomeSubcategoria;
     @FXML private TextField txtQtdInicial;
     @FXML private Button btnAdicionar;
 
@@ -219,7 +219,15 @@ public class ProductSubcategoriesController {
         if (produto != null) {
             lblTituloProduto.setText("Subcategorias: " + produto.getNome());
             lblSubtituloCodigo.setText("CÓDIGO: #" + (produto.getCodigoLoja() != null ? produto.getCodigoLoja() : "N/A"));
+            carregarCatalogo();
             carregarSubcategorias();
+        }
+    }
+
+    public void carregarCatalogo() {
+        if (cbNomeSubcategoria != null && produtoSubcategoriaDAO != null) {
+            List<String> catalogo = produtoSubcategoriaDAO.getCatalogoSubcategorias();
+            cbNomeSubcategoria.setItems(FXCollections.observableArrayList(catalogo));
         }
     }
 
@@ -253,10 +261,18 @@ public class ProductSubcategoriesController {
             return;
         }
 
-        String nome = txtNomeSubcategoria.getText();
+        String nome = null;
+        if (cbNomeSubcategoria != null) {
+            if (cbNomeSubcategoria.getEditor() != null && cbNomeSubcategoria.getEditor().getText() != null && !cbNomeSubcategoria.getEditor().getText().trim().isEmpty()) {
+                nome = cbNomeSubcategoria.getEditor().getText().trim();
+            } else if (cbNomeSubcategoria.getValue() != null && !cbNomeSubcategoria.getValue().trim().isEmpty()) {
+                nome = cbNomeSubcategoria.getValue().trim();
+            }
+        }
+
         if (nome == null || nome.trim().isEmpty()) {
-            mostrarAlerta(Alert.AlertType.WARNING, "Campo Vazio", "Informe o nome da subcategoria.");
-            txtNomeSubcategoria.requestFocus();
+            mostrarAlerta(Alert.AlertType.WARNING, "Campo Vazio", "Informe ou selecione o nome da subcategoria.");
+            if (cbNomeSubcategoria != null) cbNomeSubcategoria.requestFocus();
             return;
         }
 
@@ -283,8 +299,15 @@ public class ProductSubcategoriesController {
         try {
             boolean ok = produtoSubcategoriaDAO.addSubcategoria(produto.getId(), nomeLimpo, qtd, responsavel);
             if (ok) {
-                txtNomeSubcategoria.clear();
+                produto.setTemSubcategorias(true);
+                produtoDAO.updateSemHistorico(produto);
+
+                if (cbNomeSubcategoria != null) {
+                    if (cbNomeSubcategoria.getEditor() != null) cbNomeSubcategoria.getEditor().clear();
+                    cbNomeSubcategoria.setValue(null);
+                }
                 txtQtdInicial.setText("0");
+                carregarCatalogo();
                 carregarSubcategorias();
                 if (onModificacaoCallback != null) onModificacaoCallback.run();
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Subcategoria '" + nomeLimpo + "' cadastrada com sucesso!");

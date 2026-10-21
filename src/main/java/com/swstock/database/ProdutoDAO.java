@@ -26,6 +26,10 @@ public class ProdutoDAO {
         this.databaseManager = databaseManager;
     }
 
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
     private Connection getConnection() {
         return databaseManager.getConnection();
     }
@@ -35,8 +39,8 @@ public class ProdutoDAO {
      */
     public Produto insert(Produto produto) throws SQLException {
         String sql = """
-            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria, tem_subcategorias)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -69,13 +73,13 @@ public class ProdutoDAO {
             UPDATE produtos
             SET nome = ?, grupo = ?, precoVista = ?, precoPrazo = ?, codigoLoja = ?,
                 localizacao = ?, quantidade = ?, urlImagem = ?, descricaoBreve = ?, subcategoria = ?,
-                updated_at = CURRENT_TIMESTAMP
+                tem_subcategorias = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?;
             """;
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             setStatementParameters(stmt, produto);
-            stmt.setInt(11, produto.getId());
+            stmt.setInt(12, produto.getId());
             boolean ok = stmt.executeUpdate() > 0;
 
             if (ok && diferenca != 0 && !"SEM_HISTORICO".equals(motivo)) {
@@ -110,8 +114,8 @@ public class ProdutoDAO {
      */
     public Produto upsert(Produto produto) throws SQLException {
         String sql = """
-            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria, tem_subcategorias)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(codigoLoja) DO UPDATE SET
                 nome = excluded.nome,
                 grupo = excluded.grupo,
@@ -120,6 +124,10 @@ public class ProdutoDAO {
                 subcategoria = CASE 
                     WHEN excluded.subcategoria IS NOT NULL AND TRIM(excluded.subcategoria) != '' THEN excluded.subcategoria 
                     ELSE produtos.subcategoria 
+                END,
+                tem_subcategorias = CASE 
+                    WHEN excluded.tem_subcategorias = 1 THEN 1 
+                    ELSE produtos.tem_subcategorias 
                 END,
                 localizacao = CASE 
                     WHEN produtos.localizacao IS NOT NULL AND TRIM(produtos.localizacao) != '' THEN produtos.localizacao 
@@ -160,8 +168,8 @@ public class ProdutoDAO {
      */
     public int batchUpsert(List<Produto> produtos) throws SQLException {
         String sql = """
-            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO produtos (nome, grupo, precoVista, precoPrazo, codigoLoja, localizacao, quantidade, urlImagem, descricaoBreve, subcategoria, tem_subcategorias)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(codigoLoja) DO UPDATE SET
                 nome = excluded.nome,
                 grupo = excluded.grupo,
@@ -170,6 +178,10 @@ public class ProdutoDAO {
                 subcategoria = CASE 
                     WHEN excluded.subcategoria IS NOT NULL AND TRIM(excluded.subcategoria) != '' THEN excluded.subcategoria 
                     ELSE produtos.subcategoria 
+                END,
+                tem_subcategorias = CASE 
+                    WHEN excluded.tem_subcategorias = 1 THEN 1 
+                    ELSE produtos.tem_subcategorias 
                 END,
                 localizacao = CASE 
                     WHEN produtos.localizacao IS NOT NULL AND TRIM(produtos.localizacao) != '' THEN produtos.localizacao 
@@ -549,6 +561,20 @@ public class ProdutoDAO {
             }
         }
 
+        // 3. Da tabela catalogo_subcategorias (quando não filtra por grupo específico)
+        if (!filtrarGrupo) {
+            String sqlCat = "SELECT DISTINCT UPPER(TRIM(nome)) as sub FROM catalogo_subcategorias WHERE nome IS NOT NULL AND TRIM(nome) != ''";
+            try (Statement stmtCat = getConnection().createStatement();
+                 ResultSet rsCat = stmtCat.executeQuery(sqlCat)) {
+                while (rsCat.next()) {
+                    String s = rsCat.getString("sub");
+                    if (s != null && !s.trim().isEmpty()) {
+                        subcategorias.add(s.trim());
+                    }
+                }
+            } catch (SQLException ignored) {}
+        }
+
         return new ArrayList<>(subcategorias);
     }
 
@@ -563,6 +589,7 @@ public class ProdutoDAO {
         stmt.setString(8, p.getUrlImagem());
         stmt.setString(9, p.getDescricaoBreve());
         stmt.setString(10, p.getSubcategoria() != null ? p.getSubcategoria() : "");
+        stmt.setInt(11, p.isTemSubcategorias() ? 1 : 0);
     }
 
     private Produto mapRow(ResultSet rs) throws SQLException {
@@ -588,6 +615,9 @@ public class ProdutoDAO {
         );
         try {
             p.setSubcategoria(rs.getString("subcategoria"));
+        } catch (SQLException ignored) {}
+        try {
+            p.setTemSubcategorias(rs.getInt("tem_subcategorias") == 1);
         } catch (SQLException ignored) {}
         return p;
     }

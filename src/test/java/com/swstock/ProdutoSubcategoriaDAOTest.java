@@ -165,4 +165,87 @@ public class ProdutoSubcategoriaDAOTest {
         assertTrue(subcategoriasSW.contains("LINHA AUTOMOTIVA"));
         assertTrue(subcategoriasSW.contains("LINHA INDUSTRIAL"));
     }
+
+    @Test
+    void testCatalogoSubcategoriasUnificadas() throws SQLException {
+        // Insere diretamente no catálogo
+        subcategoriaDAO.salvarNoCatalogo("900ML");
+        subcategoriaDAO.salvarNoCatalogo("3.6L");
+        subcategoriaDAO.salvarNoCatalogo("900ml"); // duplicata case-insensitive ignorada
+        subcategoriaDAO.salvarNoCatalogo("18L (LATA)");
+
+        // Cadastra produto com subcategoria geral
+        Produto p1 = new Produto("Esmalte Sintético", "CORAL", 45.0, 50.0, "SKU-CAT-01", "A1", 10, null, null);
+        p1.setSubcategoria("LINHA PREMIUM");
+        produtoDAO.upsert(p1);
+
+        // Cadastra produto com variação na tabela produto_subcategorias
+        Produto p2 = new Produto("Verniz Marítimo", "SUVINIL", 60.0, 68.0, "SKU-CAT-02", "B2", 0, null, null);
+        produtoDAO.upsert(p2);
+        subcategoriaDAO.addSubcategoria(p2.getId(), "BRILHANTE", 5, "Admin");
+
+        List<String> catalogo = subcategoriaDAO.getCatalogoSubcategorias();
+        assertTrue(catalogo.contains("900ML"));
+        assertTrue(catalogo.contains("3.6L"));
+        assertTrue(catalogo.contains("18L (LATA)"));
+        assertTrue(catalogo.contains("LINHA PREMIUM"));
+        assertTrue(catalogo.contains("BRILHANTE"));
+        // Verifica que não duplicou 900ml
+        long count900 = catalogo.stream().filter(s -> s.equalsIgnoreCase("900ML")).count();
+        assertEquals(1, count900);
+    }
+
+    @Test
+    void testFlagTemSubcategoriasPersistence() throws SQLException {
+        Produto p = new Produto("Tinta Fachada", "SUVILUX", 120.0, 135.0, "SKU-TEM-SUB-01", "C3", 0, null, null);
+        p.setTemSubcategorias(true);
+        produtoDAO.upsert(p);
+        assertNotNull(p.getId());
+
+        Produto doBanco = produtoDAO.findById(p.getId());
+        assertNotNull(doBanco);
+        assertTrue(doBanco.isTemSubcategorias());
+
+        // Usuário desmarca manualmente a opção
+        p.setTemSubcategorias(false);
+        produtoDAO.updateSemHistorico(p);
+
+        Produto atualizado = produtoDAO.findById(p.getId());
+        assertNotNull(atualizado);
+        assertFalse(atualizado.isTemSubcategorias());
+    }
+
+    @Test
+    void testProdutoComCoresESubcategoriaSimultaneos() throws SQLException {
+        com.swstock.database.ProdutoCorDAO corDAO = new com.swstock.database.ProdutoCorDAO(dbManager);
+
+        Produto p = new Produto("Esmalte Sintético Fosco", "CORAL", 42.0, 48.0, "SKU-COR-SUB-01", "D4", 0, null, null);
+        p.setSubcategoria("900ML");
+        p.setTemSubcategorias(true);
+        produtoDAO.upsert(p);
+        assertNotNull(p.getId());
+
+        // Adiciona variação de subcategoria
+        boolean subOk = subcategoriaDAO.addSubcategoria(p.getId(), "900ML", 15, "Admin");
+        assertTrue(subOk);
+
+        // Adiciona variações de cores
+        boolean cor1Ok = corDAO.addCor(p.getId(), "BRANCO NEVE", 10, "Admin");
+        boolean cor2Ok = corDAO.addCor(p.getId(), "PRETO FOSCO", 5, "Admin");
+        assertTrue(cor1Ok);
+        assertTrue(cor2Ok);
+
+        // Verifica que ambos os dados coexistem perfeitamente para o produto
+        Produto doBanco = produtoDAO.findById(p.getId());
+        assertEquals("900ML", doBanco.getSubcategoria());
+        assertTrue(doBanco.isTemSubcategorias());
+
+        List<ProdutoSubcategoria> subs = subcategoriaDAO.findByProdutoId(p.getId());
+        assertEquals(1, subs.size());
+        assertEquals("900ML", subs.get(0).getNomeSubcategoria());
+
+        List<com.swstock.model.ProdutoCor> cores = corDAO.findByProdutoId(p.getId());
+        assertEquals(2, cores.size());
+        assertEquals(15, corDAO.getTotalQuantidadeCores(p.getId()));
+    }
 }
