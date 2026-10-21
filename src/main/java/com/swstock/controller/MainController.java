@@ -652,8 +652,7 @@ public class MainController {
             stage.initOwner(rootPane.getScene().getWindow());
             Scene scene = new Scene(root, 1080, 800);
             stage.setScene(scene);
-            stage.setWidth(1920);
-            stage.setHeight(1030);
+            stage.setMaximized(true);
             stage.setMinWidth(920);
             stage.setMinHeight(680);
             stage.centerOnScreen();
