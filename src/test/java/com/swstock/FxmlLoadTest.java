@@ -7,6 +7,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.awt.GraphicsEnvironment;
+import java.util.Locale;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class FxmlLoadTest {
@@ -15,6 +18,11 @@ class FxmlLoadTest {
 
     @BeforeAll
     static void initJavaFX() {
+        if (isHeadless()) {
+            javaFxAvailable = false;
+            return;
+        }
+
         try {
             Platform.startup(() -> {});
             javaFxAvailable = true;
@@ -25,6 +33,19 @@ class FxmlLoadTest {
             // Em ambiente headless (sem display X11/Wayland), marcar como indisponível
             javaFxAvailable = false;
         }
+    }
+
+    private static boolean isHeadless() {
+        if (GraphicsEnvironment.isHeadless()) {
+            return true;
+        }
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (os.contains("linux")) {
+            String display = System.getenv("DISPLAY");
+            String wayland = System.getenv("WAYLAND_DISPLAY");
+            return (display == null || display.isBlank()) && (wayland == null || wayland.isBlank());
+        }
+        return false;
     }
 
     @BeforeEach

@@ -8,7 +8,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import org.junit.jupiter.api.*;
 
+import java.awt.GraphicsEnvironment;
 import java.io.File;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,13 +26,17 @@ public class TablePreferencesHelperTest {
 
     @BeforeAll
     void init() {
-        try {
-            Platform.startup(() -> {});
-            javaFxAvailable = true;
-        } catch (IllegalStateException ignored) {
-            javaFxAvailable = true;
-        } catch (Throwable t) {
+        if (isHeadless()) {
             javaFxAvailable = false;
+        } else {
+            try {
+                Platform.startup(() -> {});
+                javaFxAvailable = true;
+            } catch (IllegalStateException ignored) {
+                javaFxAvailable = true;
+            } catch (Throwable t) {
+                javaFxAvailable = false;
+            }
         }
 
         new File(TEST_DB).delete();
@@ -49,6 +55,19 @@ public class TablePreferencesHelperTest {
         if (tempFile != null) {
             tempFile.delete();
         }
+    }
+
+    private static boolean isHeadless() {
+        if (GraphicsEnvironment.isHeadless()) {
+            return true;
+        }
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (os.contains("linux")) {
+            String display = System.getenv("DISPLAY");
+            String wayland = System.getenv("WAYLAND_DISPLAY");
+            return (display == null || display.isBlank()) && (wayland == null || wayland.isBlank());
+        }
+        return false;
     }
 
     @BeforeEach
