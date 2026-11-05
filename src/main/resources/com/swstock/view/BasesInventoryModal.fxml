@@ -113,13 +113,11 @@
                 <!-- Tabela de Bases do Levantamento -->
                 <TableView fx:id="tblBases" VBox.vgrow="ALWAYS" styleClass="data-table">
                     <columns>
-                        <TableColumn fx:id="colTamanho" id="colTamanho" text="TAMANHO" prefWidth="110.0" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colNome" id="colNome" text="NOME DA BASE" prefWidth="280.0" />
-                        <TableColumn fx:id="colTipo" id="colTipo" text="TIPO DE BASE" prefWidth="130.0" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colFabricante" id="colFabricante" text="FABRICANTE" prefWidth="160.0" />
-                        <TableColumn fx:id="colEstoque" id="colEstoque" text="ESTOQUE ATUAL" prefWidth="120.0" style="-fx-alignment: CENTER;" />
-                        <TableColumn fx:id="colValorCompra" id="colValorCompra" text="VALOR DE COMPRA" prefWidth="130.0" style="-fx-alignment: CENTER_RIGHT;" />
-                        <TableColumn fx:id="colSubtotalCompra" id="colSubtotalCompra" text="TOTAL EM ESTOQUE" prefWidth="140.0" style="-fx-alignment: CENTER_RIGHT;" />
+                        <TableColumn fx:id="colTamanho" id="colTamanho" text="TAMANHO" prefWidth="120.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colNome" id="colNome" text="NOME DA BASE" prefWidth="380.0" />
+                        <TableColumn fx:id="colTipo" id="colTipo" text="TIPO DE BASE" prefWidth="140.0" style="-fx-alignment: CENTER;" />
+                        <TableColumn fx:id="colFabricante" id="colFabricante" text="FABRICANTE" prefWidth="180.0" />
+                        <TableColumn fx:id="colEstoque" id="colEstoque" text="ESTOQUE ATUAL" prefWidth="130.0" style="-fx-alignment: CENTER;" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY" />

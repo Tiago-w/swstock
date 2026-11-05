@@ -498,6 +498,7 @@ public class MainController {
             stage.setScene(new Scene(root));
 
             controller.setStage(stage);
+            controller.setBaseDAO(new com.swstock.database.BaseDAO(produtoDAO != null ? produtoDAO.getDatabaseManager() : com.swstock.database.DatabaseManager.getInstance()));
             if (tipoInicial != null) {
                 controller.selecionarTipo(tipoInicial);
             }

@@ -237,9 +237,16 @@ public class BaseDAO {
         StringBuilder sql = new StringBuilder("SELECT id, tamanho, nome, tipo, fabricante, quantidade, valor_compra, created_at, updated_at FROM bases WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
 
-        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS")) {
-            sql.append(" AND UPPER(tipo) = ? ");
-            params.add(tipo.trim().toUpperCase());
+        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS") && !tipo.equalsIgnoreCase("TODOS") && !tipo.equalsIgnoreCase("TODOS OS TIPOS")) {
+            String tipoUpper = tipo.trim().toUpperCase();
+            if (tipoUpper.contains("PREDIA")) {
+                sql.append(" AND UPPER(tipo) = 'PREDIAL' ");
+            } else if (tipoUpper.contains("AUTOMOTIV")) {
+                sql.append(" AND UPPER(tipo) = 'AUTOMOTIVA' ");
+            } else {
+                sql.append(" AND UPPER(tipo) = ? ");
+                params.add(tipoUpper);
+            }
         }
 
         if (fabricante != null && !fabricante.trim().isEmpty() && !fabricante.equalsIgnoreCase("TODOS")) {
@@ -273,8 +280,15 @@ public class BaseDAO {
 
     public List<String> getAllFabricantes(String tipo) throws SQLException {
         StringBuilder sql = new StringBuilder("SELECT DISTINCT fabricante FROM bases WHERE fabricante IS NOT NULL AND TRIM(fabricante) != '' ");
-        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS")) {
-            sql.append(" AND UPPER(tipo) = '").append(tipo.trim().toUpperCase()).append("' ");
+        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS") && !tipo.equalsIgnoreCase("TODOS") && !tipo.equalsIgnoreCase("TODOS OS TIPOS")) {
+            String tipoUpper = tipo.trim().toUpperCase();
+            if (tipoUpper.contains("PREDIA")) {
+                sql.append(" AND UPPER(tipo) = 'PREDIAL' ");
+            } else if (tipoUpper.contains("AUTOMOTIV")) {
+                sql.append(" AND UPPER(tipo) = 'AUTOMOTIVA' ");
+            } else {
+                sql.append(" AND UPPER(tipo) = '").append(tipoUpper).append("' ");
+            }
         }
         sql.append(" ORDER BY fabricante ASC;");
 
@@ -290,8 +304,15 @@ public class BaseDAO {
 
     public List<String> getAllTamanhos(String tipo) throws SQLException {
         StringBuilder sql = new StringBuilder("SELECT DISTINCT tamanho FROM bases WHERE tamanho IS NOT NULL AND TRIM(tamanho) != '' ");
-        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS") && !tipo.equalsIgnoreCase("TODOS")) {
-            sql.append(" AND UPPER(tipo) = '").append(tipo.trim().toUpperCase()).append("' ");
+        if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS") && !tipo.equalsIgnoreCase("TODOS") && !tipo.equalsIgnoreCase("TODOS OS TIPOS")) {
+            String tipoUpper = tipo.trim().toUpperCase();
+            if (tipoUpper.contains("PREDIA")) {
+                sql.append(" AND UPPER(tipo) = 'PREDIAL' ");
+            } else if (tipoUpper.contains("AUTOMOTIV")) {
+                sql.append(" AND UPPER(tipo) = 'AUTOMOTIVA' ");
+            } else {
+                sql.append(" AND UPPER(tipo) = '").append(tipoUpper).append("' ");
+            }
         }
         sql.append(" ORDER BY tamanho ASC;");
 
@@ -310,8 +331,15 @@ public class BaseDAO {
         List<Object> params = new ArrayList<>();
 
         if (tipo != null && !tipo.trim().isEmpty() && !tipo.equalsIgnoreCase("TODAS") && !tipo.equalsIgnoreCase("TODOS") && !tipo.equalsIgnoreCase("TODOS OS TIPOS")) {
-            sql.append(" AND UPPER(tipo) = ? ");
-            params.add(tipo.trim().toUpperCase());
+            String tipoUpper = tipo.trim().toUpperCase();
+            if (tipoUpper.contains("PREDIA")) {
+                sql.append(" AND UPPER(tipo) = 'PREDIAL' ");
+            } else if (tipoUpper.contains("AUTOMOTIV")) {
+                sql.append(" AND UPPER(tipo) = 'AUTOMOTIVA' ");
+            } else {
+                sql.append(" AND UPPER(tipo) = ? ");
+                params.add(tipoUpper);
+            }
         }
 
         if (fabricante != null && !fabricante.trim().isEmpty() && !fabricante.equalsIgnoreCase("TODOS") && !fabricante.equalsIgnoreCase("TODOS OS FABRICANTES")) {
@@ -325,9 +353,10 @@ public class BaseDAO {
         }
 
         if (filtroEstoque != null) {
-            if (filtroEstoque.contains("> 0") || filtroEstoque.toLowerCase().contains("com estoque")) {
+            String f = filtroEstoque.trim().toUpperCase();
+            if (f.contains("> 0") || f.contains("MAIOR") || f.contains("COM ESTOQUE") || f.contains("APENAS_ESTOQUE")) {
                 sql.append(" AND quantidade > 0 ");
-            } else if (filtroEstoque.contains("= 0") || filtroEstoque.toLowerCase().contains("zerad")) {
+            } else if (f.contains("= 0") || f.contains("IGUAL") || f.contains("ZERAD") || f.contains("APENAS_ZERADOS")) {
                 sql.append(" AND quantidade = 0 ");
             }
         }

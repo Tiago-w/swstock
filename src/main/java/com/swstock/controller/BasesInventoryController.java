@@ -41,7 +41,6 @@ public class BasesInventoryController {
 
     @FXML private Label lblTotalItens;
     @FXML private Label lblTotalUnidades;
-    @FXML private Label lblTotalValorCompra;
 
     @FXML private TableView<Base> tblBases;
     @FXML private TableColumn<Base, String> colTamanho;
@@ -49,8 +48,6 @@ public class BasesInventoryController {
     @FXML private TableColumn<Base, String> colTipo;
     @FXML private TableColumn<Base, String> colFabricante;
     @FXML private TableColumn<Base, Integer> colEstoque;
-    @FXML private TableColumn<Base, Double> colValorCompra;
-    @FXML private TableColumn<Base, Double> colSubtotalCompra;
 
     @FXML private Label lblStatusFiltro;
     @FXML private Button btnResponsavelSessao;
@@ -74,11 +71,11 @@ public class BasesInventoryController {
         cbTipoBase.setValue("Todos os Tipos");
 
         cbFiltroEstoque.setItems(FXCollections.observableArrayList(
-                "Todas as Bases",
-                "Apenas com Estoque (> 0)",
-                "Apenas Zeradas (= 0)"
+                "Todas (≥ 0)",
+                "Maior que zero (> 0)",
+                "Igual a zero (= 0)"
         ));
-        cbFiltroEstoque.setValue("Todas as Bases");
+        cbFiltroEstoque.setValue("Todas (≥ 0)");
 
         configurarBadgeResponsavel();
         configurarTabela();
@@ -159,9 +156,9 @@ public class BasesInventoryController {
 
     private String getTipoFiltroDb() {
         if (cbTipoBase == null || cbTipoBase.getValue() == null) return null;
-        String v = cbTipoBase.getValue().toUpperCase();
+        String v = cbTipoBase.getValue().trim().toUpperCase();
         if (v.contains("AUTOMOTIV")) return "AUTOMOTIVA";
-        if (v.contains("PREDIAL")) return "PREDIAL";
+        if (v.contains("PREDIA")) return "PREDIAL";
         return null;
     }
 
@@ -177,7 +174,6 @@ public class BasesInventoryController {
             basesList.setAll(lista);
 
             int totalUnidades = lista.stream().mapToInt(b -> b.getQuantidade() != null ? b.getQuantidade() : 0).sum();
-            double totalValor = lista.stream().mapToDouble(b -> (b.getQuantidade() != null ? b.getQuantidade() : 0) * (b.getValorCompra() != null ? b.getValorCompra() : 0.0)).sum();
 
             if (lblTotalItens != null) {
                 lblTotalItens.setText(lista.size() + (lista.size() == 1 ? " base" : " bases"));
@@ -185,15 +181,13 @@ public class BasesInventoryController {
             if (lblTotalUnidades != null) {
                 lblTotalUnidades.setText(totalUnidades + " un.");
             }
-            if (lblTotalValorCompra != null) {
-                lblTotalValorCompra.setText(String.format(Locale.of("pt", "BR"), "R$ %.2f", totalValor));
-            }
 
             if (lblStatusFiltro != null) {
                 String descTipo = (tipo != null) ? (tipo.equalsIgnoreCase("AUTOMOTIVA") ? "Automotivas" : "Prediais") : "Todos os tipos";
                 String descFab = (fab != null && !fab.contains("Todos")) ? " | Fab: " + fab : "";
                 String descTam = (tam != null && !tam.contains("Todos")) ? " | Tam: " + tam : "";
-                lblStatusFiltro.setText("Exibindo: " + descTipo + descFab + descTam + " (" + lista.size() + " bases)");
+                String descEst = (estoqueFiltro != null && !estoqueFiltro.contains("Todas") && !estoqueFiltro.contains("≥")) ? " | " + estoqueFiltro : "";
+                lblStatusFiltro.setText("Exibindo: " + descTipo + descFab + descTam + descEst + " (" + lista.size() + " bases)");
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao carregar bases para levantamento.", e);
@@ -250,40 +244,6 @@ public class BasesInventoryController {
             }
         });
 
-        colValorCompra.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getValorCompra()));
-        colValorCompra.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(String.format(Locale.of("pt", "BR"), "R$ %.2f", item));
-                    setStyle("-fx-font-weight: bold; -fx-text-fill: #0F172A;");
-                    setAlignment(Pos.CENTER_RIGHT);
-                }
-            }
-        });
-
-        colSubtotalCompra.setCellValueFactory(cell -> {
-            int q = cell.getValue().getQuantidade() != null ? cell.getValue().getQuantidade() : 0;
-            double v = cell.getValue().getValorCompra() != null ? cell.getValue().getValorCompra() : 0.0;
-            return new SimpleObjectProperty<>(q * v);
-        });
-        colSubtotalCompra.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(String.format(Locale.of("pt", "BR"), "R$ %.2f", item));
-                    setStyle("-fx-font-weight: bold; -fx-text-fill: #166534;");
-                    setAlignment(Pos.CENTER_RIGHT);
-                }
-            }
-        });
-
         tblBases.setItems(basesList);
 
         DatabaseManager dbManager = (baseDAO != null && baseDAO.getDatabaseManager() != null)
@@ -301,6 +261,8 @@ public class BasesInventoryController {
             try {
                 carregarOpcoesFabricantes();
                 carregarOpcoesTamanhos();
+                cbFabricante.setValue("Todos os Fabricantes");
+                cbTamanho.setValue("Todos os Tamanhos");
             } finally {
                 isUpdatingFiltros = false;
             }
@@ -334,7 +296,7 @@ public class BasesInventoryController {
             carregarOpcoesTamanhos();
             cbFabricante.setValue("Todos os Fabricantes");
             cbTamanho.setValue("Todos os Tamanhos");
-            cbFiltroEstoque.setValue("Todas as Bases");
+            cbFiltroEstoque.setValue("Todas (≥ 0)");
             txtBusca.clear();
         } finally {
             isUpdatingFiltros = false;
@@ -362,6 +324,7 @@ public class BasesInventoryController {
                 String tipo = cbTipoBase.getValue();
                 String fab = cbFabricante.getValue();
                 String tam = cbTamanho.getValue();
+                String estoqueFiltro = cbFiltroEstoque != null ? cbFiltroEstoque.getValue() : null;
                 String busca = txtBusca.getText();
 
                 pdfReportService.gerarRelatorioLevantamentoBases(
@@ -370,6 +333,7 @@ public class BasesInventoryController {
                         tipo,
                         fab,
                         tam,
+                        estoqueFiltro,
                         busca
                 );
 

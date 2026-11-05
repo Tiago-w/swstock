@@ -199,6 +199,22 @@ class BaseDAOTest {
         List<Base> zerados = baseDAO.searchLevantamento("AUTOMOTIVA", "Lazzuril", null, "APENAS_ZERADOS", null);
         assertNotNull(zerados);
         assertTrue(zerados.stream().anyMatch(b -> "Base Zerada Teste".equals(b.getNome())));
+
+        // Busca passando 'Prediais' (plural com 'is') deve encontrar bases do tipo PREDIAL
+        List<Base> prediaisPlural = baseDAO.searchLevantamento("Prediais", null, null, "Todas (≥ 0)", null);
+        assertNotNull(prediaisPlural);
+        assertFalse(prediaisPlural.isEmpty());
+        assertTrue(prediaisPlural.stream().allMatch(b -> "PREDIAL".equalsIgnoreCase(b.getTipo())));
+
+        // Teste de filtro "Maior que zero (> 0)"
+        List<Base> comEstoque = baseDAO.searchLevantamento("Prediais", null, null, "Maior que zero (> 0)", null);
+        assertNotNull(comEstoque);
+        assertTrue(comEstoque.stream().allMatch(b -> b.getQuantidade() > 0));
+
+        // Teste de filtro "Igual a zero (= 0)"
+        List<Base> apenasZeradas = baseDAO.searchLevantamento("AUTOMOTIVA", null, null, "Igual a zero (= 0)", null);
+        assertNotNull(apenasZeradas);
+        assertTrue(apenasZeradas.stream().allMatch(b -> b.getQuantidade() == 0));
     }
 }
 

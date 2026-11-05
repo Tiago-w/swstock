@@ -7,6 +7,7 @@ import com.swstock.model.Produto;
 import com.swstock.model.ProdutoCor;
 import com.swstock.model.ProdutoSubcategoria;
 import com.swstock.service.PdfReportService;
+import com.swstock.service.LevantamentoEstoqueService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -112,11 +113,11 @@ public class StockInventoryController {
         }
 
         cbFiltroEstoque.setItems(FXCollections.observableArrayList(
-                "Todos os Produtos",
-                "Apenas com Estoque (> 0)",
-                "Apenas Zerados (= 0)"
+                "Todos (≥ 0)",
+                "Maior que zero (> 0)",
+                "Igual a zero (= 0)"
         ));
-        cbFiltroEstoque.setValue("Todos os Produtos");
+        cbFiltroEstoque.setValue("Todos (≥ 0)");
         configurarBadgeResponsavel();
         configurarTabela();
         configurarListeners();
@@ -362,7 +363,8 @@ public class StockInventoryController {
 
         String grupo = cbGrupo.getValue();
         String subcategoriaFiltro = cbSubcategoria != null ? cbSubcategoria.getValue() : "Todas as Subcategorias";
-        String filtroEstoque = cbFiltroEstoque.getValue();
+        String filtroEstoqueTexto = cbFiltroEstoque != null ? cbFiltroEstoque.getValue() : null;
+        LevantamentoEstoqueService.FiltroEstoque filtroEstoqueEnum = LevantamentoEstoqueService.FiltroEstoque.deRotulo(filtroEstoqueTexto);
         String busca = txtBusca.getText();
 
         try {
@@ -373,95 +375,22 @@ public class StockInventoryController {
             List<Produto> todos = produtoDAO.findByGrupoAndSubcategoria(grupo, subcategoriaFiltro, busca);
             this.produtosBaseCarregados = todos;
 
-            List<ItemLevantamento> linhas = new ArrayList<>();
-            boolean filtrarSub = subcategoriaFiltro != null && !subcategoriaFiltro.trim().isEmpty()
-                    && !subcategoriaFiltro.toUpperCase().contains("TODAS") && !subcategoriaFiltro.toUpperCase().contains("TODOS");
-            String subUpper = filtrarSub ? subcategoriaFiltro.trim().toUpperCase() : "";
+            List<LevantamentoEstoqueService.Linha> serviceLinhas = LevantamentoEstoqueService.montarLinhas(
+                    todos, mapaCores, mapaSubcategorias, subcategoriaFiltro, filtroEstoqueEnum);
 
-            for (Produto p : todos) {
-                double pv = p.getPrecoVista() != null ? p.getPrecoVista() : 0.0;
-                double pp = p.getPrecoPrazo() != null ? p.getPrecoPrazo() : 0.0;
-                String cod = p.getCodigoLoja() != null && !p.getCodigoLoja().isEmpty() ? p.getCodigoLoja() : "-";
-                String grp = p.getGrupo() != null && !p.getGrupo().isEmpty() ? p.getGrupo() : "GERAL";
-                String subProd = p.getSubcategoria() != null && !p.getSubcategoria().trim().isEmpty() ? p.getSubcategoria().trim() : "-";
-
-                List<ProdutoSubcategoria> subcategorias = (mapaSubcategorias != null && p.getId() != null) ? mapaSubcategorias.get(p.getId()) : null;
-                List<ProdutoCor> cores = (mapaCores != null && p.getId() != null) ? mapaCores.get(p.getId()) : null;
-
-                if (cores != null && !cores.isEmpty()) {
-                    // Produto possui variações por cor
-                    String subNome = (subProd != null && !subProd.equals("-")) ? subProd
-                            : ((subcategorias != null && !subcategorias.isEmpty() && subcategorias.get(0).getNomeSubcategoria() != null)
-                            ? subcategorias.get(0).getNomeSubcategoria() : "-");
-
-                    boolean matchesSub = !filtrarSub || subNome.equalsIgnoreCase(subUpper)
-                            || (subcategorias != null && subcategorias.stream().anyMatch(s -> s.getNomeSubcategoria() != null && s.getNomeSubcategoria().equalsIgnoreCase(subUpper)));
-
-                    if (!matchesSub) {
-                        continue;
-                    }
-
-                    for (ProdutoCor cor : cores) {
-                        int qtdCor = cor.getQuantidade();
-                        if ("Apenas com Estoque (> 0)".equals(filtroEstoque) && qtdCor <= 0) continue;
-                        if ("Apenas Zerados (= 0)".equals(filtroEstoque) && qtdCor != 0) continue;
-
-                        linhas.add(new ItemLevantamento(
-                                p.getId(),
-                                cod,
-                                p.getNome(),
-                                grp,
-                                subNome,
-                                cor.getNomeCor(),
-                                qtdCor,
-                                pv,
-                                pp
-                        ));
-                    }
-                } else if (subcategorias != null && !subcategorias.isEmpty()) {
-                    // Produto possui variações por subcategoria
-                    for (ProdutoSubcategoria sub : subcategorias) {
-                        String nomeSub = sub.getNomeSubcategoria() != null ? sub.getNomeSubcategoria() : "-";
-                        if (filtrarSub && !nomeSub.equalsIgnoreCase(subUpper)) {
-                            continue;
-                        }
-                        int qtdSub = sub.getQuantidade();
-                        if ("Apenas com Estoque (> 0)".equals(filtroEstoque) && qtdSub <= 0) continue;
-                        if ("Apenas Zerados (= 0)".equals(filtroEstoque) && qtdSub != 0) continue;
-
-                        linhas.add(new ItemLevantamento(
-                                p.getId(),
-                                cod,
-                                p.getNome(),
-                                grp,
-                                nomeSub,
-                                "PADRÃO",
-                                qtdSub,
-                                pv,
-                                pp
-                        ));
-                    }
-                } else {
-                    // Produto sem variações
-                    if (filtrarSub && !subProd.equalsIgnoreCase(subUpper)) {
-                        continue;
-                    }
-                    int qtd = p.getQuantidade() != null ? p.getQuantidade() : 0;
-                    if ("Apenas com Estoque (> 0)".equals(filtroEstoque) && qtd <= 0) continue;
-                    if ("Apenas Zerados (= 0)".equals(filtroEstoque) && qtd != 0) continue;
-
-                    linhas.add(new ItemLevantamento(
-                            p.getId(),
-                            cod,
-                            p.getNome(),
-                            grp,
-                            subProd,
-                            "ÚNICA",
-                            qtd,
-                            pv,
-                            pp
-                    ));
-                }
+            List<ItemLevantamento> linhas = new ArrayList<>(serviceLinhas.size());
+            for (LevantamentoEstoqueService.Linha l : serviceLinhas) {
+                linhas.add(new ItemLevantamento(
+                        l.produtoId(),
+                        l.codigo(),
+                        l.nome(),
+                        l.grupo(),
+                        l.subcategoria(),
+                        l.cor(),
+                        l.quantidade(),
+                        l.precoVista(),
+                        l.precoPrazo()
+                ));
             }
 
             itensList.setAll(linhas);
@@ -474,6 +403,7 @@ public class StockInventoryController {
             lblTotalUnidades.setText(totalQtd + " un.");
 
             // Status
+            boolean filtrarSub = LevantamentoEstoqueService.isFiltroSubcategoriaAtivo(subcategoriaFiltro);
             StringBuilder status = new StringBuilder("Exibindo: ");
             if (grupo != null && !grupo.toUpperCase().contains("TODOS") && !grupo.toUpperCase().contains("TODAS")) {
                 status.append("Grupo '").append(grupo).append("'");
@@ -481,10 +411,10 @@ public class StockInventoryController {
                 status.append("Todos os grupos");
             }
             if (filtrarSub) {
-                status.append(" | Subcategoria: '").append(subcategoriaFiltro).append("'");
+                status.append(" | Subcategoria: '").append(subcategoriaFiltro.trim()).append("'");
             }
-            if (filtroEstoque != null && !"Todos os Produtos".equals(filtroEstoque)) {
-                status.append(" | ").append(filtroEstoque);
+            if (filtroEstoqueEnum != LevantamentoEstoqueService.FiltroEstoque.TODOS) {
+                status.append(" | ").append(filtroEstoqueEnum.getRotulo());
             }
             if (busca != null && !busca.trim().isEmpty()) {
                 status.append(" | Busca: '").append(busca.trim()).append("'");
@@ -505,7 +435,7 @@ public class StockInventoryController {
             if (cbSubcategoria != null) {
                 cbSubcategoria.setValue("Todas as Subcategorias");
             }
-            cbFiltroEstoque.setValue("Todos os Produtos");
+            cbFiltroEstoque.setValue("Todos (≥ 0)");
             txtBusca.clear();
         } finally {
             isUpdatingFiltros = false;
@@ -528,6 +458,8 @@ public class StockInventoryController {
             String grupo = cbGrupo.getValue();
             String subcategoria = cbSubcategoria != null ? cbSubcategoria.getValue() : "Todas as Subcategorias";
             String busca = txtBusca.getText();
+            String filtroEstoqueTexto = cbFiltroEstoque != null ? cbFiltroEstoque.getValue() : null;
+            LevantamentoEstoqueService.FiltroEstoque filtroEstoqueEnum = LevantamentoEstoqueService.FiltroEstoque.deRotulo(filtroEstoqueTexto);
 
             String sufixoGrupo = "";
             if (grupo != null && !grupo.toUpperCase().contains("TODOS") && !grupo.toUpperCase().contains("TODAS")) {
@@ -547,7 +479,29 @@ public class StockInventoryController {
             File destino = fileChooser.showSaveDialog(stage != null ? stage : tblProdutos.getScene().getWindow());
 
             if (destino != null) {
-                pdfReportService.gerarRelatorioLevantamentoEstoque(destino, produtosBaseCarregados, mapaCores, mapaSubcategorias, grupo, subcategoria, busca);
+                List<LevantamentoEstoqueService.Linha> linhasExport = new ArrayList<>(itensList.size());
+                for (ItemLevantamento it : itensList) {
+                    linhasExport.add(new LevantamentoEstoqueService.Linha(
+                            it.getProdutoId(),
+                            it.getCodigoLoja(),
+                            it.getNome(),
+                            it.getGrupo(),
+                            it.getSubcategoria(),
+                            it.getCor(),
+                            it.getEstoque(),
+                            it.getPrecoVista(),
+                            it.getPrecoPrazo()
+                    ));
+                }
+
+                pdfReportService.gerarRelatorioLevantamentoEstoque(
+                        destino,
+                        linhasExport,
+                        grupo,
+                        subcategoria,
+                        filtroEstoqueEnum,
+                        busca
+                );
 
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
                 confirm.setTitle("PDF Gerado com Sucesso");

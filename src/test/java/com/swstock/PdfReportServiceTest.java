@@ -166,5 +166,40 @@ class PdfReportServiceTest {
         assertTrue(tempPdf.exists(), "O arquivo PDF de levantamento de bases deve ser gerado.");
         assertTrue(tempPdf.length() > 500, "O arquivo PDF de levantamento de bases deve conter dados válidos.");
     }
+
+    @Test
+    void testGerarRelatorioLevantamentoEstoqueComLinhasECores() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File tempPdf = File.createTempFile("teste_levantamento_linhas_", ".pdf");
+        tempPdf.deleteOnExit();
+
+        List<com.swstock.service.LevantamentoEstoqueService.Linha> linhas = List.of(
+                new com.swstock.service.LevantamentoEstoqueService.Linha(1, "COD-01", "Tinta Sintética", "Tintas", "BRILHANTE", "VERMELHO", 5, 30.0, 35.0),
+                new com.swstock.service.LevantamentoEstoqueService.Linha(2, "COD-02", "Lixa Água", "Abrasivos", "GRÃO 600", "PADRÃO", 0, 2.5, 3.0)
+        );
+
+        service.gerarRelatorioLevantamentoEstoque(tempPdf, linhas, "Tintas", "BRILHANTE",
+                com.swstock.service.LevantamentoEstoqueService.FiltroEstoque.TODOS, "Tinta");
+
+        assertTrue(tempPdf.exists());
+        assertTrue(tempPdf.length() > 500);
+    }
+
+    @Test
+    void testGerarRelatorioLevantamentoBasesComFiltroEstoque() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File tempPdf = File.createTempFile("teste_levantamento_bases_filtro_", ".pdf");
+        tempPdf.deleteOnExit();
+
+        List<com.swstock.model.Base> bases = List.of(
+                new com.swstock.model.Base("900ml", "Base Azul", "AUTOMOTIVA", "Lazzuril", 10, 85.0),
+                new com.swstock.model.Base("3.6L", "Base Branca", "PREDIAL", "Suvinil", 0, 120.0)
+        );
+
+        service.gerarRelatorioLevantamentoBases(tempPdf, bases, "PREDIAL", "Suvinil", "3.6L", "Maior que zero (> 0)", null);
+
+        assertTrue(tempPdf.exists());
+        assertTrue(tempPdf.length() > 500);
+    }
 }
 

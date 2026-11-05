@@ -93,12 +93,21 @@ public class BasesController {
         com.swstock.util.SessionManager.getInstance().trocarResponsavel(owner);
     }
 
+    private boolean isUpdatingFiltros = false;
+
     public void setStage(Stage stage) {
         this.stage = stage;
     }
 
+    public void setBaseDAO(BaseDAO baseDAO) {
+        this.baseDAO = baseDAO;
+        if (baseDAO != null && baseDAO.getDatabaseManager() != null) {
+            this.historicoBaseDAO = new HistoricoBaseDAO(baseDAO.getDatabaseManager());
+        }
+    }
+
     public void selecionarTipo(String tipo) {
-        if ("PREDIAL".equalsIgnoreCase(tipo)) {
+        if (tipo != null && tipo.toUpperCase().contains("PREDIA")) {
             handleSelecionarPrediais();
         } else {
             handleSelecionarAutomotivas();
@@ -223,15 +232,26 @@ public class BasesController {
     }
 
     private void configurarFiltros() {
-        txtBusca.textProperty().addListener((obs, oldVal, newVal) -> recarregarDados());
-        cbFabricanteFiltro.valueProperty().addListener((obs, oldVal, newVal) -> recarregarDados());
+        txtBusca.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (isUpdatingFiltros) return;
+            recarregarDados();
+        });
+        cbFabricanteFiltro.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (isUpdatingFiltros) return;
+            recarregarDados();
+        });
     }
 
     @FXML
     public void handleSelecionarAutomotivas() {
         this.tipoAtivo = "AUTOMOTIVA";
         atualizarEstiloTabs();
-        carregarFabricantes();
+        isUpdatingFiltros = true;
+        try {
+            carregarFabricantes();
+        } finally {
+            isUpdatingFiltros = false;
+        }
         recarregarDados();
     }
 
@@ -239,7 +259,12 @@ public class BasesController {
     public void handleSelecionarPrediais() {
         this.tipoAtivo = "PREDIAL";
         atualizarEstiloTabs();
-        carregarFabricantes();
+        isUpdatingFiltros = true;
+        try {
+            carregarFabricantes();
+        } finally {
+            isUpdatingFiltros = false;
+        }
         recarregarDados();
     }
 
