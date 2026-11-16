@@ -21,10 +21,18 @@ buildNumber.properties
 *~
 .DS_Store
 
-# Runtime
+# Runtime & Database
 *.db
+*.db-*
 *.sqlite
 *.log
+table_preferences.properties
+
+# Backups, Exports & Documents
+*.xml
+!pom.xml
+*.csv
+*.pdf
 
 # Distribution & Binaries
 dist/swstock-windows/

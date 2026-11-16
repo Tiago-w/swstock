@@ -139,9 +139,21 @@ public class DatabaseManager {
         try {
             var codeSource = DatabaseManager.class.getProtectionDomain().getCodeSource();
             if (codeSource != null && codeSource.getLocation() != null) {
-                Path path = Path.of(codeSource.getLocation().toURI());
+                Path path = Path.of(codeSource.getLocation().toURI()).toAbsolutePath().normalize();
                 if (Files.isRegularFile(path)) {
                     return path.getParent();
+                }
+                // Se estiver rodando em ambiente de desenvolvimento (classes compiladas no target/classes ou build/classes),
+                // a pasta real do projeto onde o banco se encontra é a raiz do projeto (duas pastas acima de target/classes)
+                String pathStr = path.toString().replace('\\', '/');
+                if (pathStr.endsWith("/target/classes") || pathStr.endsWith("/target/test-classes")) {
+                    Path projectRoot = path.getParent().getParent();
+                    if (projectRoot != null && Files.exists(projectRoot)) {
+                        return projectRoot;
+                    }
+                } else if (pathStr.contains("/target/classes/")) {
+                    int idx = pathStr.indexOf("/target/classes");
+                    return Path.of(pathStr.substring(0, idx));
                 }
                 return path;
             }
@@ -236,7 +248,7 @@ public class DatabaseManager {
                 .toLowerCase(Locale.ROOT);
     }
 
-    private void initSchema() {
+    public void initSchema() {
         String createTableSql = """
             CREATE TABLE IF NOT EXISTS produtos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -400,6 +412,43 @@ public class DatabaseManager {
                     SELECT DISTINCT UPPER(TRIM(nome_subcategoria)) FROM produto_subcategorias WHERE nome_subcategoria IS NOT NULL AND TRIM(nome_subcategoria) != ''
                     UNION
                     SELECT DISTINCT UPPER(TRIM(subcategoria)) FROM produtos WHERE subcategoria IS NOT NULL AND TRIM(subcategoria) != '';
+                """);
+            } catch (SQLException ignored) {
+            }
+
+            // Sincroniza produtos que possuem subcategorias cadastradas mas tem_subcategorias=0 ou subcategoria em branco
+            try {
+                stmt.execute("""
+                    UPDATE produtos 
+                    SET tem_subcategorias = 1 
+                    WHERE id IN (SELECT DISTINCT produto_id FROM produto_subcategorias) AND tem_subcategorias = 0;
+                """);
+                stmt.execute("""
+                    UPDATE produtos 
+                    SET subcategoria = (
+                        SELECT nome_subcategoria FROM produto_subcategorias 
+                        WHERE produto_id = produtos.id ORDER BY id ASC LIMIT 1
+                    )
+                    WHERE id IN (SELECT DISTINCT produto_id FROM produto_subcategorias) 
+                      AND (subcategoria IS NULL OR TRIM(subcategoria) = '');
+                """);
+                // Sincroniza a quantidade de subcategoria única em produtos que trabalham com cores
+                stmt.execute("""
+                    UPDATE produto_subcategorias
+                    SET quantidade = (
+                        SELECT COALESCE(SUM(pc.quantidade), 0)
+                        FROM produto_cores pc
+                        WHERE pc.produto_id = produto_subcategorias.produto_id
+                    )
+                    WHERE produto_id IN (
+                        SELECT produto_id
+                        FROM produto_subcategorias
+                        GROUP BY produto_id
+                        HAVING COUNT(*) = 1
+                    )
+                    AND produto_id IN (
+                        SELECT DISTINCT produto_id FROM produto_cores
+                    );
                 """);
             } catch (SQLException ignored) {
             }

@@ -186,6 +186,24 @@ class PdfReportServiceTest {
     }
 
     @Test
+    void testGerarRelatorioLevantamentoEstoqueIgnoraProdutosValorUmCentavo() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File tempPdf = File.createTempFile("teste_levantamento_centavo_", ".pdf");
+        tempPdf.deleteOnExit();
+
+        List<com.swstock.service.LevantamentoEstoqueService.Linha> linhas = List.of(
+                new com.swstock.service.LevantamentoEstoqueService.Linha(1, "COD-01", "Produto Normal", "Grupo A", "PADRAO", "UNICA", 10, 25.0, 30.0),
+                new com.swstock.service.LevantamentoEstoqueService.Linha(2, "COD-02", "Produto Centavo", "Grupo A", "PADRAO", "UNICA", 50, 0.01, 0.01)
+        );
+
+        service.gerarRelatorioLevantamentoEstoque(tempPdf, linhas, "Grupo A", "Todas as Subcategorias",
+                com.swstock.service.LevantamentoEstoqueService.FiltroEstoque.TODOS, null);
+
+        assertTrue(tempPdf.exists());
+        assertTrue(tempPdf.length() > 500);
+    }
+
+    @Test
     void testGerarRelatorioLevantamentoBasesComFiltroEstoque() throws Exception {
         PdfReportService service = new PdfReportService();
         File tempPdf = File.createTempFile("teste_levantamento_bases_filtro_", ".pdf");

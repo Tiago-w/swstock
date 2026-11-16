@@ -380,6 +380,9 @@ public class StockInventoryController {
 
             List<ItemLevantamento> linhas = new ArrayList<>(serviceLinhas.size());
             for (LevantamentoEstoqueService.Linha l : serviceLinhas) {
+                if (PdfReportService.isProdutoValorCentavo(l)) {
+                    continue;
+                }
                 linhas.add(new ItemLevantamento(
                         l.produtoId(),
                         l.codigo(),
@@ -481,6 +484,11 @@ public class StockInventoryController {
             if (destino != null) {
                 List<LevantamentoEstoqueService.Linha> linhasExport = new ArrayList<>(itensList.size());
                 for (ItemLevantamento it : itensList) {
+                    if (PdfReportService.isProdutoValorCentavo(
+                            it.getPrecoVista() != null ? it.getPrecoVista() : 0.0,
+                            it.getPrecoPrazo() != null ? it.getPrecoPrazo() : 0.0)) {
+                        continue;
+                    }
                     linhasExport.add(new LevantamentoEstoqueService.Linha(
                             it.getProdutoId(),
                             it.getCodigoLoja(),

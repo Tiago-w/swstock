@@ -414,16 +414,37 @@ public class PdfReportService {
                 LevantamentoEstoqueService.FiltroEstoque.TODOS, termoBusca);
     }
 
+    public static boolean isProdutoValorCentavo(double precoVista, double precoPrazo) {
+        // Se qualquer um dos preços for R$ 0,01 (com tolerância para arredondamento)
+        if (Math.abs(precoVista - 0.01) < 0.005 || Math.abs(precoPrazo - 0.01) < 0.005) {
+            return true;
+        }
+        // Se ambos forem resíduos de centavos ou zerados (<= 0.015)
+        if (precoVista <= 0.015 && precoPrazo <= 0.015) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isProdutoValorCentavo(LevantamentoEstoqueService.Linha l) {
+        if (l == null) return false;
+        return isProdutoValorCentavo(l.precoVista(), l.precoPrazo());
+    }
+
     /**
      * Gera o relatório PDF de Levantamento de Estoque e Ficha de Pedido com exatamente as linhas exibidas na tela.
      * Colunas: CÓDIGO, NOME DO PRODUTO, QUANTIDADE, SUBCATEGORIA, COR, PREÇO À VISTA, PEDIDO (CANETA).
+     * Produtos com valor igual a R$ 0,01 são desconsiderados do relatório impresso.
      */
     public void gerarRelatorioLevantamentoEstoque(File arquivoDestino, List<LevantamentoEstoqueService.Linha> linhas,
                                                   String grupoFiltro, String subcategoriaFiltro,
                                                   LevantamentoEstoqueService.FiltroEstoque filtroEstoque,
                                                   String termoBusca) throws Exception {
         Document document = new Document(PageSize.A4, 24, 24, 28, 28);
-        List<LevantamentoEstoqueService.Linha> itens = linhas != null ? linhas : Collections.emptyList();
+        List<LevantamentoEstoqueService.Linha> itens = (linhas != null ? linhas : Collections.<LevantamentoEstoqueService.Linha>emptyList())
+                .stream()
+                .filter(l -> !isProdutoValorCentavo(l))
+                .toList();
 
         try (FileOutputStream out = new FileOutputStream(arquivoDestino)) {
             PdfWriter writer = PdfWriter.getInstance(document, out);

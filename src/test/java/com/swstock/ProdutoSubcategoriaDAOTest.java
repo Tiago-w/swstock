@@ -248,4 +248,60 @@ public class ProdutoSubcategoriaDAOTest {
         assertEquals(2, cores.size());
         assertEquals(15, corDAO.getTotalQuantidadeCores(p.getId()));
     }
+
+    @Test
+    void testSincronizacaoAutomaticaSubcategoriaEmProdutos() throws SQLException {
+        Produto p = new Produto("Abraçadeira Nylon", "Diversos", 15.0, 18.0, "SKU-SYNC-01", "Estante D4", 5, null, null);
+        p.setSubcategoria("");
+        p.setTemSubcategorias(false);
+        produtoDAO.upsert(p);
+
+        subcategoriaDAO.addSubcategoria(p.getId(), "ALCHEM", 5, "Admin");
+
+        // Simula reiniciar ou chamar initSchema do DatabaseManager
+        dbManager.initSchema();
+
+        Produto atualizado = produtoDAO.findById(p.getId());
+        assertNotNull(atualizado);
+        assertEquals("ALCHEM", atualizado.getSubcategoria());
+        assertTrue(atualizado.isTemSubcategorias());
+    }
+
+    @Test
+    void testSincronizacaoSubcategoriaUnicaComTotalCores() throws SQLException {
+        com.swstock.database.ProdutoCorDAO corDAO = new com.swstock.database.ProdutoCorDAO(dbManager);
+        Produto p = new Produto("Tinta Spray Multiuso", "Tintas", 25.0, 30.0, "SKU-TINTA-01", "Estante T1", 0, null, null);
+        produtoDAO.upsert(p);
+
+        // Subcategoria única com quantidade 0 (como existia em produtos legados do usuário)
+        subcategoriaDAO.addSubcategoria(p.getId(), "ALLCHEM", 0, "Admin");
+
+        // Cores com 15 e 9 unidades (total = 24)
+        corDAO.addCor(p.getId(), "AZUL", 15, "Admin");
+        corDAO.addCor(p.getId(), "VERMELHO", 9, "Admin");
+
+        // Executa sincronização do schema
+        dbManager.initSchema();
+
+        List<ProdutoSubcategoria> subs = subcategoriaDAO.findByProdutoId(p.getId());
+        assertEquals(1, subs.size());
+        assertEquals("ALLCHEM", subs.get(0).getNomeSubcategoria());
+        assertEquals(24, subs.get(0).getQuantidade(), "Subcategoria única deve ser sincronizada com o total das cores");
+    }
+
+    @Test
+    void testUpdateQuantidadeSemHistorico() throws SQLException {
+        Produto p = new Produto("Silicone Acético", "Vedação", 20.0, 25.0, "SKU-SIL-01", "Estante V2", 10, null, null);
+        produtoDAO.upsert(p);
+
+        subcategoriaDAO.addSubcategoria(p.getId(), "ETANIZ", 10, "Admin");
+        List<ProdutoSubcategoria> subs = subcategoriaDAO.findByProdutoId(p.getId());
+        assertEquals(1, subs.size());
+
+        boolean ok = subcategoriaDAO.updateQuantidadeSemHistorico(subs.get(0).getId(), 25);
+        assertTrue(ok);
+
+        ProdutoSubcategoria atualizada = subcategoriaDAO.findById(subs.get(0).getId());
+        assertEquals(25, atualizada.getQuantidade());
+    }
 }

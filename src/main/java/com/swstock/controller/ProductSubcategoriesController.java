@@ -252,6 +252,12 @@ public class ProductSubcategoriesController {
 
             // Sincroniza estoque total do produto
             produto.setQuantidade(totalUnidades);
+            if (lista.isEmpty()) {
+                produto.setTemSubcategorias(false);
+                produto.setSubcategoria("");
+            } else {
+                produto.setTemSubcategorias(true);
+            }
             produtoDAO.updateSemHistorico(produto);
 
         } catch (SQLException e) {
@@ -289,6 +295,11 @@ public class ProductSubcategoriesController {
             }
         } catch (NumberFormatException ignored) {}
 
+        // Se o produto não tinha subcategorias e o usuário não digitou quantidade (deixou 0), herda o estoque existente do produto
+        if (qtd == 0 && subcategoriasList.isEmpty() && produto != null && produto.getQuantidade() != null && produto.getQuantidade() > 0) {
+            qtd = produto.getQuantidade();
+        }
+
         String nomeLimpo = nome.trim().toUpperCase();
 
         Optional<String> optResp = DialogHelper.solicitarResponsavel(
@@ -305,6 +316,8 @@ public class ProductSubcategoriesController {
             boolean ok = produtoSubcategoriaDAO.addSubcategoria(produto.getId(), nomeLimpo, qtd, responsavel);
             if (ok) {
                 produto.setTemSubcategorias(true);
+                produto.setSubcategoria(nomeLimpo);
+                produto.setQuantidade(produtoSubcategoriaDAO.getTotalQuantidadeSubcategorias(produto.getId()));
                 produtoDAO.updateSemHistorico(produto);
 
                 if (cbNomeSubcategoria != null) {

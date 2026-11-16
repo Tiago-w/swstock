@@ -118,13 +118,15 @@ public final class LevantamentoEstoqueService {
                 }
             }
 
-            // 2. Variações por subcategoria (inclusive zeradas e inclusive quando o produto também tem cores)
-            for (ProdutoSubcategoria s : subs) {
-                String nomeSub = nomeSub(s);
-                if (filtrarSub && !nomeSub.equalsIgnoreCase(subFiltro)) continue;
-                int qtd = s.getQuantidade() != null ? s.getQuantidade() : 0;
-                if (!filtro.aceita(qtd)) continue;
-                linhas.add(new Linha(p.getId(), cod, nome, grp, nomeSub, "PADRÃO", qtd, pv, pp));
+            // 2. Variações por subcategoria (quando o produto não possui variações por cor, para não duplicar estoque)
+            if (cores.isEmpty()) {
+                for (ProdutoSubcategoria s : subs) {
+                    String nomeSub = nomeSub(s);
+                    if (filtrarSub && !nomeSub.equalsIgnoreCase(subFiltro)) continue;
+                    int qtd = s.getQuantidade() != null ? s.getQuantidade() : 0;
+                    if (!filtro.aceita(qtd)) continue;
+                    linhas.add(new Linha(p.getId(), cod, nome, grp, nomeSub, "PADRÃO", qtd, pv, pp));
+                }
             }
 
             // 3. Produto simples (sem cores nem variações de subcategoria)

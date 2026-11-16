@@ -99,6 +99,30 @@ class LevantamentoEstoqueServiceTest {
     }
 
     @Test
+    void testProdutoComCoresESubcategoriasNaoDuplicaEstoque() {
+        Produto p = new Produto(4, "Tinta Acrílica Semibrilho", "Tintas", 130.0, 150.0, "ACR-02", "C2", 12, null, null);
+        Map<Integer, List<ProdutoCor>> mapaCores = new HashMap<>();
+        mapaCores.put(4, List.of(
+                new ProdutoCor(30, 4, "BRANCO", 7),
+                new ProdutoCor(31, 4, "CINZA", 5)
+        ));
+
+        Map<Integer, List<ProdutoSubcategoria>> mapaSubs = new HashMap<>();
+        mapaSubs.put(4, List.of(
+                new ProdutoSubcategoria(10, 4, "3.6L", 12)
+        ));
+
+        // Quando o produto tem cores e também subcategoria cadastrada, deve gerar as linhas das cores e NÃO duplicar com linha "PADRÃO"
+        List<Linha> linhas = LevantamentoEstoqueService.montarLinhas(
+                List.of(p), mapaCores, mapaSubs, "Todas as Subcategorias", FiltroEstoque.TODOS);
+        assertEquals(2, linhas.size());
+        assertEquals("BRANCO", linhas.get(0).cor());
+        assertEquals("3.6L", linhas.get(0).subcategoria());
+        assertEquals("CINZA", linhas.get(1).cor());
+        assertEquals("3.6L", linhas.get(1).subcategoria());
+    }
+
+    @Test
     void testFiltroEstoqueDeRotulo() {
         assertEquals(FiltroEstoque.TODOS, FiltroEstoque.deRotulo("Todos (≥ 0)"));
         assertEquals(FiltroEstoque.TODOS, FiltroEstoque.deRotulo("Todos os Produtos"));

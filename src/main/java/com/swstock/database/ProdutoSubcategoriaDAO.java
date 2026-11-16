@@ -142,6 +142,21 @@ public class ProdutoSubcategoriaDAO {
     }
 
     /**
+     * Atualiza a quantidade em estoque de uma subcategoria sem registrar movimentação no histórico
+     * (usado na sincronização interna com variações de cores que já possuem seu próprio histórico).
+     */
+    public boolean updateQuantidadeSemHistorico(int subcategoriaId, int novaQtd) throws SQLException {
+        novaQtd = Math.max(0, novaQtd);
+        String sql = "UPDATE produto_subcategorias SET quantidade = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, novaQtd);
+            stmt.setInt(2, subcategoriaId);
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
+    /**
      * Exclui uma subcategoria de um produto informando o responsável.
      */
     public boolean deleteSubcategoria(int subcategoriaId, String responsavel) throws SQLException {
