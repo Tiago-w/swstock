@@ -8,11 +8,15 @@ import com.swstock.util.SessionManager;
 import javafx.application.Platform;
 import javafx.scene.control.ComboBox;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,16 +25,45 @@ class LoginControllerTest {
 
     private static final String TEST_DB = "test_login_ctrl.db";
     private static DatabaseManager dbManager;
+    private static boolean javaFxAvailable = false;
 
     @BeforeAll
     static void initFx() {
+        if (isHeadless()) {
+            javaFxAvailable = false;
+            return;
+        }
+
         try {
             Platform.startup(() -> {});
-        } catch (Throwable ignored) {}
+            javaFxAvailable = true;
+        } catch (IllegalStateException ignored) {
+            javaFxAvailable = true;
+        } catch (Throwable t) {
+            javaFxAvailable = false;
+        }
 
         File f = new File(TEST_DB);
         if (f.exists()) f.delete();
         dbManager = DatabaseManager.getInstance(TEST_DB);
+    }
+
+    private static boolean isHeadless() {
+        if (GraphicsEnvironment.isHeadless()) {
+            return true;
+        }
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (os.contains("linux")) {
+            String display = System.getenv("DISPLAY");
+            String wayland = System.getenv("WAYLAND_DISPLAY");
+            return (display == null || display.isBlank()) && (wayland == null || wayland.isBlank());
+        }
+        return false;
+    }
+
+    @BeforeEach
+    void checkJavaFx() {
+        Assumptions.assumeTrue(javaFxAvailable, "JavaFX toolkit não inicializado neste ambiente headless");
     }
 
     @AfterAll
