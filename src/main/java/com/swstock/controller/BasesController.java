@@ -580,6 +580,7 @@ public class BasesController {
 
             BasesHistoryController controller = loader.getController();
             Stage histStage = new Stage();
+            com.swstock.MainApp.applyAppIcon(histStage);
             histStage.setTitle("Histórico da Base: " + base.getNome());
             histStage.initModality(Modality.APPLICATION_MODAL);
             histStage.initOwner(tblBases.getScene().getWindow());
@@ -603,6 +604,7 @@ public class BasesController {
 
             BasesHistoryController controller = loader.getController();
             Stage histStage = new Stage();
+            com.swstock.MainApp.applyAppIcon(histStage);
             histStage.setTitle("Histórico Geral (Bases Automotivas & Prediais)");
             histStage.initModality(Modality.APPLICATION_MODAL);
             histStage.initOwner(tblBases.getScene().getWindow());

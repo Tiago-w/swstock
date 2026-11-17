@@ -1024,6 +1024,7 @@ public class ProductDetailController {
 
             ProductColorsController controller = loader.getController();
             Stage colorStage = new Stage();
+            com.swstock.MainApp.applyAppIcon(colorStage);
             colorStage.setTitle("Cores do Produto: " + produto.getNome());
             colorStage.initModality(Modality.APPLICATION_MODAL);
             colorStage.initOwner(tabPanePrincipal.getScene().getWindow());
@@ -1188,6 +1189,7 @@ public class ProductDetailController {
 
             ProductSubcategoriesController controller = loader.getController();
             Stage subStage = new Stage();
+            com.swstock.MainApp.applyAppIcon(subStage);
             subStage.setTitle("Gerenciar Subcategorias - " + produto.getNome());
             subStage.initModality(Modality.WINDOW_MODAL);
             subStage.initOwner(tabPanePrincipal.getScene().getWindow());

@@ -391,6 +391,7 @@ public class MainController {
 
             Map2DController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle("SWStock - Planta Baixa do Depósito (Mapa 2D)");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
@@ -421,6 +422,7 @@ public class MainController {
 
             GlobalStockHistoryController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle("SWStock - Calendário & Extrato Geral de Movimentações");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
@@ -447,6 +449,7 @@ public class MainController {
 
             BasesHistoryController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle("SWStock - Histórico Geral de Bases de Tintas");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
@@ -491,6 +494,7 @@ public class MainController {
 
             BasesController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             String titulo = "SWStock - Gestão de Bases de Tintas (" + ("AUTOMOTIVA".equalsIgnoreCase(tipoInicial) ? "Bases Automotivas" : "Bases Prediais") + ")";
             stage.setTitle(titulo);
             stage.initModality(Modality.APPLICATION_MODAL);
@@ -519,6 +523,7 @@ public class MainController {
 
             StockInventoryController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle("SWStock - Levantamento de Estoque & Ficha de Pedido");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
@@ -546,6 +551,7 @@ public class MainController {
 
             BasesInventoryController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle("SWStock - Levantamento de Bases & Ficha de Pedido");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
@@ -571,6 +577,7 @@ public class MainController {
 
             ConfiguracoesController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle("SWStock - Configurações & Gestão Financeira de Estoque");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
@@ -597,6 +604,7 @@ public class MainController {
 
             FuncionariosController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle("SWStock - Gestão de Funcionários");
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());
@@ -648,6 +656,7 @@ public class MainController {
 
             ProductDetailController controller = loader.getController();
             Stage stage = new Stage();
+            com.swstock.MainApp.applyAppIcon(stage);
             stage.setTitle(produto == null ? "SWStock - Novo Produto" : "SWStock - Detalhes do Produto: " + produto.getNome());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(rootPane.getScene().getWindow());

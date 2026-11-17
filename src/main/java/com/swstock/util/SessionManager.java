@@ -9,6 +9,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.util.ArrayList;
@@ -64,6 +65,9 @@ public class SessionManager {
         if (owner != null) {
             dialog.initOwner(owner);
         }
+        if (dialog.getDialogPane().getScene() != null && dialog.getDialogPane().getScene().getWindow() instanceof Stage s) {
+            com.swstock.MainApp.applyAppIcon(s);
+        }
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("SWStock - Login do Operador");
         dialog.setHeaderText("Identificação do Responsável");
@@ -115,6 +119,9 @@ public class SessionManager {
         Dialog<String> dialog = new Dialog<>();
         if (owner != null) {
             dialog.initOwner(owner);
+        }
+        if (dialog.getDialogPane().getScene() != null && dialog.getDialogPane().getScene().getWindow() instanceof Stage s) {
+            com.swstock.MainApp.applyAppIcon(s);
         }
         dialog.setTitle("Trocar Responsável");
         dialog.setHeaderText("Alternar Operador Ativo");

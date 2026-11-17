@@ -34,8 +34,39 @@ public class MainApp extends Application {
         }
     }
 
+    private static javafx.scene.image.Image appIcon = null;
+
+    /**
+     * Retorna o ícone oficial da aplicação SWStock (PNG).
+     */
+    public static javafx.scene.image.Image getAppIcon() {
+        if (appIcon == null) {
+            try {
+                var stream = MainApp.class.getResourceAsStream("/com/swstock/images/app_icon.png");
+                if (stream != null) {
+                    appIcon = new javafx.scene.image.Image(stream);
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Não foi possível carregar o ícone da aplicação.", e);
+            }
+        }
+        return appIcon;
+    }
+
+    /**
+     * Aplica o ícone oficial da aplicação na janela informada (Stage).
+     */
+    public static void applyAppIcon(Stage stage) {
+        if (stage == null) return;
+        javafx.scene.image.Image icon = getAppIcon();
+        if (icon != null && stage.getIcons().isEmpty()) {
+            stage.getIcons().add(icon);
+        }
+    }
+
     @Override
     public void start(Stage primaryStage) {
+        applyAppIcon(primaryStage);
         if (initError != null) {
             exibirErroFatal(primaryStage, "Erro ao Inicializar Banco de Dados",
                     "Não foi possível inicializar a base de dados do SWStock:\n\n"
