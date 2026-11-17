@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox fx:id="rootPane" alignment="TOP_CENTER" spacing="18.0" prefWidth="480.0" prefHeight="560.0"
+      stylesheets="@../css/styles.css" styleClass="login-root"
+      xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.swstock.controller.LoginController">
+
+    <!-- Topo: Identidade Visual & Logo da Empresa -->
+    <VBox alignment="CENTER" spacing="8.0" styleClass="login-header-box">
+        <padding>
+            <Insets top="26.0" right="24.0" bottom="18.0" left="24.0" />
+        </padding>
+        <ImageView fx:id="imgLogo" fitHeight="75.0" preserveRatio="true" smooth="true">
+            <image>
+                <Image url="@../images/logo_empresa.png" />
+            </image>
+        </ImageView>
+        <Label text="SWStock" styleClass="login-app-title" />
+        <Label text="Sistema de Gestão &amp; Controle de Estoque" styleClass="login-app-subtitle" />
+    </VBox>
+
+    <!-- Card Central: Seleção do Operador / Responsável -->
+    <VBox spacing="16.0" styleClass="login-card-container">
+        <VBox.margin>
+            <Insets left="28.0" right="28.0" />
+        </VBox.margin>
+        <padding>
+            <Insets top="22.0" right="24.0" bottom="22.0" left="24.0" />
+        </padding>
+
+        <VBox spacing="4.0">
+            <Label text="👤 Identificação do Operador" styleClass="login-section-title" />
+            <Label text="Selecione quem está iniciando as atividades para registrar as movimentações do estoque:"
+                   wrapText="true" styleClass="login-section-desc" />
+        </VBox>
+
+        <VBox spacing="6.0">
+            <Label text="Operador Ativo:" styleClass="login-field-label" />
+            <ComboBox fx:id="cmbOperadores" maxWidth="Infinity" styleClass="login-combobox"
+                      promptText="Selecione o operador..." />
+        </VBox>
+
+        <HBox alignment="CENTER_RIGHT">
+            <Button fx:id="btnGerenciarFuncionarios" text="⚙ Cadastrar / Gerenciar Operadores"
+                    onAction="#handleGerenciarFuncionarios" styleClass="login-link-button" />
+        </HBox>
+
+        <Button fx:id="btnAcessar" text="Acessar Sistema  ➔" maxWidth="Infinity"
+                defaultButton="true" onAction="#handleAcessarSistema"
+                styleClass="login-btn-primary" />
+    </VBox>
+
+    <Region VBox.vgrow="ALWAYS" />
+
+    <!-- Rodapé: Sair & Informações de Segurança -->
+    <HBox alignment="CENTER" spacing="12.0">
+        <padding>
+            <Insets top="4.0" bottom="18.0" left="28.0" right="28.0" />
+        </padding>
+        <Label text="SWStock v1.0.14 • Offline Seguro" styleClass="login-footer-text" />
+        <Region HBox.hgrow="ALWAYS" />
+        <Button fx:id="btnSair" text="✕ Sair" onAction="#handleSair" styleClass="login-btn-exit" />
+    </HBox>
+</VBox>

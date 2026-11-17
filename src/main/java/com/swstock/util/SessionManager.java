@@ -52,6 +52,10 @@ public class SessionManager {
         return loginRealizado;
     }
 
+    public void setLoginRealizado(boolean loginRealizado) {
+        this.loginRealizado = loginRealizado;
+    }
+
     /**
      * Exibe o diálogo de login inicial quando a aplicação é aberta.
      */

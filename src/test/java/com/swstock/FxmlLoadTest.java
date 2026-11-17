@@ -129,5 +129,12 @@ class FxmlLoadTest {
         Object root = loader.load();
         assertNotNull(root);
     }
+
+    @Test
+    void testLoadLoginViewFxml() throws Exception {
+        FXMLLoader loader = new FXMLLoader(FxmlLoadTest.class.getResource("/com/swstock/view/LoginView.fxml"));
+        Object root = loader.load();
+        assertNotNull(root);
+    }
 }
 

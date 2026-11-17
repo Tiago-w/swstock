@@ -1,10 +1,15 @@
 package com.swstock;
 
+import com.swstock.controller.LoginController;
 import com.swstock.database.DatabaseManager;
+import com.swstock.util.SessionManager;
+import com.swstock.view.SplashScreen;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.util.logging.Level;
@@ -12,27 +17,13 @@ import java.util.logging.Logger;
 
 /**
  * Ponto de entrada da aplicação JavaFX SWStock.
- * Inicializa a interface gráfica, gerencia o ciclo de vida e garante
- * o fechamento gracioso do banco SQLite no encerramento da janela.
+ * Inicializa a interface com tela de pré-carregamento (Splash Screen),
+ * seguida por tela sofisticada de inicialização e identificação do operador (Login),
+ * e por fim carrega o sistema principal maximizado.
  */
 public class MainApp extends Application {
 
     private static final Logger LOGGER = Logger.getLogger(MainApp.class.getName());
-
-    private Exception initError;
-
-    @Override
-    public void init() throws Exception {
-        super.init();
-        LOGGER.info("Inicializando SWStock e verificando base SQLite...");
-        try {
-            // Pré-carrega o banco de dados offline
-            DatabaseManager.getInstance();
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Erro ao inicializar base SQLite durante o init()", e);
-            initError = e;
-        }
-    }
 
     private static javafx.scene.image.Image appIcon = null;
 
@@ -67,15 +58,63 @@ public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         applyAppIcon(primaryStage);
-        if (initError != null) {
-            exibirErroFatal(primaryStage, "Erro ao Inicializar Banco de Dados",
-                    "Não foi possível inicializar a base de dados do SWStock:\n\n"
-                    + initError.getMessage()
-                    + "\n\nCausa: " + (initError.getCause() != null ? initError.getCause().getMessage() : "Desconhecida")
-                    + "\n\nVerifique se o usuário possui permissão de gravação.");
-            return;
-        }
 
+        // 1. Exibe imediatamente a Tela de Pré-carregamento (Splash Screen) com a logo central
+        Stage splashStage = new Stage();
+        SplashScreen.showAndInit(
+            splashStage,
+            // Callback quando a inicialização estiver pronta
+            () -> exibirTelaLogin(primaryStage),
+            // Callback se houver erro crítico ao inicializar o banco
+            error -> {
+                LOGGER.log(Level.SEVERE, "Erro crítico na inicialização do SWStock.", error);
+                exibirErroFatal(primaryStage, "Erro ao Inicializar Banco de Dados",
+                        "Não foi possível inicializar a base de dados do SWStock:\n\n"
+                        + error.getMessage()
+                        + "\n\nCausa: " + (error.getCause() != null ? error.getCause().getMessage() : "Desconhecida")
+                        + "\n\nVerifique se o usuário possui permissão de gravação.");
+            }
+        );
+    }
+
+    /**
+     * 2. Exibe a tela sofisticada de identificação do operador (Login).
+     */
+    private void exibirTelaLogin(Stage primaryStage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/LoginView.fxml"));
+            Parent root = loader.load();
+
+            LoginController controller = loader.getController();
+            Stage loginStage = new Stage();
+            applyAppIcon(loginStage);
+            loginStage.setTitle("SWStock - Inicialização & Seleção de Operador");
+            loginStage.setResizable(false);
+
+            Scene scene = new Scene(root, 480, 560);
+            loginStage.setScene(scene);
+            loginStage.centerOnScreen();
+
+            controller.setLoginStage(loginStage);
+            controller.setOnLoginSucesso(() -> abrirJanelaPrincipal(primaryStage));
+
+            // Se o usuário fechar a janela pelo 'X', encerra a aplicação com segurança
+            loginStage.setOnCloseRequest(event -> {
+                LOGGER.info("Janela de inicialização fechada pelo operador. Encerrando aplicação...");
+                Platform.exit();
+            });
+
+            loginStage.show();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir tela de login. Abrindo janela principal diretamente.", e);
+            abrirJanelaPrincipal(primaryStage);
+        }
+    }
+
+    /**
+     * 3. Abre a janela principal do sistema (MainView) somente após a seleção do operador.
+     */
+    private void abrirJanelaPrincipal(Stage primaryStage) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/MainView.fxml"));
             Parent root = loader.load();
@@ -88,28 +127,26 @@ public class MainApp extends Application {
             primaryStage.setMinHeight(600);
             primaryStage.setScene(scene);
 
-            // Garante o fechamento seguro do banco ao clicar no 'X' da janela
+            // Garante o fechamento seguro do banco ao clicar no 'X' da janela principal
             primaryStage.setOnCloseRequest(event -> {
                 LOGGER.info("Janela principal fechada. Encerrando conexões SQLite...");
                 DatabaseManager.getInstance().close();
             });
 
             primaryStage.show();
-            LOGGER.info("SWStock iniciado com sucesso.");
-
-            // Exibe o diálogo de login inicial para selecionar o responsável pelas operações
-            javafx.application.Platform.runLater(() -> {
-                com.swstock.util.SessionManager.getInstance().exibirLoginInicial(primaryStage);
-            });
+            LOGGER.info("SWStock iniciado com sucesso. Operador ativo: " + SessionManager.getInstance().getResponsavelAtual());
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Falha crítica ao iniciar SWStock.", e);
+            LOGGER.log(Level.SEVERE, "Falha crítica ao iniciar interface principal do SWStock.", e);
             exibirErroFatal(primaryStage, "Falha Crítica ao Iniciar SWStock",
                     "Ocorreu um erro ao carregar a interface da aplicação:\n\n" + e.getMessage());
         }
     }
 
     private void exibirErroFatal(Stage stage, String titulo, String mensagem) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        if (alert.getDialogPane().getScene() != null && alert.getDialogPane().getScene().getWindow() instanceof Stage s) {
+            applyAppIcon(s);
+        }
         alert.setTitle(titulo);
         alert.setHeaderText("O SWStock não pôde ser iniciado");
         alert.setContentText(mensagem);

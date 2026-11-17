@@ -219,5 +219,21 @@ class PdfReportServiceTest {
         assertTrue(tempPdf.exists());
         assertTrue(tempPdf.length() > 500);
     }
+
+    @Test
+    void testCabecalhoComLogoEmpresa() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File outPdf = new File("/tmp/teste_cabecalho_logo.pdf");
+
+        List<com.swstock.service.LevantamentoEstoqueService.Linha> linhas = List.of(
+                new com.swstock.service.LevantamentoEstoqueService.Linha(1, "COD-01", "Produto A", "Grupo A", "PADRAO", "UNICA", 10, 25.0, 30.0)
+        );
+
+        service.gerarRelatorioLevantamentoEstoque(outPdf, linhas, "Grupo A", "Todas as Subcategorias",
+                com.swstock.service.LevantamentoEstoqueService.FiltroEstoque.TODOS, null);
+
+        assertTrue(outPdf.exists());
+        assertTrue(outPdf.length() > 500);
+    }
 }
 

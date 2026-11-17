@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.Circle?>
 
@@ -13,10 +14,15 @@
 
     <!-- Topo: Banner Superior -->
     <top>
-        <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="header-banner">
+        <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="header-banner">
             <children>
                 <Button fx:id="btnToggleSidebar" onAction="#handleToggleSidebar"
                         styleClass="hamburger-button" text="☰" />
+                <ImageView fx:id="imgLogoEmpresa" fitHeight="38.0" preserveRatio="true" smooth="true">
+                    <image>
+                        <Image url="@../images/logo_empresa.png" />
+                    </image>
+                </ImageView>
                 <VBox alignment="CENTER_LEFT" spacing="2.0">
                     <children>
                         <Label styleClass="brand-title" text="SWStock" />

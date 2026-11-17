@@ -118,9 +118,6 @@ public class PdfReportService {
             titulo += " - " + grupoFiltro.trim();
         }
 
-        Paragraph pTitulo = new Paragraph(titulo, FONT_TITLE);
-        document.add(pTitulo);
-
         // Linha de contexto (Período, Filtros e Data de Emissão)
         StringBuilder sub = new StringBuilder();
         if (dataInicio != null && dataFim != null) {
@@ -142,9 +139,7 @@ public class PdfReportService {
         }
         sub.append(" | Emitido em: ").append(LocalDateTime.now().format(DATE_TIME_FORMATTER));
 
-        Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
-        pSub.setSpacingAfter(8);
-        document.add(pSub);
+        adicionarTituloESubtituloComLogo(document, titulo, sub.toString(), 8f);
 
         // Métricas Consolidadas do Cabeçalho
         int totalEntradas = 0;
@@ -175,6 +170,72 @@ public class PdfReportService {
         tblResumo.addCell(c3);
         tblResumo.addCell(c4);
         document.add(tblResumo);
+    }
+
+    private Image carregarLogoPdf() {
+        try {
+            java.net.URL url = getClass().getResource("/com/swstock/images/logo_empresa.png");
+            if (url == null) {
+                url = getClass().getResource("/com/swstock/images/image-removebg-preview.png");
+            }
+            if (url == null) {
+                url = getClass().getResource("/com/swstock/images/app_icon.png");
+            }
+            if (url != null) {
+                Image img = Image.getInstance(url);
+                img.scaleToFit(100f, 48f);
+                return img;
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Não foi possível carregar o logo da empresa para o PDF.", e);
+        }
+        return null;
+    }
+
+    private void adicionarTituloESubtituloComLogo(Document document, String titulo, String subtitulo, float spacingAfter) throws DocumentException {
+        Image logo = carregarLogoPdf();
+        if (logo == null) {
+            Paragraph pTitulo = new Paragraph(titulo, FONT_TITLE);
+            pTitulo.setSpacingAfter(3);
+            document.add(pTitulo);
+            if (subtitulo != null && !subtitulo.trim().isEmpty()) {
+                Paragraph pSub = new Paragraph(subtitulo, FONT_SUBTITLE);
+                pSub.setSpacingAfter(spacingAfter);
+                document.add(pSub);
+            }
+            return;
+        }
+
+        PdfPTable headerTable = new PdfPTable(new float[]{80f, 20f});
+        headerTable.setWidthPercentage(100);
+        headerTable.setSpacingAfter(spacingAfter);
+
+        PdfPCell textCell = new PdfPCell();
+        textCell.setBorder(Rectangle.NO_BORDER);
+        textCell.setPadding(0);
+        textCell.setPaddingRight(8);
+
+        Paragraph pTitulo = new Paragraph(titulo, FONT_TITLE);
+        pTitulo.setSpacingAfter(3);
+        textCell.addElement(pTitulo);
+
+        if (subtitulo != null && !subtitulo.trim().isEmpty()) {
+            Paragraph pSub = new Paragraph(subtitulo, FONT_SUBTITLE);
+            textCell.addElement(pSub);
+        }
+        headerTable.addCell(textCell);
+
+        PdfPCell logoCell = new PdfPCell();
+        logoCell.setBorder(Rectangle.NO_BORDER);
+        logoCell.setPadding(0);
+        logoCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        logoCell.setVerticalAlignment(Element.ALIGN_TOP);
+
+        logo.setAlignment(Element.ALIGN_RIGHT);
+        logoCell.addElement(logo);
+        headerTable.addCell(logoCell);
+
+        document.add(headerTable);
     }
 
     private PdfPCell criarCardResumo(String label, String valor, Color bgColor, Color textColor) {
@@ -463,10 +524,6 @@ public class PdfReportService {
             document.open();
 
             // 1. Cabeçalho
-            Paragraph pTitulo = new Paragraph("SWStock - Levantamento de Estoque & Ficha de Pedido", FONT_TITLE);
-            pTitulo.setSpacingAfter(3);
-            document.add(pTitulo);
-
             String dataHora = LocalDateTime.now().format(DATE_TIME_FORMATTER);
             String grupoTxt = (grupoFiltro != null && !grupoFiltro.trim().isEmpty() && !grupoFiltro.toUpperCase().contains("TODOS") && !grupoFiltro.toUpperCase().contains("TODAS"))
                     ? grupoFiltro.toUpperCase() : "TODOS OS GRUPOS / FABRICANTES";
@@ -486,9 +543,7 @@ public class PdfReportService {
             }
             sub.append("\nTotal de Itens: ").append(itens.size()).append(" itens/variações  |  Estoque Total: ").append(totalQtdGeral).append(" un.");
 
-            Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
-            pSub.setSpacingAfter(10);
-            document.add(pSub);
+            adicionarTituloESubtituloComLogo(document, "SWStock - Levantamento de Estoque & Ficha de Pedido", sub.toString(), 10f);
 
             if (itens.isEmpty()) {
                 Paragraph pVazio = new Paragraph("\nNenhum produto encontrado para o levantamento com os filtros selecionados.", FONT_CELL);
@@ -627,10 +682,6 @@ public class PdfReportService {
             document.open();
 
             // 1. Cabeçalho
-            Paragraph pTitulo = new Paragraph("SWStock - Levantamento de Bases & Ficha de Pedido", FONT_TITLE);
-            pTitulo.setSpacingAfter(3);
-            document.add(pTitulo);
-
             String dataHora = LocalDateTime.now().format(DATE_TIME_FORMATTER);
             String tipoTxt = (tipoFiltro != null && !tipoFiltro.trim().isEmpty() && !tipoFiltro.toUpperCase().contains("TODOS") && !tipoFiltro.toUpperCase().contains("TODAS"))
                     ? tipoFiltro.toUpperCase() : "TODOS OS TIPOS (PREDIAL E AUTOMOTIVA)";
@@ -653,9 +704,7 @@ public class PdfReportService {
             }
             sub.append("\nTotal de Itens: ").append(bases.size()).append(" bases  |  Estoque Total: ").append(totalQtdGeral).append(" un.");
 
-            Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
-            pSub.setSpacingAfter(10);
-            document.add(pSub);
+            adicionarTituloESubtituloComLogo(document, "SWStock - Levantamento de Bases & Ficha de Pedido", sub.toString(), 10f);
 
             if (bases.isEmpty()) {
                 Paragraph pVazio = new Paragraph("\nNenhuma base encontrada para o levantamento com os filtros selecionados.", FONT_CELL);
@@ -777,8 +826,6 @@ public class PdfReportService {
             if (tipoBaseFiltro != null && !tipoBaseFiltro.trim().isEmpty() && !tipoBaseFiltro.contains("Todas")) {
                 titulo += " (" + tipoBaseFiltro.trim() + ")";
             }
-            Paragraph pTitulo = new Paragraph(titulo, FONT_TITLE);
-            document.add(pTitulo);
 
             StringBuilder sub = new StringBuilder();
             if (dataInicio != null && dataFim != null) {
@@ -800,9 +847,7 @@ public class PdfReportService {
             }
             sub.append(" | Emitido em: ").append(LocalDateTime.now().format(DATE_TIME_FORMATTER));
 
-            Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
-            pSub.setSpacingAfter(8);
-            document.add(pSub);
+            adicionarTituloESubtituloComLogo(document, titulo, sub.toString(), 8f);
 
             // Métricas
             int totalEntradas = 0;
@@ -1034,10 +1079,6 @@ public class PdfReportService {
             document.open();
 
             // Cabeçalho
-            Paragraph pTitulo = new Paragraph("SWStock - Relatório de Avaliação Financeira de Estoque", FONT_TITLE);
-            pTitulo.setSpacingAfter(3);
-            document.add(pTitulo);
-
             String dataHora = LocalDateTime.now().format(DATE_TIME_FORMATTER);
             String grupoTxt = (grupoFiltro != null && !grupoFiltro.trim().isEmpty() && !grupoFiltro.toUpperCase().contains("TODOS") && !grupoFiltro.toUpperCase().contains("TODAS"))
                     ? grupoFiltro.toUpperCase() : "TODOS OS FABRICANTES / GRUPOS";
@@ -1049,9 +1090,8 @@ public class PdfReportService {
             if (termoBusca != null && !termoBusca.trim().isEmpty()) {
                 sub.append("  |  Busca: '").append(termoBusca.trim()).append("'");
             }
-            Paragraph pSub = new Paragraph(sub.toString(), FONT_SUBTITLE);
-            pSub.setSpacingAfter(8);
-            document.add(pSub);
+
+            adicionarTituloESubtituloComLogo(document, "SWStock - Relatório de Avaliação Financeira de Estoque", sub.toString(), 8f);
 
             // Resumo
             PdfPTable tblResumo = new PdfPTable(4);
