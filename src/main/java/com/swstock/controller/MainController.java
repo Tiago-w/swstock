@@ -75,11 +75,22 @@ public class MainController {
     @FXML private Label lblStatus;
     @FXML private Label lblTotalItens;
 
+    @FXML private VBox kpiCardTotal;
+    @FXML private VBox kpiCardDisponivel;
+    @FXML private VBox kpiCardBaixo;
+    @FXML private VBox kpiCardZerado;
+    @FXML private Label lblKpiTotalUnidades;
+    @FXML private Label lblKpiTotalProdutos;
+    @FXML private Label lblKpiDisponiveis;
+    @FXML private Label lblKpiBaixo;
+    @FXML private Label lblKpiZerado;
+
     private final ProdutoDAO produtoDAO = new ProdutoDAO();
     private final XmlService xmlService = new XmlService(produtoDAO);
     private final ObservableList<Produto> produtosList = FXCollections.observableArrayList();
 
     private String localizacaoFiltroAtiva = null;
+    private String kpiFiltroAtivo = "TODOS";
 
     @FXML
     public void initialize() {
@@ -395,20 +406,123 @@ public class MainController {
     public void carregarProdutos() {
         try {
             String termo = txtSearch.getText();
-            List<Produto> lista = produtoDAO.findByFilter(termo, localizacaoFiltroAtiva);
-            produtosList.setAll(lista);
+            List<Produto> listaBase = produtoDAO.findByFilter(termo, localizacaoFiltroAtiva);
 
-            int totalUnidades = lista.stream()
+            // Atualiza os KPIs de resumo sobre o conjunto filtrado por busca/localização
+            int totalUnidadesBase = 0;
+            int disponiveis = 0;
+            int baixo = 0;
+            int zerado = 0;
+            for (Produto p : listaBase) {
+                int q = p.getQuantidade() != null ? p.getQuantidade() : 0;
+                totalUnidadesBase += q;
+                if (q == 0) {
+                    zerado++;
+                } else if (q <= 5) {
+                    baixo++;
+                } else {
+                    disponiveis++;
+                }
+            }
+            if (lblKpiTotalUnidades != null) lblKpiTotalUnidades.setText(String.format("%,d un.", totalUnidadesBase).replace(',', '.'));
+            if (lblKpiTotalProdutos != null) lblKpiTotalProdutos.setText(String.format("%,d produtos cadastrados", listaBase.size()).replace(',', '.'));
+            if (lblKpiDisponiveis != null) lblKpiDisponiveis.setText(String.format("%,d itens", disponiveis).replace(',', '.'));
+            if (lblKpiBaixo != null) lblKpiBaixo.setText(String.format("%,d itens", baixo).replace(',', '.'));
+            if (lblKpiZerado != null) lblKpiZerado.setText(String.format("%,d itens", zerado).replace(',', '.'));
+
+            // Aplica filtro rápido selecionado nos cards KPI
+            List<Produto> listaExibida;
+            if ("DISPONIVEL".equals(kpiFiltroAtivo)) {
+                listaExibida = listaBase.stream().filter(p -> (p.getQuantidade() != null ? p.getQuantidade() : 0) > 5).toList();
+            } else if ("BAIXO".equals(kpiFiltroAtivo)) {
+                listaExibida = listaBase.stream().filter(p -> {
+                    int q = p.getQuantidade() != null ? p.getQuantidade() : 0;
+                    return q >= 1 && q <= 5;
+                }).toList();
+            } else if ("ZERADO".equals(kpiFiltroAtivo)) {
+                listaExibida = listaBase.stream().filter(p -> (p.getQuantidade() != null ? p.getQuantidade() : 0) == 0).toList();
+            } else {
+                listaExibida = listaBase;
+            }
+
+            produtosList.setAll(listaExibida);
+
+            int totalUnidades = listaExibida.stream()
                     .mapToInt(p -> p.getQuantidade() != null ? p.getQuantidade() : 0)
                     .sum();
 
             lblTotalItens.setText(String.format("Total: %d produtos cadastrados (%d unidades no total)",
-                    lista.size(), totalUnidades));
-            lblHeaderStats.setText(String.format(" %d Itens (%d un.)", lista.size(), totalUnidades));
+                    listaExibida.size(), totalUnidades));
+            lblHeaderStats.setText(String.format(" %d Itens (%d un.)", listaExibida.size(), totalUnidades));
             lblStatus.setText("Banco de Dados SQLite: Sincronizado e Operacional");
+            atualizarBadgeFiltro();
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Erro ao carregar produtos do banco.", e);
             lblStatus.setText(" Erro ao consultar o banco de dados.");
+        }
+    }
+
+    @FXML
+    private void handleKpiFiltroTodos() {
+        aplicarFiltroKpi("TODOS");
+    }
+
+    @FXML
+    private void handleKpiFiltroDisponivel() {
+        aplicarFiltroKpi("DISPONIVEL".equals(kpiFiltroAtivo) ? "TODOS" : "DISPONIVEL");
+    }
+
+    @FXML
+    private void handleKpiFiltroBaixo() {
+        aplicarFiltroKpi("BAIXO".equals(kpiFiltroAtivo) ? "TODOS" : "BAIXO");
+    }
+
+    @FXML
+    private void handleKpiFiltroZerado() {
+        aplicarFiltroKpi("ZERADO".equals(kpiFiltroAtivo) ? "TODOS" : "ZERADO");
+    }
+
+    private void aplicarFiltroKpi(String filtro) {
+        this.kpiFiltroAtivo = filtro != null ? filtro : "TODOS";
+        atualizarEstiloKpiCards();
+        carregarProdutos();
+    }
+
+    private void atualizarEstiloKpiCards() {
+        definirSelecaoKpiCard(kpiCardDisponivel, "DISPONIVEL".equals(kpiFiltroAtivo));
+        definirSelecaoKpiCard(kpiCardBaixo, "BAIXO".equals(kpiFiltroAtivo));
+        definirSelecaoKpiCard(kpiCardZerado, "ZERADO".equals(kpiFiltroAtivo));
+    }
+
+    private void definirSelecaoKpiCard(VBox card, boolean selecionado) {
+        if (card == null) return;
+        card.getStyleClass().removeAll("kpi-card", "kpi-card-selected");
+        card.getStyleClass().add(selecionado ? "kpi-card-selected" : "kpi-card");
+    }
+
+    private void atualizarBadgeFiltro() {
+        if (lblFiltroAtivo == null || btnLimparFiltro == null) return;
+        boolean temLoc = localizacaoFiltroAtiva != null && !localizacaoFiltroAtiva.trim().isEmpty();
+        boolean temKpi = kpiFiltroAtivo != null && !"TODOS".equals(kpiFiltroAtivo);
+        if (temLoc || temKpi) {
+            StringBuilder sb = new StringBuilder("Filtrado: ");
+            if (temLoc) sb.append(localizacaoFiltroAtiva.toUpperCase());
+            if (temLoc && temKpi) sb.append(" • ");
+            if (temKpi) {
+                switch (kpiFiltroAtivo) {
+                    case "DISPONIVEL" -> sb.append("Disponíveis (> 5 un.)");
+                    case "BAIXO" -> sb.append("Estoque Baixo (1–5 un.)");
+                    case "ZERADO" -> sb.append("Sem Estoque (0 un.)");
+                    default -> {}
+                }
+            }
+            lblFiltroAtivo.setText(sb.toString());
+            btnLimparFiltro.setVisible(true);
+            btnLimparFiltro.setManaged(true);
+        } else {
+            lblFiltroAtivo.setText("Exibindo: Todos os itens");
+            btnLimparFiltro.setVisible(false);
+            btnLimparFiltro.setManaged(false);
         }
     }
 
@@ -655,21 +769,17 @@ public class MainController {
 
     public void aplicarFiltroLocalizacao(String localizacao) {
         this.localizacaoFiltroAtiva = localizacao;
-        if (localizacao != null && !localizacao.trim().isEmpty()) {
-            lblFiltroAtivo.setText("Filtrado por: " + localizacao.toUpperCase());
-            btnLimparFiltro.setVisible(true);
-            btnLimparFiltro.setManaged(true);
-        } else {
-            lblFiltroAtivo.setText("Exibindo: Todos os itens");
-            btnLimparFiltro.setVisible(false);
-            btnLimparFiltro.setManaged(false);
-        }
+        atualizarBadgeFiltro();
         carregarProdutos();
     }
 
     @FXML
     private void handleLimparFiltro() {
-        aplicarFiltroLocalizacao(null);
+        this.localizacaoFiltroAtiva = null;
+        this.kpiFiltroAtivo = "TODOS";
+        atualizarEstiloKpiCards();
+        atualizarBadgeFiltro();
+        carregarProdutos();
     }
 
     @FXML

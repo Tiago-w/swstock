@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.Group?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
 
 <BorderPane fx:id="rootPane" prefHeight="700.0" prefWidth="1100.0"
             stylesheets="@../css/styles.css"
@@ -81,6 +83,95 @@
     <center>
         <VBox spacing="14.0" styleClass="main-container">
             <children>
+                <!-- Cards KPI Clicáveis (Filtros Rápidos de Estoque) -->
+                <HBox styleClass="kpi-row">
+                    <children>
+                        <!-- Card 1: Hero Azul SWStock -->
+                        <VBox fx:id="kpiCardTotal" onMouseClicked="#handleKpiFiltroTodos"
+                              spacing="5.0" HBox.hgrow="ALWAYS" styleClass="kpi-card-hero">
+                            <children>
+                                <HBox alignment="CENTER_LEFT">
+                                    <children>
+                                        <Label text="TOTAL EM ESTOQUE" styleClass="kpi-hero-label" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <StackPane styleClass="kpi-icon-hero">
+                                            <Group>
+                                                <SVGPath content="M20 6h-2.18c.11-.31.18-.65.18-1a2.996 2.996 0 0 0-5.5-1.65l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"
+                                                         fill="#FFFFFF" scaleX="0.65" scaleY="0.65" />
+                                            </Group>
+                                        </StackPane>
+                                    </children>
+                                </HBox>
+                                <Label fx:id="lblKpiTotalUnidades" text="0 un." styleClass="kpi-hero-value" />
+                                <Label fx:id="lblKpiTotalProdutos" text="0 produtos cadastrados" styleClass="kpi-hero-sub" />
+                            </children>
+                        </VBox>
+
+                        <!-- Card 2: Disponíveis -->
+                        <VBox fx:id="kpiCardDisponivel" onMouseClicked="#handleKpiFiltroDisponivel"
+                              spacing="5.0" HBox.hgrow="ALWAYS" styleClass="kpi-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT">
+                                    <children>
+                                        <Label text="DISPONÍVEIS" styleClass="kpi-label" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <StackPane styleClass="kpi-icon-ok">
+                                            <Group>
+                                                <SVGPath content="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                                         fill="#15803D" scaleX="0.70" scaleY="0.70" />
+                                            </Group>
+                                        </StackPane>
+                                    </children>
+                                </HBox>
+                                <Label fx:id="lblKpiDisponiveis" text="0 itens" styleClass="kpi-value" />
+                                <Label text="Estoque regular (&gt; 5 un.)" styleClass="kpi-sub-ok" />
+                            </children>
+                        </VBox>
+
+                        <!-- Card 3: Estoque Baixo -->
+                        <VBox fx:id="kpiCardBaixo" onMouseClicked="#handleKpiFiltroBaixo"
+                              spacing="5.0" HBox.hgrow="ALWAYS" styleClass="kpi-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT">
+                                    <children>
+                                        <Label text="ESTOQUE BAIXO" styleClass="kpi-label" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <StackPane styleClass="kpi-icon-low">
+                                            <Group>
+                                                <SVGPath content="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"
+                                                         fill="#B45309" scaleX="0.65" scaleY="0.65" />
+                                            </Group>
+                                        </StackPane>
+                                    </children>
+                                </HBox>
+                                <Label fx:id="lblKpiBaixo" text="0 itens" styleClass="kpi-value" />
+                                <Label text="Atenção (1 a 5 un.)" styleClass="kpi-sub-low" />
+                            </children>
+                        </VBox>
+
+                        <!-- Card 4: Sem Estoque -->
+                        <VBox fx:id="kpiCardZerado" onMouseClicked="#handleKpiFiltroZerado"
+                              spacing="5.0" HBox.hgrow="ALWAYS" styleClass="kpi-card">
+                            <children>
+                                <HBox alignment="CENTER_LEFT">
+                                    <children>
+                                        <Label text="SEM ESTOQUE" styleClass="kpi-label" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <StackPane styleClass="kpi-icon-empty">
+                                            <Group>
+                                                <SVGPath content="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"
+                                                         fill="#B91C1C" scaleX="0.68" scaleY="0.68" />
+                                            </Group>
+                                        </StackPane>
+                                    </children>
+                                </HBox>
+                                <Label fx:id="lblKpiZerado" text="0 itens" styleClass="kpi-value" />
+                                <Label text="Itens zerados (0 un.)" styleClass="kpi-sub-empty" />
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+
                 <!-- Barra de Ações Rápidas -->
                 <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="action-bar">
                     <children>

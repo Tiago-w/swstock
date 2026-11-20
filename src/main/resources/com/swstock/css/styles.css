@@ -977,5 +977,140 @@
     -fx-background-color: #0A377D;
 }
 
+/* ==========================================================================
+   Cards KPI Clicáveis / Filtros Rápidos de Estoque (Paleta SWStock)
+   ========================================================================== */
+.kpi-row {
+    -fx-spacing: 14px;
+}
+
+.kpi-card-hero {
+    -fx-background-color: linear-gradient(to bottom right, #0D47A1 0%, #1565C0 100%);
+    -fx-border-color: #0D47A1;
+    -fx-border-width: 1px;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-padding: 14px 18px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(13, 71, 161, 0.24), 12, 0, 0, 4);
+}
+
+.kpi-card-hero:hover {
+    -fx-background-color: linear-gradient(to bottom right, #1565C0 0%, #1976D2 100%);
+    -fx-border-color: #1976D2;
+    -fx-effect: dropshadow(gaussian, rgba(21, 101, 192, 0.34), 14, 0, 0, 5);
+}
+
+.kpi-hero-label {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #BBDEFB;
+}
+
+.kpi-hero-value {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+}
+
+.kpi-hero-sub {
+    -fx-font-size: 11px;
+    -fx-text-fill: #DBEAFE;
+}
+
+.kpi-card {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E2E8F0;
+    -fx-border-width: 1px;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-padding: 14px 18px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.05), 10, 0, 0, 2);
+}
+
+.kpi-card:hover {
+    -fx-border-color: #93C5FD;
+    -fx-effect: dropshadow(gaussian, rgba(21, 101, 192, 0.12), 14, 0, 0, 4);
+}
+
+.kpi-card-selected {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #1565C0;
+    -fx-border-width: 2px;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-padding: 14px 18px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(21, 101, 192, 0.20), 14, 0, 0, 4);
+}
+
+.kpi-label {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #64748B;
+}
+
+.kpi-value {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0F172A;
+}
+
+.kpi-sub-ok {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #15803D;
+}
+
+.kpi-sub-low {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #B45309;
+}
+
+.kpi-sub-empty {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #B91C1C;
+}
+
+.kpi-icon-hero {
+    -fx-background-color: rgba(255, 255, 255, 0.16);
+    -fx-background-radius: 9px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+}
+
+.kpi-icon-ok {
+    -fx-background-color: #DCFCE7;
+    -fx-background-radius: 9px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+}
+
+.kpi-icon-low {
+    -fx-background-color: #FEF3C7;
+    -fx-background-radius: 9px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+}
+
+.kpi-icon-empty {
+    -fx-background-color: #FEE2E2;
+    -fx-background-radius: 9px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+}
+
+
 
 
