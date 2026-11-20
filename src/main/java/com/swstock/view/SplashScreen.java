@@ -79,7 +79,7 @@ public class SplashScreen {
         Label lblStatus = new Label("Iniciando componentes do sistema...");
         lblStatus.setStyle("-fx-font-size: 11px; -fx-text-fill: #475569;");
 
-        Label lblRodape = new Label("Versão 1.0.14 • Carregando base de dados...");
+        Label lblRodape = new Label("Versão 1.0.13 • Carregando base de dados...");
         lblRodape.setStyle("-fx-font-size: 10px; -fx-text-fill: #94A3B8;");
 
         root.getChildren().addAll(logoView, lblTitulo, lblSubtitulo, progressBar, lblStatus, lblRodape);

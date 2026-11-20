@@ -58,7 +58,7 @@
         <padding>
             <Insets top="4.0" bottom="18.0" left="28.0" right="28.0" />
         </padding>
-        <Label text="SWStock v1.0.14 • Offline Seguro" styleClass="login-footer-text" />
+        <Label text="SWStock v1.0.13 • Offline Seguro" styleClass="login-footer-text" />
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="btnSair" text="✕ Sair" onAction="#handleSair" styleClass="login-btn-exit" />
     </HBox>
