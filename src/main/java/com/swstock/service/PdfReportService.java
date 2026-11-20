@@ -38,6 +38,16 @@ public class PdfReportService {
     private static final Font FONT_CELL_RED = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(185, 28, 28));
     private static final Font FONT_FOOTER = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(148, 163, 184));
 
+    private final com.swstock.util.LogoManager logoManager;
+
+    public PdfReportService() {
+        this(com.swstock.util.LogoManager.getInstance());
+    }
+
+    public PdfReportService(com.swstock.util.LogoManager logoManager) {
+        this.logoManager = logoManager != null ? logoManager : com.swstock.util.LogoManager.getInstance();
+    }
+
     /**
      * Gera o relatório PDF das movimentações filtradas de estoque agrupadas por data.
      */
@@ -174,15 +184,9 @@ public class PdfReportService {
 
     private Image carregarLogoPdf() {
         try {
-            java.net.URL url = getClass().getResource("/com/swstock/images/logo_empresa.png");
-            if (url == null) {
-                url = getClass().getResource("/com/swstock/images/image-removebg-preview.png");
-            }
-            if (url == null) {
-                url = getClass().getResource("/com/swstock/images/app_icon.png");
-            }
-            if (url != null) {
-                Image img = Image.getInstance(url);
+            byte[] logoBytes = logoManager.getLogoBytes();
+            if (logoBytes != null && logoBytes.length > 0) {
+                Image img = Image.getInstance(logoBytes);
                 img.scaleToFit(100f, 48f);
                 return img;
             }

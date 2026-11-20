@@ -18,11 +18,8 @@
             <children>
                 <Button fx:id="btnToggleSidebar" onAction="#handleToggleSidebar"
                         styleClass="hamburger-button" text="☰" />
-                <ImageView fx:id="imgLogoEmpresa" fitHeight="38.0" preserveRatio="true" smooth="true">
-                    <image>
-                        <Image url="@../images/logo_empresa.png" />
-                    </image>
-                </ImageView>
+                <ImageView fx:id="imgLogoEmpresa" fitHeight="38.0" preserveRatio="true" smooth="true"
+                           visible="false" managed="false" />
                 <VBox alignment="CENTER_LEFT" spacing="2.0">
                     <children>
                         <Label styleClass="brand-title" text="SWStock" />
@@ -66,6 +63,9 @@
 
                 <Button fx:id="btnConfiguracoes" maxWidth="Infinity" onAction="#handleAbrirConfiguracoes"
                         styleClass="nav-button" text="Gestão do Sistema" />
+
+                <Button fx:id="btnAlterarLogo" maxWidth="Infinity" onAction="#handleAlterarLogo"
+                        styleClass="nav-button" text="Alterar/adicionar logo" />
 
                 <Region VBox.vgrow="ALWAYS" />
 

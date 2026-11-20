@@ -44,3 +44,9 @@ dist/*.jar
 
 # Sample data
 sample_data/
+
+# Company custom logos (should never be committed)
+**/logo_empresa.png
+**/image-removebg-preview.png
+custom_logo.*
+

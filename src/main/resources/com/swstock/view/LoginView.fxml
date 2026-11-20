@@ -15,11 +15,7 @@
         <padding>
             <Insets top="26.0" right="24.0" bottom="18.0" left="24.0" />
         </padding>
-        <ImageView fx:id="imgLogo" fitHeight="75.0" preserveRatio="true" smooth="true">
-            <image>
-                <Image url="@../images/logo_empresa.png" />
-            </image>
-        </ImageView>
+        <ImageView fx:id="imgLogo" fitHeight="75.0" preserveRatio="true" smooth="true" />
         <Label text="SWStock" styleClass="login-app-title" />
         <Label text="Sistema de Gestão &amp; Controle de Estoque" styleClass="login-app-subtitle" />
     </VBox>

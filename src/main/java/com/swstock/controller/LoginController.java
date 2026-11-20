@@ -61,7 +61,25 @@ public class LoginController {
 
     @FXML
     public void initialize() {
+        carregarLogo();
         carregarOperadores();
+    }
+
+    private void carregarLogo() {
+        if (imgLogo == null) return;
+        try {
+            javafx.scene.image.Image logo = com.swstock.util.LogoManager.getInstance().getLogoFxImageOrDefault();
+            if (logo != null && !logo.isError()) {
+                imgLogo.setImage(logo);
+                imgLogo.setVisible(true);
+                imgLogo.setManaged(true);
+            } else {
+                imgLogo.setVisible(false);
+                imgLogo.setManaged(false);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Não foi possível carregar a logo na tela de login.", e);
+        }
     }
 
     /**

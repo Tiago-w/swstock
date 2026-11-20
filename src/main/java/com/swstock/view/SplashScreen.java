@@ -50,15 +50,15 @@ public class SplashScreen {
             "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.22), 20, 0, 0, 6);"
         );
 
-        // Logo da empresa centralizada
+        // Logo da empresa centralizada (carrega do cache local rápido ou ícone padrão SWStock)
         ImageView logoView = new ImageView();
+        logoView.setFitHeight(95);
+        logoView.setPreserveRatio(true);
+        logoView.setSmooth(true);
         try {
-            var stream = SplashScreen.class.getResourceAsStream("/com/swstock/images/logo_empresa.png");
-            if (stream != null) {
-                logoView.setImage(new Image(stream));
-                logoView.setFitHeight(95);
-                logoView.setPreserveRatio(true);
-                logoView.setSmooth(true);
+            Image splashLogo = com.swstock.util.LogoManager.getInstance().getLogoFxImageForSplashOrDefault();
+            if (splashLogo != null && !splashLogo.isError()) {
+                logoView.setImage(splashLogo);
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Não foi possível carregar a logo para a splash screen.", e);
@@ -105,6 +105,13 @@ public class SplashScreen {
                 DatabaseManager.getInstance();
 
                 Platform.runLater(() -> lblStatus.setText("Carregando operadores e configurações..."));
+                try {
+                    com.swstock.util.LogoManager.getInstance().sincronizarComBanco();
+                    Image dbLogo = com.swstock.util.LogoManager.getInstance().getLogoFxImageOrDefault();
+                    if (dbLogo != null && !dbLogo.isError()) {
+                        Platform.runLater(() -> logoView.setImage(dbLogo));
+                    }
+                } catch (Exception ignored) {}
                 try {
                     new FuncionarioDAO().findAll();
                 } catch (Exception ignored) {}

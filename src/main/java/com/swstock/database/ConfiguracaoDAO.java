@@ -31,8 +31,8 @@ public class ConfiguracaoDAO {
             return defaultVal;
         }
         String sql = "SELECT valor FROM configuracoes WHERE chave = ?";
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = dbManager.getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, chave.trim());
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -53,13 +53,30 @@ public class ConfiguracaoDAO {
             return;
         }
         String sql = "INSERT OR REPLACE INTO configuracoes (chave, valor, updated_at) VALUES (?, ?, datetime('now', 'localtime'))";
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = dbManager.getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, chave.trim());
             stmt.setString(2, valor != null ? valor : "");
             stmt.executeUpdate();
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Erro ao salvar configuração: " + chave, e);
+        }
+    }
+
+    /**
+     * Remove uma chave de configuração existente.
+     */
+    public void deleteValor(String chave) {
+        if (chave == null || chave.trim().isEmpty()) {
+            return;
+        }
+        String sql = "DELETE FROM configuracoes WHERE chave = ?";
+        Connection conn = dbManager.getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, chave.trim());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Erro ao remover configuração: " + chave, e);
         }
     }
 }

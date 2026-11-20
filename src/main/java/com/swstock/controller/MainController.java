@@ -15,6 +15,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -41,6 +43,7 @@ public class MainController {
     @FXML private BorderPane rootPane;
     @FXML private VBox sidebar;
     @FXML private Button btnToggleSidebar;
+    @FXML private ImageView imgLogoEmpresa;
     @FXML private Label lblHeaderStats;
 
     @FXML private Button btnHistoricoGeralBases;
@@ -50,6 +53,7 @@ public class MainController {
     @FXML private Button btnBasesPrediais;
     @FXML private Button btnLevantamentoBases;
     @FXML private Button btnConfiguracoes;
+    @FXML private Button btnAlterarLogo;
     @FXML private Button btnResponsavelSessao;
 
     @FXML private TextField txtSearch;
@@ -87,10 +91,39 @@ public class MainController {
             boxSubmenuBases.setVisible(false);
             boxSubmenuBases.setManaged(false);
         }
+        configurarLogoEmpresa();
         configurarBadgeResponsavel();
         configurarTabela();
         configurarBuscaInstantanea();
         carregarProdutos();
+    }
+
+    private void configurarLogoEmpresa() {
+        atualizarLogoCabecalho();
+        com.swstock.util.LogoManager.getInstance().logoVersionProperty().addListener((obs, oldVal, newVal) -> {
+            atualizarLogoCabecalho();
+        });
+    }
+
+    private void atualizarLogoCabecalho() {
+        if (imgLogoEmpresa == null) return;
+        Image logo = com.swstock.util.LogoManager.getInstance().getLogoFxImage();
+        if (logo != null && !logo.isError()) {
+            imgLogoEmpresa.setImage(logo);
+            imgLogoEmpresa.setVisible(true);
+            imgLogoEmpresa.setManaged(true);
+        } else {
+            imgLogoEmpresa.setImage(null);
+            imgLogoEmpresa.setVisible(false);
+            imgLogoEmpresa.setManaged(false);
+        }
+    }
+
+    @FXML
+    private void handleAlterarLogo() {
+        com.swstock.util.LogoManager.exibirDialogoGerenciarLogo(
+                rootPane != null && rootPane.getScene() != null ? rootPane.getScene().getWindow() : null
+        );
     }
 
     private void configurarBadgeResponsavel() {
