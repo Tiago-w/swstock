@@ -88,10 +88,10 @@ public class MainApp extends Application {
             LoginController controller = loader.getController();
             Stage loginStage = new Stage();
             applyAppIcon(loginStage);
-            loginStage.setTitle("SWStock - Inicialização & Seleção de Operador");
+            loginStage.setTitle("SWStock - Acesso ao Sistema");
             loginStage.setResizable(false);
 
-            Scene scene = new Scene(root, 480, 560);
+            Scene scene = new Scene(root, 760, 450);
             loginStage.setScene(scene);
             loginStage.centerOnScreen();
 
