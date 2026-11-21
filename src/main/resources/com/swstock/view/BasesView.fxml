@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.Group?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.SVGPath?>
 
 <VBox prefHeight="700.0" prefWidth="1100.0"
       stylesheets="@../css/styles.css"
@@ -13,8 +16,10 @@
 
     <children>
         <!-- Topo: Banner Superior -->
-        <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="header-banner">
+        <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="header-banner">
             <children>
+                <ImageView fx:id="imgLogoEmpresa" fitHeight="38.0" preserveRatio="true" smooth="true"
+                           visible="false" managed="false" />
                 <VBox alignment="CENTER_LEFT" spacing="2.0">
                     <children>
                         <Label styleClass="brand-title" text="SWStock" />
@@ -25,9 +30,15 @@
                 <Region HBox.hgrow="ALWAYS" />
                 <Button fx:id="btnResponsavelSessao" onAction="#handleTrocarResponsavel"
                         styleClass="badge-responsavel" text="👤 Responsável: Administrador" />
-                <Button onAction="#handleAbrirHistoricoBases"
-                        style="-fx-background-color: #0D47A1; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6px; -fx-padding: 8px 16px; -fx-font-size: 12px;"
-                        text=" Histórico Geral de Bases" />
+                <Button onAction="#handleAbrirHistoricoBases" graphicTextGap="7.0"
+                        styleClass="btn-header-accent" text="Histórico Geral de Bases">
+                    <graphic>
+                        <Group>
+                            <SVGPath content="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+                                     fill="#FFFFFF" scaleX="0.64" scaleY="0.64" />
+                        </Group>
+                    </graphic>
+                </Button>
                 <Button onAction="#handleFechar" styleClass="btn-secondary" text="Fechar" />
             </children>
         </HBox>
@@ -36,21 +47,21 @@
         <VBox spacing="14.0" VBox.vgrow="ALWAYS" style="-fx-padding: 18px 24px;">
             <children>
                 <!-- Faixa Fixa de Alternância de Abas -->
-                <HBox alignment="CENTER_LEFT" spacing="12.0"
-                      style="-fx-background-color: #FFFFFF; -fx-padding: 10px 18px; -fx-background-radius: 8px; -fx-border-color: #E2E8F0; -fx-border-radius: 8px;">
+                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="bases-category-bar">
                     <children>
                         <Label text="Categoria de Bases:" style="-fx-font-weight: bold; -fx-text-fill: #1E293B; -fx-font-size: 13px;" />
-                        <HBox spacing="0.0" style="-fx-background-color: #E2E8F0; -fx-background-radius: 8px; -fx-padding: 3px;">
+                        <HBox spacing="4.0" styleClass="bases-segmented-track">
                             <children>
                                 <Button fx:id="btnTabAutomotivas" onAction="#handleSelecionarAutomotivas"
                                         text="Bases Automotivas" prefWidth="180.0"
-                                        style="-fx-background-color: #1565C0; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-padding: 8px 18px; -fx-background-radius: 6px 0 0 6px; -fx-cursor: hand; -fx-font-size: 12px;" />
+                                        styleClass="bases-seg-btn-active-auto" />
                                 <Button fx:id="btnTabPrediais" onAction="#handleSelecionarPrediais"
                                         text="Bases Prediais" prefWidth="180.0"
-                                        style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 8px 18px; -fx-background-radius: 0 6px 6px 0; -fx-cursor: hand; -fx-font-size: 12px;" />
+                                        styleClass="bases-seg-btn-inactive" />
                             </children>
                         </HBox>
                         <Region HBox.hgrow="ALWAYS" />
+                        <Label text="Dica: dê dois cliques em uma base para modificar" styleClass="bases-hint-label" />
                         <Label fx:id="lblTotalBasesExibidas" styleClass="badge-location" text="0 bases cadastradas" />
                     </children>
                 </HBox>

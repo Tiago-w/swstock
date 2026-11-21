@@ -1,5 +1,7 @@
 package com.swstock;
 
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import com.swstock.model.HistoricoEstoque;
 import com.swstock.service.PdfReportService;
 import org.junit.jupiter.api.Test;
@@ -234,6 +236,57 @@ class PdfReportServiceTest {
 
         assertTrue(outPdf.exists());
         assertTrue(outPdf.length() > 500);
+    }
+
+    @Test
+    void testRelatorioHistoricoRemoveMotivoSubstituiCorPadraoPorTracoEPreservaNomeCompleto() throws Exception {
+        PdfReportService service = new PdfReportService();
+        File tempPdf = File.createTempFile("teste_historico_layout_6col_", ".pdf");
+        tempPdf.deleteOnExit();
+
+        List<HistoricoEstoque> movs = List.of(
+                new HistoricoEstoque(1, 1, "2026-11-16 09:00:00", "SAIDA", -10, 160, 150,
+                        "Modificação de estoque", "Lucas (10)",
+                        "COADOR DESCARTAVEL PARA TINTA", "010156", "Depósito", "01 DIVERSOS"),
+                new HistoricoEstoque(2, 2, "2026-11-16 09:10:00", "SAIDA", -1, 3, 2,
+                        "Modificação de estoque [BRANCO]", "Lucas (10)",
+                        "BELA CASA OLEO CORES 900ML", "040068", "Depósito", "04 KILLING"),
+                new HistoricoEstoque(3, 2, "2026-11-16 09:15:00", "SAIDA", -3, 6, 3,
+                        "Modificação de estoque [PRETO]", "Lucas (10)",
+                        "BELA CASA OLEO CORES 900ML", "040068", "Depósito", "04 KILLING"),
+                new HistoricoEstoque(4, 3, "2026-11-16 09:20:00", "SAIDA", -6, 24, 18,
+                        "Modificação de estoque [PADRÃO]", "Lucas (10)",
+                        "VERNIZ BI-COMP. C/ CATALISADOR 5500", "100015", "Depósito", "10 WANDA"),
+                new HistoricoEstoque(5, 4, "2026-11-16 09:25:00", "SAIDA", -2, 14, 12,
+                        "Modificação de estoque [ÚNICA]", "Lucas (10)",
+                        "THINNER SINTETICO AUT16 05LT", "300022", "Depósito", "30 2001/RHAI")
+        );
+
+        service.gerarRelatorio(tempPdf, movs, null, null, "Apenas Saídas", null, null);
+
+        assertTrue(tempPdf.exists());
+        assertTrue(tempPdf.length() > 500);
+
+        StringBuilder textoPdf = new StringBuilder();
+        try (PdfReader reader = new PdfReader(tempPdf.getAbsolutePath())) {
+            PdfTextExtractor extractor = new PdfTextExtractor(reader);
+            for (int p = 1; p <= reader.getNumberOfPages(); p++) {
+                textoPdf.append(extractor.getTextFromPage(p)).append('\n');
+            }
+        }
+        String texto = textoPdf.toString();
+
+        assertFalse(texto.contains("MOTIVO / ORIGEM"), "A coluna MOTIVO / ORIGEM deve ter sido removida.");
+        assertFalse(texto.contains("Modificação de estoque"), "O texto do motivo não deve aparecer na tabela.");
+        assertFalse(texto.contains("ÚNICA"), "Cor ÚNICA deve ser substituída por traço.");
+        assertFalse(texto.contains("PADRÃO"), "Cor PADRÃO deve ser substituída por traço.");
+        assertTrue(texto.contains("—"), "Produtos sem cor específica devem exibir traço centralizado (—).");
+        assertTrue(texto.contains("BRANCO"), "Cores específicas como BRANCO devem continuar sendo exibidas.");
+        assertTrue(texto.contains("PRETO"), "Cores específicas como PRETO devem continuar sendo exibidas.");
+        assertTrue(texto.contains("VERNIZ BI-COMP. C/ CATALISADOR 5500 [100015]"),
+                "Nome completo do produto com SKU deve ser preservado sem perda de informação.");
+        assertTrue(texto.contains("COADOR DESCARTAVEL PARA TINTA [010156]"),
+                "Nome completo do produto com SKU deve ser preservado sem perda de informação.");
     }
 }
 

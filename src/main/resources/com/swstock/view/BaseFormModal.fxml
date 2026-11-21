@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<VBox fx:id="rootPane" prefWidth="540.0" spacing="0.0"
+      stylesheets="@../css/styles.css" styleClass="base-modal-root"
+      xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.swstock.controller.BaseFormController">
+
+    <!-- Cabeçalho Executivo SWStock (mesmo padrão da Tela de Login e Trocar Responsável) -->
+    <HBox alignment="CENTER_LEFT" spacing="14.0" styleClass="base-modal-header">
+        <children>
+            <StackPane styleClass="switch-operator-icon-badge">
+                <Group>
+                    <SVGPath fx:id="svgHeaderIcon"
+                             content="M18 4V3c0-.55-.45-1-1-1H5c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1h12c.55 0 1-.45 1-1V6h1v4H9v11c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-9h8V4h-3z"
+                             fill="#FFFFFF" scaleX="0.90" scaleY="0.90" />
+                </Group>
+            </StackPane>
+
+            <VBox alignment="CENTER_LEFT" spacing="3.0" HBox.hgrow="ALWAYS">
+                <children>
+                    <Label fx:id="lblModalTitulo" text="Editar Base de Tinta" styleClass="switch-operator-title" />
+                    <Label fx:id="lblModalSubtitulo" text="Atualize os dados cadastrais e o saldo em estoque."
+                           wrapText="true" minHeight="-Infinity" styleClass="switch-operator-subtitle" />
+                </children>
+            </VBox>
+
+            <Label fx:id="lblBadgeTipoHeader" text="AUTOMOTIVA" styleClass="base-modal-type-pill" />
+        </children>
+    </HBox>
+
+    <!-- Corpo Principal Limpo -->
+    <VBox spacing="15.0">
+        <padding>
+            <Insets top="22.0" right="26.0" bottom="22.0" left="26.0" />
+        </padding>
+
+        <children>
+            <!-- Faixa de Contexto da Base em Edição (visível apenas no modo edição) -->
+            <HBox fx:id="boxResumoBase" alignment="CENTER_LEFT" spacing="8.0" styleClass="switch-operator-current-box">
+                <children>
+                    <Circle fx:id="dotTipoResumo" radius="4.5" fill="#1565C0" />
+                    <Label text="Editando:" style="-fx-font-size: 12.5px; -fx-text-fill: #64748B;" />
+                    <Label fx:id="lblResumoNome" text="Base" HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                           style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+                    <Label fx:id="lblResumoEstoque" text="Atual: 0 un." styleClass="badge-stock-ok" />
+                </children>
+            </HBox>
+
+            <!-- Linha 1: Tamanho e Linha/Tipo -->
+            <HBox spacing="14.0">
+                <children>
+                    <VBox spacing="6.0" prefWidth="175.0">
+                        <children>
+                            <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                <Group>
+                                    <SVGPath content="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8z"
+                                             fill="#64748B" scaleX="0.56" scaleY="0.56" />
+                                </Group>
+                                <Label text="TAMANHO DA BASE *" styleClass="login-field-label" />
+                            </HBox>
+                            <TextField fx:id="txtTamanho" maxWidth="Infinity" styleClass="modal-text-field"
+                                       promptText="Ex: 3.6L, 900ml, 18L" />
+                        </children>
+                    </VBox>
+
+                    <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                        <children>
+                            <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                <Group>
+                                    <SVGPath content="M12 2l-5.5 9h11L12 2zm0 3.84L13.93 9h-3.87L12 5.84zM17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 7c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zM3 21.5h8v-8H3v8zm2-6h4v4H5v-4z"
+                                             fill="#64748B" scaleX="0.56" scaleY="0.56" />
+                                </Group>
+                                <Label text="LINHA / TIPO *" styleClass="login-field-label" />
+                            </HBox>
+                            <ComboBox fx:id="cbTipo" maxWidth="Infinity" styleClass="login-combobox, modal-combobox" />
+                        </children>
+                    </VBox>
+                </children>
+            </HBox>
+
+            <!-- Linha 2: Nome da Base -->
+            <VBox spacing="6.0">
+                <children>
+                    <HBox alignment="CENTER_LEFT" spacing="6.0">
+                        <Group>
+                            <SVGPath content="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"
+                                     fill="#64748B" scaleX="0.56" scaleY="0.56" />
+                        </Group>
+                        <Label text="NOME DA BASE *" styleClass="login-field-label" />
+                    </HBox>
+                    <TextField fx:id="txtNome" maxWidth="Infinity" styleClass="modal-text-field"
+                               promptText="Ex: Base Branco Puro ou Amarelo Ouro" />
+                </children>
+            </VBox>
+
+            <!-- Linha 3: Fabricante e Valor de Compra -->
+            <HBox spacing="14.0">
+                <children>
+                    <VBox spacing="6.0" HBox.hgrow="ALWAYS">
+                        <children>
+                            <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                <Group>
+                                    <SVGPath content="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"
+                                             fill="#64748B" scaleX="0.56" scaleY="0.56" />
+                                </Group>
+                                <Label text="FABRICANTE / MARCA" styleClass="login-field-label" />
+                            </HBox>
+                            <TextField fx:id="txtFabricante" maxWidth="Infinity" styleClass="modal-text-field"
+                                       promptText="Ex: Coral, Suvinil, Wanda, Lazzuril..." />
+                        </children>
+                    </VBox>
+
+                    <VBox spacing="6.0" prefWidth="185.0">
+                        <children>
+                            <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                <Group>
+                                    <SVGPath content="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"
+                                             fill="#64748B" scaleX="0.58" scaleY="0.58" />
+                                </Group>
+                                <Label text="VALOR DE COMPRA (R$)" styleClass="login-field-label" />
+                            </HBox>
+                            <TextField fx:id="txtValorCompra" maxWidth="Infinity" styleClass="modal-text-field"
+                                       promptText="0,00" />
+                        </children>
+                    </VBox>
+                </children>
+            </HBox>
+
+            <!-- Linha 4: Card de Controle de Estoque -->
+            <VBox spacing="10.0" styleClass="base-stock-card">
+                <children>
+                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                        <children>
+                            <Group>
+                                <SVGPath content="M20 6h-2.18c.11-.31.18-.65.18-1a2.996 2.996 0 0 0-5.5-1.65l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"
+                                         fill="#475569" scaleX="0.58" scaleY="0.58" />
+                            </Group>
+                            <Label text="QUANTIDADE EM ESTOQUE" styleClass="login-field-label" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="lblDelta" text="Sem alteração" styleClass="delta-pill-neutral" />
+                        </children>
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <children>
+                            <Button fx:id="btnMenos" text="−" onAction="#handleDecrementar" styleClass="stepper-btn-minus" />
+                            <TextField fx:id="txtQuantidade" text="0" styleClass="modal-qty-field" />
+                            <Button fx:id="btnMais" text="+" onAction="#handleIncrementar" styleClass="stepper-btn-plus" />
+                            <Label text="unidades" style="-fx-text-fill: #64748B; -fx-font-size: 12.5px; -fx-font-weight: 600;" />
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+
+            <!-- Alerta de Validação Inline -->
+            <Label fx:id="lblErroValidacao" styleClass="modal-validation-error"
+                   maxWidth="Infinity" wrapText="true" visible="false" managed="false" />
+
+            <!-- Rodapé de Ações -->
+            <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="base-modal-footer">
+                <children>
+                    <Button fx:id="btnVerHistorico" text="Histórico" onAction="#handleVerHistorico"
+                            graphicTextGap="6.0" styleClass="btn-modal-history">
+                        <graphic>
+                            <Group>
+                                <SVGPath content="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+                                         fill="#92400E" scaleX="0.65" scaleY="0.65" />
+                            </Group>
+                        </graphic>
+                    </Button>
+
+                    <Region HBox.hgrow="ALWAYS" />
+
+                    <Button fx:id="btnCancelar" text="Cancelar" cancelButton="true"
+                            onAction="#handleCancelar" styleClass="switch-btn-cancel" />
+
+                    <Button fx:id="btnSalvar" text="Salvar Alterações" defaultButton="true"
+                            onAction="#handleSalvar" graphicTextGap="8.0" styleClass="switch-btn-confirm">
+                        <graphic>
+                            <Group>
+                                <SVGPath content="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                         fill="#FFFFFF" scaleX="0.72" scaleY="0.72" />
+                            </Group>
+                        </graphic>
+                    </Button>
+                </children>
+            </HBox>
+        </children>
+    </VBox>
+</VBox>

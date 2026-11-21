@@ -3,24 +3,29 @@ package com.swstock.controller;
 import com.swstock.database.BaseDAO;
 import com.swstock.database.HistoricoBaseDAO;
 import com.swstock.model.Base;
-import com.swstock.model.HistoricoBase;
 import com.swstock.util.DialogHelper;
+import javafx.animation.FadeTransition;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
+import javafx.util.Duration;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -35,6 +40,7 @@ public class BasesController {
 
     private static final Logger LOGGER = Logger.getLogger(BasesController.class.getName());
 
+    @FXML private ImageView imgLogoEmpresa;
     @FXML private Button btnTabAutomotivas;
     @FXML private Button btnTabPrediais;
     @FXML private Label lblHeaderSubtitulo;
@@ -68,6 +74,7 @@ public class BasesController {
             historicoBaseDAO = new HistoricoBaseDAO();
         }
 
+        configurarLogoEmpresa();
         configurarBadgeResponsavel();
         com.swstock.util.DeadKeyHelper.attach(txtBusca);
         configurarTabela();
@@ -75,6 +82,27 @@ public class BasesController {
         atualizarEstiloTabs();
         carregarFabricantes();
         recarregarDados();
+    }
+
+    private void configurarLogoEmpresa() {
+        atualizarLogoCabecalho();
+        com.swstock.util.LogoManager.getInstance().logoVersionProperty().addListener((obs, oldVal, newVal) -> {
+            atualizarLogoCabecalho();
+        });
+    }
+
+    private void atualizarLogoCabecalho() {
+        if (imgLogoEmpresa == null) return;
+        Image logo = com.swstock.util.LogoManager.getInstance().getLogoFxImage();
+        if (logo != null && !logo.isError()) {
+            imgLogoEmpresa.setImage(logo);
+            imgLogoEmpresa.setVisible(true);
+            imgLogoEmpresa.setManaged(true);
+        } else {
+            imgLogoEmpresa.setImage(null);
+            imgLogoEmpresa.setVisible(false);
+            imgLogoEmpresa.setManaged(false);
+        }
     }
 
     private void configurarBadgeResponsavel() {
@@ -223,12 +251,81 @@ public class BasesController {
             }
         });
 
+        tblBases.setRowFactory(tv -> {
+            TableRow<Base> row = new TableRow<>();
+
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem itemEditar = new MenuItem("Modificar Base / Estoque");
+            itemEditar.setOnAction(e -> {
+                if (!row.isEmpty()) {
+                    abrirModalEditarBase(row.getItem());
+                }
+            });
+            MenuItem itemHistorico = new MenuItem("Ver Histórico da Base");
+            itemHistorico.setOnAction(e -> {
+                if (!row.isEmpty()) {
+                    abrirHistoricoEspecifico(row.getItem());
+                }
+            });
+            MenuItem itemExcluir = new MenuItem("Excluir Base");
+            itemExcluir.setOnAction(e -> {
+                if (!row.isEmpty()) {
+                    handleExcluirBase(row.getItem());
+                }
+            });
+            contextMenu.getItems().addAll(itemEditar, itemHistorico, new SeparatorMenuItem(), itemExcluir);
+
+            row.contextMenuProperty().bind(
+                    Bindings.when(row.emptyProperty())
+                            .then((ContextMenu) null)
+                            .otherwise(contextMenu)
+            );
+
+            row.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY
+                        && event.getClickCount() == 2
+                        && !row.isEmpty()
+                        && !isClickEmBotao(event.getTarget())) {
+                    abrirModalEditarBase(row.getItem());
+                }
+            });
+
+            return row;
+        });
+
+        tblBases.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                Base selecionada = tblBases.getSelectionModel().getSelectedItem();
+                if (selecionada != null) {
+                    abrirModalEditarBase(selecionada);
+                    event.consume();
+                }
+            }
+        });
+
         tblBases.setItems(basesList);
 
         com.swstock.database.DatabaseManager dbManager = (baseDAO != null && baseDAO.getDatabaseManager() != null)
                 ? baseDAO.getDatabaseManager()
                 : com.swstock.database.DatabaseManager.getInstance();
         com.swstock.util.TablePreferencesHelper.vincular(tblBases, "bases_tintas", dbManager);
+    }
+
+    private boolean isClickEmBotao(Object target) {
+        if (!(target instanceof Node node)) {
+            return false;
+        }
+        Node atual = node;
+        while (atual != null) {
+            if (atual instanceof ButtonBase) {
+                return true;
+            }
+            if (atual instanceof TableRow<?>) {
+                return false;
+            }
+            atual = atual.getParent();
+        }
+        return false;
     }
 
     private void configurarFiltros() {
@@ -269,25 +366,35 @@ public class BasesController {
     }
 
     private void atualizarEstiloTabs() {
+        btnTabAutomotivas.getStyleClass().removeAll("bases-seg-btn-active-auto", "bases-seg-btn-active-predial", "bases-seg-btn-inactive");
+        btnTabPrediais.getStyleClass().removeAll("bases-seg-btn-active-auto", "bases-seg-btn-active-predial", "bases-seg-btn-inactive");
+        btnTabAutomotivas.setStyle("");
+        btnTabPrediais.setStyle("");
+
         if ("AUTOMOTIVA".equalsIgnoreCase(tipoAtivo)) {
-            btnTabAutomotivas.setStyle("-fx-background-color: #1565C0; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 6px 0 0 6px; -fx-cursor: hand; -fx-font-size: 12px;");
-            btnTabPrediais.setStyle("-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 0 6px 6px 0; -fx-cursor: hand; -fx-font-size: 12px;");
+            btnTabAutomotivas.getStyleClass().add("bases-seg-btn-active-auto");
+            btnTabPrediais.getStyleClass().add("bases-seg-btn-inactive");
             lblHeaderSubtitulo.setText("Gestão de Bases de Tintas: Linha Automotiva");
         } else {
-            btnTabAutomotivas.setStyle("-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 6px 0 0 6px; -fx-cursor: hand; -fx-font-size: 12px;");
-            btnTabPrediais.setStyle("-fx-background-color: #D97706; -fx-text-fill: #FFFFFF; -fx-font-weight: bold; -fx-padding: 7px 18px; -fx-background-radius: 0 6px 6px 0; -fx-cursor: hand; -fx-font-size: 12px;");
+            btnTabAutomotivas.getStyleClass().add("bases-seg-btn-inactive");
+            btnTabPrediais.getStyleClass().add("bases-seg-btn-active-predial");
             lblHeaderSubtitulo.setText("Gestão de Bases de Tintas: Linha Predial");
         }
     }
 
     private void carregarFabricantes() {
+        String selecionadoAnterior = cbFabricanteFiltro != null ? cbFabricanteFiltro.getValue() : null;
         try {
             List<String> fabs = baseDAO.getAllFabricantes(tipoAtivo);
             ObservableList<String> items = FXCollections.observableArrayList();
             items.add("Todos os Fabricantes");
             items.addAll(fabs);
             cbFabricanteFiltro.setItems(items);
-            cbFabricanteFiltro.getSelectionModel().selectFirst();
+            if (selecionadoAnterior != null && items.contains(selecionadoAnterior)) {
+                cbFabricanteFiltro.setValue(selecionadoAnterior);
+            } else {
+                cbFabricanteFiltro.getSelectionModel().selectFirst();
+            }
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Erro ao carregar fabricantes de bases", e);
         }
@@ -315,130 +422,55 @@ public class BasesController {
         }
     }
 
-    private VBox criarStepperEstoque(TextField txtQtd, int estoqueInicial) {
-        Button btnMenos = new Button("-");
-        btnMenos.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 34px; -fx-min-height: 28px; -fx-background-color: #EF4444; -fx-text-fill: white; -fx-background-radius: 4px; -fx-cursor: hand;");
+    private Optional<Base> exibirModalBase(Base baseParaEditar) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/BaseFormModal.fxml"));
+            Parent root = loader.load();
 
-        Button btnMais = new Button("+");
-        btnMais.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 34px; -fx-min-height: 28px; -fx-background-color: #10B981; -fx-text-fill: white; -fx-background-radius: 4px; -fx-cursor: hand;");
+            BaseFormController controller = loader.getController();
+            Stage modalStage = new Stage();
+            com.swstock.MainApp.applyAppIcon(modalStage);
+            modalStage.setTitle(baseParaEditar == null
+                    ? "SWStock - Cadastrar Nova Base"
+                    : "SWStock - Modificar Base: " + baseParaEditar.getNome());
+            modalStage.initModality(Modality.APPLICATION_MODAL);
+            Window owner = stage != null ? stage : (tblBases != null && tblBases.getScene() != null ? tblBases.getScene().getWindow() : null);
+            if (owner != null) {
+                modalStage.initOwner(owner);
+            }
+            modalStage.setResizable(false);
 
-        Label lblDelta = new Label("");
-
-        Runnable atualizarDelta = () -> {
-            int atual = 0;
-            try {
-                atual = Integer.parseInt(txtQtd.getText().trim());
-            } catch (NumberFormatException ignored) {}
-            int diff = atual - estoqueInicial;
-            if (diff > 0) {
-                lblDelta.setText("Está sendo adicionado " + diff + (diff == 1 ? " item" : " itens"));
-                lblDelta.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #16A34A;");
-            } else if (diff < 0) {
-                lblDelta.setText("Está sendo retirado " + Math.abs(diff) + (Math.abs(diff) == 1 ? " item" : " itens"));
-                lblDelta.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #DC2626;");
+            controller.setStage(modalStage);
+            if (baseParaEditar == null) {
+                controller.configurarModoCadastro(tipoAtivo);
             } else {
-                lblDelta.setText("");
+                controller.setOnAbrirHistorico(b -> abrirHistoricoEspecifico(b, modalStage));
+                controller.configurarModoEdicao(baseParaEditar);
             }
-        };
 
-        btnMenos.setOnAction(e -> {
-            int v = 0;
-            try { v = Integer.parseInt(txtQtd.getText().trim()); } catch (NumberFormatException ignored) {}
-            if (v > 0) {
-                txtQtd.setText(String.valueOf(v - 1));
-            }
-        });
+            Scene scene = new Scene(root);
+            modalStage.setScene(scene);
+            modalStage.sizeToScene();
+            modalStage.centerOnScreen();
 
-        btnMais.setOnAction(e -> {
-            int v = 0;
-            try { v = Integer.parseInt(txtQtd.getText().trim()); } catch (NumberFormatException ignored) {}
-            txtQtd.setText(String.valueOf(v + 1));
-        });
+            root.setOpacity(0.0);
+            FadeTransition fade = new FadeTransition(Duration.millis(180), root);
+            fade.setFromValue(0.0);
+            fade.setToValue(1.0);
+            fade.play();
 
-        txtQtd.textProperty().addListener((obs, o, n) -> atualizarDelta.run());
-        atualizarDelta.run();
-
-        txtQtd.setPrefWidth(110);
-        HBox stepperBox = new HBox(6, btnMenos, txtQtd, btnMais);
-        stepperBox.setAlignment(Pos.CENTER_LEFT);
-        return new VBox(4, stepperBox, lblDelta);
+            modalStage.showAndWait();
+            return controller.getResultado();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Erro ao abrir modal de base", e);
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", "Falha ao abrir painel de base: " + e.getMessage());
+            return Optional.empty();
+        }
     }
 
     @FXML
     private void handleNovaBase() {
-        Dialog<Base> dialog = new Dialog<>();
-        dialog.setTitle("Cadastrar Nova Base");
-        dialog.setHeaderText("Cadastrar nova base (" + ("AUTOMOTIVA".equalsIgnoreCase(tipoAtivo) ? "Automotiva" : "Predial") + ")");
-
-        DialogPane dialogPane = dialog.getDialogPane();
-        dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(20, 20, 10, 10));
-
-        TextField txtTamanho = new TextField();
-        txtTamanho.setPromptText("Ex: 3.6L, 900ml, 18L, 225ml...");
-        com.swstock.util.DeadKeyHelper.attach(txtTamanho);
-
-        TextField txtNomeBase = new TextField();
-        txtNomeBase.setPromptText("Ex: Base Branco Puro ou Amarelo Ouro");
-        com.swstock.util.DeadKeyHelper.attach(txtNomeBase);
-
-        ComboBox<String> cbTipo = new ComboBox<>(FXCollections.observableArrayList("AUTOMOTIVA", "PREDIAL"));
-        cbTipo.setValue(tipoAtivo);
-
-        TextField txtFab = new TextField();
-        txtFab.setPromptText("Ex: Coral, Suvinil, Wanda, Lazzuril...");
-        txtFab.setText("Geral");
-        com.swstock.util.DeadKeyHelper.attach(txtFab);
-
-        TextField txtQtd = new TextField("0");
-        VBox boxQtd = criarStepperEstoque(txtQtd, 0);
-
-        TextField txtPreco = new TextField("0.00");
-        txtPreco.setPromptText("Valor de compra (R$)");
-
-        grid.add(new Label("Tamanho da Base:"), 0, 0);
-        grid.add(txtTamanho, 1, 0);
-        grid.add(new Label("Nome da Base:"), 0, 1);
-        grid.add(txtNomeBase, 1, 1);
-        grid.add(new Label("Linha / Tipo:"), 0, 2);
-        grid.add(cbTipo, 1, 2);
-        grid.add(new Label("Fabricante / Marca:"), 0, 3);
-        grid.add(txtFab, 1, 3);
-        grid.add(new Label("Quantidade em Estoque:"), 0, 4);
-        grid.add(boxQtd, 1, 4);
-        grid.add(new Label("Valor de Compra (R$):"), 0, 5);
-        grid.add(txtPreco, 1, 5);
-
-        dialogPane.setContent(grid);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == ButtonType.OK) {
-                if (txtTamanho.getText().trim().isEmpty() || txtNomeBase.getText().trim().isEmpty()) {
-                    mostrarAlerta(Alert.AlertType.WARNING, "Campos Obrigatórios", "Tamanho e Nome da base são obrigatórios.");
-                    return null;
-                }
-                int qtd = 0;
-                try { qtd = Integer.parseInt(txtQtd.getText().trim()); } catch (NumberFormatException ignored) {}
-                double preco = 0.0;
-                try { preco = Double.parseDouble(txtPreco.getText().trim().replace(",", ".")); } catch (NumberFormatException ignored) {}
-
-                return new Base(
-                        txtTamanho.getText().trim().toUpperCase(),
-                        txtNomeBase.getText().trim(),
-                        cbTipo.getValue(),
-                        txtFab.getText().trim(),
-                        qtd,
-                        preco
-                );
-            }
-            return null;
-        });
-
-        Optional<Base> resultado = dialog.showAndWait();
+        Optional<Base> resultado = exibirModalBase(null);
         resultado.ifPresent(novaBase -> {
             Optional<String> optResp = DialogHelper.solicitarResponsavel(
                     tblBases.getScene().getWindow(),
@@ -449,7 +481,12 @@ public class BasesController {
 
             try {
                 baseDAO.insert(novaBase, optResp.get());
-                carregarFabricantes();
+                isUpdatingFiltros = true;
+                try {
+                    carregarFabricantes();
+                } finally {
+                    isUpdatingFiltros = false;
+                }
                 recarregarDados();
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Base cadastrada com sucesso!");
             } catch (SQLException e) {
@@ -460,74 +497,8 @@ public class BasesController {
     }
 
     private void abrirModalEditarBase(Base base) {
-        Dialog<Base> dialog = new Dialog<>();
-        dialog.setTitle("Editar Base");
-        dialog.setHeaderText("Editar dados e estoque da base: " + base.getNome());
-
-        DialogPane dialogPane = dialog.getDialogPane();
-        dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(20, 20, 10, 10));
-
-        TextField txtTamanho = new TextField(base.getTamanho());
-        txtTamanho.setPromptText("Ex: 3.6L, 900ml, 18L, 225ml...");
-        com.swstock.util.DeadKeyHelper.attach(txtTamanho);
-
-        TextField txtNomeBase = new TextField(base.getNome());
-        com.swstock.util.DeadKeyHelper.attach(txtNomeBase);
-
-        ComboBox<String> cbTipo = new ComboBox<>(FXCollections.observableArrayList("AUTOMOTIVA", "PREDIAL"));
-        cbTipo.setValue(base.getTipo());
-
-        TextField txtFab = new TextField(base.getFabricante());
-        com.swstock.util.DeadKeyHelper.attach(txtFab);
-
-        TextField txtQtd = new TextField(String.valueOf(base.getQuantidade()));
-        VBox boxQtd = criarStepperEstoque(txtQtd, base.getQuantidade());
-
-        TextField txtPreco = new TextField(String.format("%.2f", base.getValorCompra()).replace(",", "."));
-
-        grid.add(new Label("Tamanho da Base:"), 0, 0);
-        grid.add(txtTamanho, 1, 0);
-        grid.add(new Label("Nome da Base:"), 0, 1);
-        grid.add(txtNomeBase, 1, 1);
-        grid.add(new Label("Linha / Tipo:"), 0, 2);
-        grid.add(cbTipo, 1, 2);
-        grid.add(new Label("Fabricante / Marca:"), 0, 3);
-        grid.add(txtFab, 1, 3);
-        grid.add(new Label("Quantidade em Estoque:"), 0, 4);
-        grid.add(boxQtd, 1, 4);
-        grid.add(new Label("Valor de Compra (R$):"), 0, 5);
-        grid.add(txtPreco, 1, 5);
-
-        dialogPane.setContent(grid);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == ButtonType.OK) {
-                if (txtTamanho.getText().trim().isEmpty() || txtNomeBase.getText().trim().isEmpty()) {
-                    mostrarAlerta(Alert.AlertType.WARNING, "Campos Obrigatórios", "Tamanho e Nome da base são obrigatórios.");
-                    return null;
-                }
-                int qtd = 0;
-                try { qtd = Integer.parseInt(txtQtd.getText().trim()); } catch (NumberFormatException ignored) {}
-                double preco = 0.0;
-                try { preco = Double.parseDouble(txtPreco.getText().trim().replace(",", ".")); } catch (NumberFormatException ignored) {}
-
-                base.setTamanho(txtTamanho.getText().trim().toUpperCase());
-                base.setNome(txtNomeBase.getText().trim());
-                base.setTipo(cbTipo.getValue());
-                base.setFabricante(txtFab.getText().trim());
-                base.setQuantidade(qtd);
-                base.setValorCompra(preco);
-                return base;
-            }
-            return null;
-        });
-
-        Optional<Base> resultado = dialog.showAndWait();
+        if (base == null) return;
+        Optional<Base> resultado = exibirModalBase(base);
         resultado.ifPresent(baseEditada -> {
             Optional<String> optResp = DialogHelper.solicitarResponsavel(
                     tblBases.getScene().getWindow(),
@@ -538,6 +509,12 @@ public class BasesController {
 
             try {
                 baseDAO.update(baseEditada, optResp.get(), "Edição cadastral e ajuste de estoque da base");
+                isUpdatingFiltros = true;
+                try {
+                    carregarFabricantes();
+                } finally {
+                    isUpdatingFiltros = false;
+                }
                 recarregarDados();
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Base atualizada com sucesso!");
             } catch (SQLException e) {
@@ -574,6 +551,10 @@ public class BasesController {
     }
 
     private void abrirHistoricoEspecifico(Base base) {
+        abrirHistoricoEspecifico(base, null);
+    }
+
+    private void abrirHistoricoEspecifico(Base base, Window ownerOverride) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/swstock/view/BasesHistoryView.fxml"));
             Parent root = loader.load();
@@ -583,7 +564,10 @@ public class BasesController {
             com.swstock.MainApp.applyAppIcon(histStage);
             histStage.setTitle("Histórico da Base: " + base.getNome());
             histStage.initModality(Modality.APPLICATION_MODAL);
-            histStage.initOwner(tblBases.getScene().getWindow());
+            Window owner = ownerOverride != null ? ownerOverride : (tblBases != null && tblBases.getScene() != null ? tblBases.getScene().getWindow() : stage);
+            if (owner != null) {
+                histStage.initOwner(owner);
+            }
             histStage.setScene(new Scene(root));
 
             controller.setStage(histStage);
