@@ -82,6 +82,15 @@ class LogoManagerTest {
 
         manager.salvarLogo(imgFile);
 
+        // Garante execução de eventos pendentes na thread JavaFX quando o toolkit já estiver ativo
+        try {
+            java.util.concurrent.CountDownLatch fxLatch = new java.util.concurrent.CountDownLatch(1);
+            javafx.application.Platform.runLater(fxLatch::countDown);
+            fxLatch.await(3, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IllegalStateException ignored) {
+            // Toolkit JavaFX não inicializado (execução headless)
+        }
+
         assertTrue(manager.hasCustomLogo());
         assertTrue(manager.logoVersionProperty().get() > versaoAntes);
         assertNotNull(manager.getLogoBytes());

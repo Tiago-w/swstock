@@ -1,9 +1,11 @@
 package com.swstock.controller;
 
+import com.swstock.database.FuncionarioDAO;
 import com.swstock.database.HistoricoEstoqueDAO;
 import com.swstock.database.ProdutoCorDAO;
 import com.swstock.database.ProdutoDAO;
 import com.swstock.database.ProdutoSubcategoriaDAO;
+import com.swstock.model.Funcionario;
 import com.swstock.model.HistoricoEstoque;
 import com.swstock.model.Produto;
 import com.swstock.model.ProdutoCor;
@@ -26,6 +28,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -55,6 +58,13 @@ public class ProductDetailController {
     @FXML private Label lblModalCodigo;
     @FXML private Label lblAutoSaveStatus;
     @FXML private Button btnResponsavelSessao;
+
+    // Seletor rápido obrigatório de quem realizou a alteração
+    @FXML private HBox boxQuickOperator;
+    @FXML private FlowPane flowOperadoresRapidos;
+    @FXML private Label lblStatusResponsavelEdicao;
+    @FXML private Button btnSalvar;
+    @FXML private Button btnExcluirProduto;
 
     @FXML private TabPane tabPanePrincipal;
     @FXML private TextField txtQuantidade;
@@ -113,6 +123,9 @@ public class ProductDetailController {
     private HistoricoEstoqueDAO historicoEstoqueDAO;
     private ProdutoCorDAO produtoCorDAO = new ProdutoCorDAO();
     private ProdutoSubcategoriaDAO produtoSubcategoriaDAO = new ProdutoSubcategoriaDAO();
+    private FuncionarioDAO funcionarioDAO;
+    private final ToggleGroup toggleGroupOperadores = new ToggleGroup();
+    private String responsavelEdicaoSelecionado = null;
     private final ObservableList<HistoricoEstoque> historicoList = FXCollections.observableArrayList();
     private final ObservableList<ProdutoCor> coresDoProduto = FXCollections.observableArrayList();
     private final ObservableList<ProdutoSubcategoria> subcategoriasDoProduto = FXCollections.observableArrayList();
@@ -145,10 +158,138 @@ public class ProductDetailController {
         });
 
         configurarBadgeResponsavel();
+        configurarSeletorOperadoresRapidos();
         configurarCampoQuantidade();
         configurarTabelaHistorico();
         configurarSeletorCores();
         configurarSeletorSubcategorias();
+    }
+
+    private void configurarSeletorOperadoresRapidos() {
+        toggleGroupOperadores.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle instanceof ToggleButton tb && tb.getUserData() instanceof String nomeOp && !nomeOp.isBlank()) {
+                this.responsavelEdicaoSelecionado = nomeOp.trim();
+            } else {
+                this.responsavelEdicaoSelecionado = null;
+            }
+            atualizarEstadoBotaoSalvar();
+        });
+        carregarOperadoresRapidos();
+        resetarSelecaoResponsavel();
+    }
+
+    /**
+     * Popula a faixa de botões rápidos (1 clique) com os operadores/vendedores cadastrados.
+     * Sempre inicia sem seleção (estado padrão travado) para impedir salvamentos sem identificar quem editou.
+     */
+    public void carregarOperadoresRapidos() {
+        if (flowOperadoresRapidos == null) return;
+
+        flowOperadoresRapidos.getChildren().clear();
+        toggleGroupOperadores.getToggles().clear();
+
+        List<String> operadores = new ArrayList<>();
+        try {
+            FuncionarioDAO dao = this.funcionarioDAO != null
+                    ? this.funcionarioDAO
+                    : (produtoDAO != null && produtoDAO.getDatabaseManager() != null
+                        ? new FuncionarioDAO(produtoDAO.getDatabaseManager())
+                        : new FuncionarioDAO());
+            for (Funcionario f : dao.findAll()) {
+                if (f.getNome() != null && !f.getNome().trim().isEmpty()) {
+                    String label = f.getNome().trim();
+                    if (f.getNumero() != null && !f.getNumero().trim().isEmpty()) {
+                        label += " (" + f.getNumero().trim() + ")";
+                    }
+                    operadores.add(label);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Não foi possível carregar lista de operadores para seleção rápida.", e);
+        }
+
+        if (operadores.isEmpty()) {
+            operadores.add("Administrador");
+        }
+
+        for (String op : operadores) {
+            ToggleButton chip = new ToggleButton(op);
+            chip.setUserData(op);
+            chip.setToggleGroup(toggleGroupOperadores);
+            chip.getStyleClass().add("quick-operator-chip");
+            chip.setFocusTraversable(false);
+            flowOperadoresRapidos.getChildren().add(chip);
+        }
+
+        resetarSelecaoResponsavel();
+    }
+
+    /**
+     * Reseta a seleção do responsável para o estado padrão (nenhum selecionado) e trava o botão Salvar.
+     */
+    public void resetarSelecaoResponsavel() {
+        toggleGroupOperadores.selectToggle(null);
+        this.responsavelEdicaoSelecionado = null;
+        atualizarEstadoBotaoSalvar();
+    }
+
+    /**
+     * Seleciona programaticamente um operador pelo rótulo (ou limpa se nulo/vazio).
+     */
+    public void selecionarOperadorRapido(String operador) {
+        if (operador == null || operador.isBlank()) {
+            resetarSelecaoResponsavel();
+            return;
+        }
+        String alvo = operador.trim();
+        for (Toggle t : toggleGroupOperadores.getToggles()) {
+            if (t instanceof ToggleButton tb && alvo.equalsIgnoreCase(String.valueOf(tb.getUserData()))) {
+                toggleGroupOperadores.selectToggle(tb);
+                return;
+            }
+        }
+    }
+
+    public String getResponsavelEdicaoSelecionado() {
+        return responsavelEdicaoSelecionado;
+    }
+
+    private void atualizarEstadoBotaoSalvar() {
+        boolean selecionado = responsavelEdicaoSelecionado != null && !responsavelEdicaoSelecionado.isBlank();
+
+        if (btnSalvar != null) {
+            btnSalvar.setDisable(!selecionado);
+            btnSalvar.setTooltip(selecionado
+                    ? new Tooltip("Salvar alterações como " + responsavelEdicaoSelecionado)
+                    : new Tooltip("Selecione quem realizou a alteração acima para liberar o botão Salvar."));
+        }
+
+        if (boxQuickOperator != null) {
+            boxQuickOperator.getStyleClass().removeAll("quick-operator-strip-pending", "quick-operator-strip-selected");
+            boxQuickOperator.getStyleClass().add(selecionado ? "quick-operator-strip-selected" : "quick-operator-strip-pending");
+        }
+
+        if (lblStatusResponsavelEdicao != null) {
+            lblStatusResponsavelEdicao.getStyleClass().removeAll("operator-lock-pill-pending", "operator-lock-pill-ok");
+            if (selecionado) {
+                lblStatusResponsavelEdicao.setText("✓ Selecionado: " + responsavelEdicaoSelecionado);
+                lblStatusResponsavelEdicao.getStyleClass().add("operator-lock-pill-ok");
+            } else {
+                lblStatusResponsavelEdicao.setText("Selecione quem editou para liberar Salvar");
+                lblStatusResponsavelEdicao.getStyleClass().add("operator-lock-pill-pending");
+            }
+        }
+    }
+
+    private Optional<String> obterResponsavelAuxiliar(String titulo, String header) {
+        if (responsavelEdicaoSelecionado != null && !responsavelEdicaoSelecionado.isBlank()) {
+            return Optional.of(responsavelEdicaoSelecionado.trim());
+        }
+        return DialogHelper.solicitarResponsavel(
+                tabPanePrincipal != null && tabPanePrincipal.getScene() != null ? tabPanePrincipal.getScene().getWindow() : stage,
+                titulo,
+                header
+        );
     }
 
     private void configurarBadgeResponsavel() {
@@ -450,14 +591,23 @@ public class ProductDetailController {
         if (lblDeltaEstoque == null) return;
         int inicial = (corAtiva != null) ? estoqueInicialCor : ((subcategoriaAtiva != null && coresDoProduto.isEmpty()) ? estoqueInicialSubcategoria : estoqueInicialProduto);
         int diff = qtdAtual - inicial;
+        lblDeltaEstoque.getStyleClass().removeAll("delta-pill-add", "delta-pill-remove", "delta-pill-neutral");
+        lblDeltaEstoque.setStyle("");
         if (diff > 0) {
-            lblDeltaEstoque.setText("Está sendo adicionado " + diff + (diff == 1 ? " item" : " itens"));
-            lblDeltaEstoque.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 12px;");
+            lblDeltaEstoque.setText("+" + diff + (diff == 1 ? " item adicionado" : " itens adicionados"));
+            lblDeltaEstoque.getStyleClass().add("delta-pill-add");
+            lblDeltaEstoque.setVisible(true);
+            lblDeltaEstoque.setManaged(true);
         } else if (diff < 0) {
-            lblDeltaEstoque.setText("Está sendo retirado " + Math.abs(diff) + (Math.abs(diff) == 1 ? " item" : " itens"));
-            lblDeltaEstoque.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 12px;");
+            int abs = Math.abs(diff);
+            lblDeltaEstoque.setText("-" + abs + (abs == 1 ? " item retirado" : " itens retirados"));
+            lblDeltaEstoque.getStyleClass().add("delta-pill-remove");
+            lblDeltaEstoque.setVisible(true);
+            lblDeltaEstoque.setManaged(true);
         } else {
             lblDeltaEstoque.setText("");
+            lblDeltaEstoque.setVisible(false);
+            lblDeltaEstoque.setManaged(false);
         }
     }
 
@@ -484,8 +634,7 @@ public class ProductDetailController {
                         } else if (subcategoriaAtiva != null) {
                             varDesc = " (" + subcategoriaAtiva.getNomeSubcategoria() + ")";
                         }
-                        lblAutoSaveStatus.setText("Alteração pendente de salvamento" + varDesc);
-                        lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+                        atualizarStatusPendente("Alteração pendente" + varDesc);
                     } else {
                         atualizarStatusSincronizado();
                     }
@@ -517,8 +666,17 @@ public class ProductDetailController {
 
     public void setProdutoDAO(ProdutoDAO produtoDAO) {
         this.produtoDAO = produtoDAO;
-        this.historicoEstoqueDAO = new HistoricoEstoqueDAO();
-        this.produtoCorDAO = new ProdutoCorDAO();
+        if (produtoDAO != null && produtoDAO.getDatabaseManager() != null) {
+            this.historicoEstoqueDAO = new HistoricoEstoqueDAO(produtoDAO.getDatabaseManager());
+            this.produtoCorDAO = new ProdutoCorDAO(produtoDAO.getDatabaseManager());
+            this.produtoSubcategoriaDAO = new ProdutoSubcategoriaDAO(produtoDAO.getDatabaseManager());
+            this.funcionarioDAO = new FuncionarioDAO(produtoDAO.getDatabaseManager());
+        } else {
+            this.historicoEstoqueDAO = new HistoricoEstoqueDAO();
+            this.produtoCorDAO = new ProdutoCorDAO();
+            this.produtoSubcategoriaDAO = new ProdutoSubcategoriaDAO();
+            this.funcionarioDAO = new FuncionarioDAO();
+        }
     }
 
     public void setOnUpdateCallback(Runnable onUpdateCallback) {
@@ -561,8 +719,7 @@ public class ProductDetailController {
             if (lblEstoqueInicial != null) {
                 lblEstoqueInicial.setText("0 un.");
             }
-            lblAutoSaveStatus.setText("Modo Criação");
-            lblAutoSaveStatus.setStyle("-fx-text-fill: #2563EB; -fx-font-weight: bold; -fx-font-size: 11px;");
+            atualizarStatusCriacao();
             txtPrecoVista.setText("0.00");
             txtPrecoPrazo.setText("0.00");
             txtCodigoLoja.setText("SKU-" + (int)(Math.random() * 900000 + 100000));
@@ -573,6 +730,7 @@ public class ProductDetailController {
             carregarCoresProduto();
             carregarSubcategoriasProduto();
             atualizarFeedbackDelta(0);
+            carregarOperadoresRapidos();
         } else {
             this.estoqueInicial = produto.getQuantidade() != null ? produto.getQuantidade() : 0;
             this.estoqueInicialProduto = this.estoqueInicial;
@@ -610,6 +768,7 @@ public class ProductDetailController {
             }
             atualizarEstadoTravaQuantidade();
             atualizarFeedbackDelta(this.estoqueInicialProduto);
+            carregarOperadoresRapidos();
         }
     }
 
@@ -974,9 +1133,8 @@ public class ProductDetailController {
         if (result.isPresent() && !result.get().trim().isEmpty()) {
             String nomeCor = result.get().trim().toUpperCase();
 
-            // Pede o responsável pela alteração
-            Optional<String> optResp = DialogHelper.solicitarResponsavel(
-                    tabPanePrincipal.getScene().getWindow(),
+            // Pede o responsável pela alteração (ou usa o já selecionado nos botões rápidos)
+            Optional<String> optResp = obterResponsavelAuxiliar(
                     "Responsável pelo Cadastro da Cor",
                     "Informe quem está cadastrando a cor '" + nomeCor + "':"
             );
@@ -1119,9 +1277,8 @@ public class ProductDetailController {
         if (result.isPresent() && !result.get().trim().isEmpty()) {
             String nomeSub = result.get().trim().toUpperCase();
 
-            // Pede o responsável pela alteração
-            Optional<String> optResp = DialogHelper.solicitarResponsavel(
-                    tabPanePrincipal.getScene().getWindow(),
+            // Pede o responsável pela alteração (ou usa o já selecionado nos botões rápidos)
+            Optional<String> optResp = obterResponsavelAuxiliar(
                     "Responsável pelo Cadastro da Subcategoria",
                     "Informe quem está cadastrando a subcategoria '" + nomeSub + "':"
             );
@@ -1352,8 +1509,7 @@ public class ProductDetailController {
                         boxImageNav.setManaged(false);
                     }
 
-                    lblAutoSaveStatus.setText("Dados preenchidos pela busca web");
-                    lblAutoSaveStatus.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 11px;");
+                    atualizarStatusOk("Dados preenchidos pela busca web");
                 }))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
@@ -1423,17 +1579,13 @@ public class ProductDetailController {
         setQuantidadeDisplay(novo);
         atualizarFeedbackDelta(novo);
         if (corAtiva != null && subcategoriaAtiva != null) {
-            lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + " - " + subcategoriaAtiva.getNomeSubcategoria() + ")");
-            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            atualizarStatusPendente("Alteração pendente (" + corAtiva.getNomeCor() + " - " + subcategoriaAtiva.getNomeSubcategoria() + ")");
         } else if (corAtiva != null) {
-            lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
-            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            atualizarStatusPendente("Alteração pendente (" + corAtiva.getNomeCor() + ")");
         } else if (subcategoriaAtiva != null) {
-            lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + subcategoriaAtiva.getNomeSubcategoria() + ")");
-            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            atualizarStatusPendente("Alteração pendente (" + subcategoriaAtiva.getNomeSubcategoria() + ")");
         } else if (coresDoProduto.isEmpty() && subcategoriasDoProduto.isEmpty()) {
-            lblAutoSaveStatus.setText("Alteração pendente de salvamento");
-            lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+            atualizarStatusPendente("Alteração pendente");
         }
     }
 
@@ -1455,17 +1607,13 @@ public class ProductDetailController {
             setQuantidadeDisplay(novo);
             atualizarFeedbackDelta(novo);
             if (corAtiva != null && subcategoriaAtiva != null) {
-                lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + " - " + subcategoriaAtiva.getNomeSubcategoria() + ")");
-                lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+                atualizarStatusPendente("Alteração pendente (" + corAtiva.getNomeCor() + " - " + subcategoriaAtiva.getNomeSubcategoria() + ")");
             } else if (corAtiva != null) {
-                lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + corAtiva.getNomeCor() + ")");
-                lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+                atualizarStatusPendente("Alteração pendente (" + corAtiva.getNomeCor() + ")");
             } else if (subcategoriaAtiva != null) {
-                lblAutoSaveStatus.setText("Alteração pendente de salvamento (" + subcategoriaAtiva.getNomeSubcategoria() + ")");
-                lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+                atualizarStatusPendente("Alteração pendente (" + subcategoriaAtiva.getNomeSubcategoria() + ")");
             } else if (coresDoProduto.isEmpty() && subcategoriasDoProduto.isEmpty()) {
-                lblAutoSaveStatus.setText("Alteração pendente de salvamento");
-                lblAutoSaveStatus.setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px;");
+                atualizarStatusPendente("Alteração pendente");
             }
         }
     }
@@ -1480,26 +1628,48 @@ public class ProductDetailController {
     }
 
     private void atualizarStatusSincronizado() {
-        lblAutoSaveStatus.setText("Sincronizado com SQLite");
-        lblAutoSaveStatus.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 11px;");
+        atualizarStatusOk("Sincronizado com SQLite");
+    }
+
+    private void atualizarStatusOk(String texto) {
+        if (lblAutoSaveStatus == null) return;
+        lblAutoSaveStatus.setStyle("");
+        lblAutoSaveStatus.getStyleClass().removeAll("product-status-pill-ok", "product-status-pill-pending", "product-status-pill-create");
+        lblAutoSaveStatus.getStyleClass().add("product-status-pill-ok");
+        lblAutoSaveStatus.setText(texto);
+    }
+
+    private void atualizarStatusPendente(String texto) {
+        if (lblAutoSaveStatus == null) return;
+        lblAutoSaveStatus.setStyle("");
+        lblAutoSaveStatus.getStyleClass().removeAll("product-status-pill-ok", "product-status-pill-pending", "product-status-pill-create");
+        lblAutoSaveStatus.getStyleClass().add("product-status-pill-pending");
+        lblAutoSaveStatus.setText(texto);
+    }
+
+    private void atualizarStatusCriacao() {
+        if (lblAutoSaveStatus == null) return;
+        lblAutoSaveStatus.setStyle("");
+        lblAutoSaveStatus.getStyleClass().removeAll("product-status-pill-ok", "product-status-pill-pending", "product-status-pill-create");
+        lblAutoSaveStatus.getStyleClass().add("product-status-pill-create");
+        lblAutoSaveStatus.setText("Modo Criação");
     }
 
     @FXML
     private void handleSalvarAlteracoes() {
+        // TRAVA OBRIGATÓRIA: não permite salvar enquanto nenhum responsável tiver sido selecionado
+        if (responsavelEdicaoSelecionado == null || responsavelEdicaoSelecionado.isBlank()) {
+            atualizarEstadoBotaoSalvar();
+            mostrarAlerta(Alert.AlertType.WARNING, "Responsável Obrigatório",
+                    "Selecione quem realizou a alteração nos botões rápidos antes de salvar.");
+            return;
+        }
+
         if (!validarFormulario()) {
             return;
         }
 
-        // QUALQUER SALVAMENTO PEDE QUEM ALTEROU
-        Optional<String> optResp = DialogHelper.solicitarResponsavel(
-                tabPanePrincipal.getScene().getWindow(),
-                "Confirmação de Responsável",
-                "Informe o funcionário responsável por salvar as alterações deste produto:"
-        );
-        if (optResp.isEmpty()) {
-            return; // Salvamento abortado
-        }
-        String responsavel = optResp.get();
+        String responsavel = responsavelEdicaoSelecionado.trim();
 
         int qtdFinal = parseQuantidadeAtual();
 
@@ -1703,8 +1873,7 @@ public class ProductDetailController {
 
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            Optional<String> optResp = DialogHelper.solicitarResponsavel(
-                    tabPanePrincipal.getScene().getWindow(),
+            Optional<String> optResp = obterResponsavelAuxiliar(
                     "Responsável pela Exclusão",
                     "Informe quem está excluindo o produto '" + produto.getNome() + "':"
             );
